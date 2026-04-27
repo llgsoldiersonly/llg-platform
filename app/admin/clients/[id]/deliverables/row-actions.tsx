@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Trash2 } from 'lucide-react'
@@ -27,6 +28,7 @@ export function DeliverableRowActions({
   status: string
   isCustom: boolean
 }) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
@@ -36,6 +38,7 @@ export function DeliverableRowActions({
     startTransition(async () => {
       const result = await updateDeliverableStatus(deliverableId, newStatus, clientId)
       if (!result.ok) setError(result.error.message)
+      else router.refresh()
     })
   }
 
@@ -45,6 +48,7 @@ export function DeliverableRowActions({
     startTransition(async () => {
       const result = await deleteCustomDeliverable(deliverableId, clientId)
       if (!result.ok) setError(result.error.message)
+      else router.refresh()
     })
   }
 

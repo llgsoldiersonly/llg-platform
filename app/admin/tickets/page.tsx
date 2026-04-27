@@ -16,9 +16,9 @@ type TicketRow = {
   status: string
   created_at: string
   sla_deadline_at: string | null
+  assigned_user_id: string | null
   client: { id: string; firm_name: string } | null
   department: { name: string; slug: string } | null
-  assigned_user: { full_name: string | null } | null
 }
 
 const statusVariant: Record<string, 'success' | 'info' | 'warning' | 'secondary' | 'destructive'> = {
@@ -39,19 +39,30 @@ function slaState(deadline: string | null): { label: string; variant: 'success' 
 
 export default async function AdminTicketsPage() {
   const supa = createAdminClient()
-  const { data: tickets } = await supa
-    .from('tickets')
-    .select(`
-      id, ticket_number, type, subject, category, priority, status, created_at, sla_deadline_at,
-      client:clients(id, firm_name),
-      department:departments!tickets_assigned_department_id_fkey(name, slug),
-      assigned_user:profiles!tickets_assigned_user_id_fkey(full_name)
-    `)
-    .order('created_at', { ascending: false })
-    .limit(100)
-    .returns<TicketRow[]>()
+  const [{ data: rawTickets }, { data: assignees }] = await Promise.all([
+    supa
+      .from('tickets')
+      .select(`
+        id, ticket_number, type, subject, category, priority, status, created_at, sla_deadline_at,
+        assigned_user_id,
+        client:clients(id, firm_name),
+        department:departments!tickets_assigned_department_id_fkey(name, slug)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(100)
+      .returns<TicketRow[]>(),
+    supa.from('profiles').select('id, full_name'),
+  ])
 
-  const list = tickets ?? []
+  const profileMap = new Map<string, string | null>()
+  for (const p of assignees ?? []) profileMap.set(p.id, p.full_name)
+
+  const list = (rawTickets ?? []).map((t) => ({
+    ...t,
+    assigned_user: t.assigned_user_id
+      ? { full_name: profileMap.get(t.assigned_user_id) ?? null }
+      : null,
+  }))
   const open = list.filter((t) => t.status !== 'closed' && t.status !== 'resolved')
   const closed = list.filter((t) => t.status === 'closed' || t.status === 'resolved')
 
