@@ -82,7 +82,7 @@ if echo "$HEALTH" | grep -q '"ok":true'; then
   check_json_eq "Seed: 1 demo client"                "$HEALTH" "demo_clients" 1
   check_json_eq "Seed: 11 departments"               "$HEALTH" "departments" 11
   check_json_eq "Seed: 5 packages"                   "$HEALTH" "packages" 5
-  check_json_eq "Seed: 8 subscriptions"              "$HEALTH" "subscriptions" 8
+  check_json_eq "Seed: 9 subscriptions"              "$HEALTH" "subscriptions" 9
   check_json_eq "Seed: 8 client locations"           "$HEALTH" "locations" 8
   check_json_eq "Seed: 8 ticket routing rules"       "$HEALTH" "routing_rules" 8
   check_json_eq "Seed: 1 incentive deliverable"      "$HEALTH" "incentive_deliverables" 1
