@@ -1,7 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
-    { "path": "/api/cron/ticket-quotas",       "schedule": "0 8 * * 1" },
-    { "path": "/api/cron/auto-close-inactive", "schedule": "0 3 * * *" }
+    { "path": "/api/cron/wordpress",          "schedule": "0 2 * * *" },
+    { "path": "/api/cron/callrail",           "schedule": "20 2 * * *" },
+    { "path": "/api/cron/metricool",          "schedule": "30 2 * * *" },
+    { "path": "/api/cron/ticket-quotas",      "schedule": "0 8 * * 1" },
+    { "path": "/api/cron/auto-close-inactive","schedule": "0 3 * * *" }
   ]
 }
