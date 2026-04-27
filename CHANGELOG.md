@@ -2,6 +2,39 @@
 
 All notable changes per phase. Newest first.
 
+## Phase 2 — Schema + Seed ✅ shipped
+
+**Date:** 2026-04-27
+**PR:** [#1](https://github.com/llgsoldiersonly/llg-platform/pull/1) — merged
+
+### Migrations
+- **0001** core_schema — profiles, departments, clients (with `is_demo_only`), client_locations (BrightLocal IDs), client_users
+- **0002** credentials — `client_credentials` with RLS enabled and zero policies (service-role only)
+- **0003** packages_deliverables — templates, modules, deliverables menu, subscriptions, deliverables instance table, `deliverables_display` view
+- **0004** raw_tables — `tracked_keywords` + 8 `raw_*` ingestion buffers
+- **0005** normalized_tables — 9 deduped tables the app reads
+- **0006** tickets_tasks — tickets, messages, routing, tasks, comments
+- **0007** sync_log_notifications — sync_log, notifications, activity_log
+- **0008** rls_policies — `is_agency_staff()` / `is_super_admin()` / `accessible_client_ids()` helpers + RLS on every tenant-scoped table
+- **0009** seed — 11 depts, 5 packages, 93 package_deliverables, 8 routing rules, 7 clients (6 pilots + Acme demo with `is_demo_only=true`), 8 locations (Gilliam gets 2), 9 subscriptions (Daniels and Gilliam each get 2), Olson's free-website incentive
+- **0010** auth_trigger — `on_auth_user_created` trigger creates a `profiles` row whenever `auth.users` gets a new entry, with backfill for users created before this trigger existed
+
+### App additions
+- **`/api/health`** endpoint — public, returns seed counts via service-role. Used by smoke tests + ops monitoring.
+- Middleware excludes `/api/health` so the smoke test can hit it unauthenticated.
+
+### Acceptance
+- `pnpm smoke https://llg-platform-llg-team.vercel.app` → **13/13 passing** on production
+- Counts verified: 7 clients, 1 demo, 11 depts, 5 packages, 9 subs, 8 locations, 8 routing rules, 1 incentive, 93 deliverables
+- RLS verified on preview branch: helper fns present, 35 tenant tables locked, `client_credentials` has 0 policies (service-role only)
+
+### Known follow-ups (NOT bugs)
+- Idempotency check via "reset preview branch + reapply" was skipped (would burn ~$0.30 in Branching compute). All inserts use `ON CONFLICT` or `WHERE NOT EXISTS` patterns; will be exercised next time someone re-runs migrations on a fresh DB.
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` is scoped to specific git branches in Vercel Preview env (CLI bug prevented "all branches" setting). Each new phase branch will need its own copy added. Workaround documented in PR #1 comments.
+- Test users (Part 2.5.4 of the handoff) are NOT seeded — those live in `supabase/seed.sql` for local-only `supabase db reset`. Production gets only the 7 real-client seed rows.
+
+---
+
 ## Phase 1 — Foundation ✅ shipped
 
 **Date:** 2026-04-27
