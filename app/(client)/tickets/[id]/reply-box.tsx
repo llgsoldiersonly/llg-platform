@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { replyToTicket } from '@/lib/actions/tickets'
 
 export function ClientReplyBox({ ticketId }: { ticketId: string }) {
+  const router = useRouter()
   const [body, setBody] = useState('')
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -17,6 +19,7 @@ export function ClientReplyBox({ ticketId }: { ticketId: string }) {
       const result = await replyToTicket(ticketId, body, false)
       if (result.ok) {
         setBody('')
+        router.refresh()
       } else {
         setError(result.error.message)
       }

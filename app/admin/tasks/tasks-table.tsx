@@ -1,6 +1,7 @@
 'use client'
 
 import { useTransition, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Select } from '@/components/ui/select'
@@ -69,6 +70,7 @@ export function TasksTable({ tasks }: { tasks: Task[] }) {
 }
 
 function Row({ task }: { task: Task }) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
@@ -78,6 +80,7 @@ function Row({ task }: { task: Task }) {
     startTransition(async () => {
       const result = await updateTaskStatus(task.id, next as 'todo' | 'in_progress' | 'in_review' | 'blocked' | 'done' | 'cancelled')
       if (!result.ok) setError(result.error.message)
+      else router.refresh()
     })
   }
 
@@ -87,6 +90,7 @@ function Row({ task }: { task: Task }) {
     startTransition(async () => {
       const result = await deleteTask(task.id)
       if (!result.ok) setError(result.error.message)
+      else router.refresh()
     })
   }
 

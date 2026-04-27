@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Dialog,
   DialogContent,
@@ -38,6 +39,7 @@ export function CreateTaskButton({
   defaultDeliverableId,
   triggerLabel,
 }: Props) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -57,6 +59,7 @@ export function CreateTaskButton({
       })
       if (result.ok) {
         setOpen(false)
+        router.refresh()
       } else {
         setError(result.error.message)
       }

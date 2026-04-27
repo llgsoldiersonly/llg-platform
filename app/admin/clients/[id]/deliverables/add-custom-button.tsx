@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,7 @@ type Props = {
 }
 
 export function AddCustomDeliverableButton({ clientId, subscriptions }: Props) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -68,6 +70,7 @@ export function AddCustomDeliverableButton({ clientId, subscriptions }: Props) {
 
       if (result.ok) {
         setOpen(false)
+        router.refresh()
       } else {
         setError(result.error.message)
       }

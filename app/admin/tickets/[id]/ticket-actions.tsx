@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
@@ -34,6 +35,7 @@ export function AdminTicketActions({
   staff,
   departments,
 }: Props) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [body, setBody] = useState('')
@@ -44,8 +46,10 @@ export function AdminTicketActions({
     setError(null)
     startTransition(async () => {
       const result = await replyToTicket(ticketId, body, internal)
-      if (result.ok) setBody('')
-      else setError(result.error.message)
+      if (result.ok) {
+        setBody('')
+        router.refresh()
+      } else setError(result.error.message)
     })
   }
 
@@ -57,6 +61,7 @@ export function AdminTicketActions({
     startTransition(async () => {
       const result = await assignTicket(ticketId, userId, deptId || undefined)
       if (!result.ok) setError(result.error.message)
+      else router.refresh()
     })
   }
 
@@ -66,6 +71,7 @@ export function AdminTicketActions({
     startTransition(async () => {
       const result = await closeTicket(ticketId, 'resolved')
       if (!result.ok) setError(result.error.message)
+      else router.refresh()
     })
   }
 
@@ -75,6 +81,7 @@ export function AdminTicketActions({
     startTransition(async () => {
       const result = await escalateTicket(ticketId)
       if (!result.ok) setError(result.error.message)
+      else router.refresh()
     })
   }
 
