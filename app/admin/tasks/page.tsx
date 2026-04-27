@@ -1,13 +1,11 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { TasksTable } from './tasks-table'
 import { CreateTaskButton } from './create-task-button'
 
 export const dynamic = 'force-dynamic'
 
-type Task = {
+type RawTask = {
   id: string
   task_number: number
   title: string
@@ -15,10 +13,12 @@ type Task = {
   priority: string
   due_date: string | null
   created_at: string
+  assigned_to: string | null
   client: { id: string; firm_name: string } | null
   department: { name: string; slug: string } | null
-  assignee: { id: string; full_name: string | null } | null
 }
+
+type Profile = { id: string; full_name: string | null }
 
 export default async function AdminTasksPage({
   searchParams,
@@ -31,13 +31,15 @@ export default async function AdminTasksPage({
 
   const supa = createAdminClient()
 
+  // Tasks → assignee join can't be expressed as a FK relationship in PostgREST
+  // (tasks.assigned_to FKs to auth.users, not public.profiles). Fetch tasks
+  // and look up assignee names in a second query, then merge in code.
   let query = supa
     .from('tasks')
     .select(`
-      id, task_number, title, status, priority, due_date, created_at,
+      id, task_number, title, status, priority, due_date, created_at, assigned_to,
       client:clients(id, firm_name),
-      department:departments(name, slug),
-      assignee:profiles!tasks_assigned_to_fkey(id, full_name)
+      department:departments(name, slug)
     `)
     .order('created_at', { ascending: false })
     .limit(200)
@@ -45,19 +47,38 @@ export default async function AdminTasksPage({
   if (filterStatus) query = query.eq('status', filterStatus)
   if (filterAssignee) query = query.eq('assigned_to', filterAssignee)
 
-  const [{ data: tasks }, { data: staff }, { data: departments }, { data: clients }] = await Promise.all([
-    query.returns<Task[]>(),
-    supa
-      .from('profiles')
-      .select('id, full_name, role')
-      .in('role', ['agency_staff', 'super_admin'])
-      .order('full_name', { ascending: true }),
-    supa.from('departments').select('id, name, slug').order('name'),
-    supa.from('clients').select('id, firm_name').order('firm_name'),
-  ])
+  const [{ data: rawTasks }, { data: staff }, { data: departments }, { data: clients }] =
+    await Promise.all([
+      query.returns<RawTask[]>(),
+      supa
+        .from('profiles')
+        .select('id, full_name, role')
+        .in('role', ['agency_staff', 'super_admin'])
+        .order('full_name', { ascending: true }),
+      supa.from('departments').select('id, name, slug').order('name'),
+      supa.from('clients').select('id, firm_name').order('firm_name'),
+    ])
 
-  const list = tasks ?? []
-  const open = list.filter((t) => t.status !== 'done' && t.status !== 'cancelled')
+  // Map assignee_id -> profile so the table can show full_name
+  const profileMap = new Map<string, Profile>()
+  for (const p of staff ?? []) {
+    profileMap.set(p.id, { id: p.id, full_name: p.full_name })
+  }
+
+  const tasks = (rawTasks ?? []).map((t) => ({
+    id: t.id,
+    task_number: t.task_number,
+    title: t.title,
+    status: t.status,
+    priority: t.priority,
+    due_date: t.due_date,
+    created_at: t.created_at,
+    client: t.client,
+    department: t.department,
+    assignee: t.assigned_to ? profileMap.get(t.assigned_to) ?? { id: t.assigned_to, full_name: null } : null,
+  }))
+
+  const open = tasks.filter((t) => t.status !== 'done' && t.status !== 'cancelled')
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-8">
@@ -65,7 +86,7 @@ export default async function AdminTasksPage({
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Tasks</h1>
           <p className="mt-1 text-sm text-slate-500">
-            {open.length} open · {list.length} total
+            {open.length} open · {tasks.length} total
           </p>
         </div>
         <CreateTaskButton
@@ -106,7 +127,7 @@ export default async function AdminTasksPage({
         </CardContent>
       </Card>
 
-      <TasksTable tasks={list} />
+      <TasksTable tasks={tasks} />
     </div>
   )
 }
