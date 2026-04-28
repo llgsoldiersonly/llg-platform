@@ -36,12 +36,27 @@ export async function POST(req: Request) {
       .eq('client_id', client.id)
       .maybeSingle()
 
-    if (!creds?.callrail_account_id) {
+    // Account ID resolution: per-client value first, fallback to global env var.
+    // LLG uses one CallRail account for all clients distinguished by company_id,
+    // so the global default keeps the per-client form simpler.
+    const accountId = creds?.callrail_account_id ?? process.env.CALLRAIL_DEFAULT_ACCOUNT_ID
+    if (!accountId) {
       await supa.from('sync_log').insert({
         source: 'cron:callrail',
         client_id: client.id,
         status: 'skipped',
-        error_message: 'No CallRail account_id',
+        error_message: 'No CallRail account_id (per-client or default env)',
+      })
+      continue
+    }
+    if (!creds?.callrail_company_id) {
+      // Without a company_id we'd pull every call across the shared account.
+      // Skip until the per-client company filter is set.
+      await supa.from('sync_log').insert({
+        source: 'cron:callrail',
+        client_id: client.id,
+        status: 'skipped',
+        error_message: 'No CallRail company_id (cannot scope shared account)',
       })
       continue
     }
@@ -49,8 +64,8 @@ export async function POST(req: Request) {
     try {
       const calls = await fetchCallRailCalls({
         apiToken: process.env.CALLRAIL_API_TOKEN!,
-        accountId: creds.callrail_account_id,
-        companyId: creds.callrail_company_id ?? undefined,
+        accountId,
+        companyId: creds.callrail_company_id,
         startDate,
         endDate,
       })
