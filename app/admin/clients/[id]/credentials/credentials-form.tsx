@@ -81,8 +81,18 @@ export function CredentialsForm({
       </Section>
 
       <Section title="CallRail">
-        <Field label="Account ID" name="callrail_account_id" defaultValue={initial.callrail_account_id ?? ''} />
-        <Field label="Company ID" name="callrail_company_id" defaultValue={initial.callrail_company_id ?? ''} />
+        <Field
+          label="Account ID"
+          name="callrail_account_id"
+          defaultValue={initial.callrail_account_id ?? ''}
+          help="Leave blank to use the shared LLG account (CALLRAIL_DEFAULT_ACCOUNT_ID env var)."
+        />
+        <Field
+          label="Company ID *"
+          name="callrail_company_id"
+          defaultValue={initial.callrail_company_id ?? ''}
+          help="Required — scopes calls to this client within the shared account."
+        />
       </Section>
 
       <Section title="Metricool">
