@@ -14,13 +14,13 @@ export function ClientTabNav({ clientId }: { clientId: string }) {
     { href: base,                          label: 'Summary' },
     { href: `${base}/deliverables`,        label: 'Deliverables' },
     { href: `${base}/credentials`,         label: 'Credentials' },
+    { href: `${base}/content`,             label: 'Content' },
+    { href: `${base}/calls`,               label: 'Calls' },
+    { href: `${base}/social`,              label: 'Social' },
     { href: `${base}/rankings`,            label: 'Rankings',     phase: 'Phase 7' },
     { href: `${base}/local`,               label: 'Local',        phase: 'Phase 8' },
-    { href: `${base}/content`,             label: 'Content',      phase: 'Phase 6' },
-    { href: `${base}/calls`,               label: 'Calls',        phase: 'Phase 6' },
-    { href: `${base}/social`,              label: 'Social',       phase: 'Phase 6' },
-    { href: `${base}/tickets`,             label: 'Tickets',      phase: 'Phase 5' },
-    { href: `${base}/tasks`,               label: 'Tasks',        phase: 'Phase 9' },
+    { href: `${base}/tickets`,             label: 'Tickets',      phase: 'global view exists' },
+    { href: `${base}/tasks`,               label: 'Tasks',        phase: 'global view exists' },
   ]
 
   return (
