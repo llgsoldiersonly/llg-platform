@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+import { isAgencyStaff } from '@/lib/auth/rbac'
+import { getActiveImpersonation } from '@/lib/impersonation'
 
 export type ClientLocation = {
   id: string
@@ -70,11 +72,18 @@ export async function getClientContext(searchParams?: URLSearchParams): Promise<
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  // RLS filters to clients this user has access to via client_users.
-  const { data: clients } = await supabase
+  // Staff impersonating a specific client (super-admin "View as" mode):
+  // pin the context to the impersonated client_id instead of whatever RLS
+  // picks first. Non-staff with a stray cookie are ignored.
+  const impersonation = isAgencyStaff(user) ? await getActiveImpersonation() : null
+
+  const baseQuery = supabase
     .from('clients')
     .select('id, firm_name, primary_domain, is_demo_only')
-    .limit(1)
+
+  const { data: clients } = impersonation
+    ? await baseQuery.eq('id', impersonation.clientId).limit(1)
+    : await baseQuery.limit(1)
 
   const client = clients?.[0]
   if (!client) return null

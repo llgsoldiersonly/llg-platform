@@ -4,6 +4,7 @@ import { isAgencyStaff } from '@/lib/auth/rbac'
 import { getClientContext } from '@/lib/client-context'
 import { ClientSidebar } from '@/components/client/sidebar'
 import { ClientTopbar } from '@/components/client/topbar'
+import { ImpersonationBanner } from '@/components/client/impersonation-banner'
 
 export default async function ClientPortalLayout({
   children,
@@ -36,6 +37,7 @@ export default async function ClientPortalLayout({
       <ClientSidebar firmName={firmName} />
       <div className="flex min-h-screen flex-1 flex-col">
         <ClientTopbar />
+        <ImpersonationBanner />
         <main className="flex-1">{children}</main>
       </div>
     </div>

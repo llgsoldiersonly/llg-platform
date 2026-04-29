@@ -1,7 +1,10 @@
 import { notFound } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isSuperAdmin } from '@/lib/auth/rbac'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { ImpersonateCard } from '@/components/admin/impersonate-card'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,11 +26,18 @@ type Location = {
 
 export default async function ClientSummaryPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ impersonation_error?: string }>
 }) {
   const { id } = await params
+  const sp = await searchParams
   const supa = createAdminClient()
+
+  const supabaseAuth = await createClient()
+  const { data: { user } } = await supabaseAuth.auth.getUser()
+  const showImpersonate = isSuperAdmin(user)
 
   const [{ data: client }, subscriptionsRes, locationsRes] = await Promise.all([
     supa
@@ -186,6 +196,14 @@ export default async function ClientSummaryPage({
           )}
         </CardContent>
       </Card>
+
+      {showImpersonate && (
+        <ImpersonateCard
+          clientId={client.id}
+          clientName={client.firm_name}
+          errorMessage={sp.impersonation_error}
+        />
+      )}
     </div>
   )
 }
