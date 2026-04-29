@@ -5,6 +5,7 @@ import { isSuperAdmin } from '@/lib/auth/rbac'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ImpersonateCard } from '@/components/admin/impersonate-card'
+import { InviteClientCard } from '@/components/admin/invite-client-card'
 
 export const dynamic = 'force-dynamic'
 
@@ -196,6 +197,12 @@ export default async function ClientSummaryPage({
           )}
         </CardContent>
       </Card>
+
+      <InviteClientCard
+        clientId={client.id}
+        defaultEmail={client.primary_contact_email ?? null}
+        defaultName={client.primary_contact_name ?? null}
+      />
 
       {showImpersonate && (
         <ImpersonateCard

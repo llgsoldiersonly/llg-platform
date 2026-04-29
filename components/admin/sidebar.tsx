@@ -29,7 +29,7 @@ const items: NavItem[] = [
   { href: '/admin/workload', label: 'Workload', icon: TrendingUp },
   { href: '/admin/ads', label: 'Ads', icon: Megaphone },
   { href: '/admin/system/health', label: 'System health', icon: Activity },
-  { href: '/admin/settings/users', label: 'Settings', icon: Settings, phase: 'Phase 10' },
+  { href: '/admin/settings/users', label: 'Settings', icon: Settings },
 ]
 
 export function AdminSidebar() {
