@@ -22,7 +22,7 @@ type NavItem = {
 const items: NavItem[] = [
   { href: '/overview',     label: 'Overview',     icon: LayoutDashboard },
   { href: '/plan',         label: 'My plan',      icon: ClipboardCheck },
-  { href: '/tickets',      label: 'Tickets',      icon: Briefcase, phase: 'Phase 5' },
+  { href: '/tickets',      label: 'Tickets',      icon: Briefcase },
   { href: '/team',         label: 'My team',      icon: Users,     phase: 'Phase 9' },
   { href: '/integrations', label: 'Integrations', icon: Plug,      phase: 'Phase 6' },
   { href: '/profile',      label: 'Profile',      icon: User },
