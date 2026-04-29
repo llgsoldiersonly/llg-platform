@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" role="img" aria-label="Legal Leads Group">
+  <title>Legal Leads Group mark</title>
+
+  <defs>
+    <!-- Planet body: two-tone radial gradient with highlight on upper right -->
+    <radialGradient id="llg-planet" cx="62%" cy="32%" r="78%">
+      <stop offset="0%"   stop-color="#A878F0"/>
+      <stop offset="35%"  stop-color="#7B3FE0"/>
+      <stop offset="70%"  stop-color="#5816B6"/>
+      <stop offset="100%" stop-color="#3B0E78"/>
+    </radialGradient>
+
+    <!-- Ring: subtle horizontal gradient -->
+    <linearGradient id="llg-ring" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#7B3FE0"/>
+      <stop offset="50%"  stop-color="#A878F0"/>
+      <stop offset="100%" stop-color="#7B3FE0"/>
+    </linearGradient>
+
+    <!-- Rocket body gradient -->
+    <linearGradient id="llg-rocket" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"  stop-color="#C9A6FF"/>
+      <stop offset="100%" stop-color="#7B3FE0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ============================================================
+       Back half of ring (drawn first, planet covers middle)
+       Tilted ellipse: cx=500, cy=520, rx=380, ry=110, rotated -12°
+       ============================================================ -->
+  <g transform="rotate(-12 500 520)">
+    <path d="M 120,520 A 380,110 0 0,1 880,520"
+          fill="none" stroke="url(#llg-ring)" stroke-width="42" stroke-linecap="round"/>
+  </g>
+
+  <!-- ============================================================
+       Planet body
+       ============================================================ -->
+  <circle cx="500" cy="500" r="225" fill="url(#llg-planet)"/>
+
+  <!-- Subtle highlight crescent for extra depth -->
+  <ellipse cx="430" cy="430" rx="90" ry="60"
+           fill="#A878F0" opacity="0.18"
+           transform="rotate(-30 430 430)"/>
+
+  <!-- ============================================================
+       Front half of ring (drawn after planet so it appears in front)
+       ============================================================ -->
+  <g transform="rotate(-12 500 520)">
+    <path d="M 120,520 A 380,110 0 0,0 880,520"
+          fill="none" stroke="url(#llg-ring)" stroke-width="42" stroke-linecap="round"/>
+  </g>
+
+  <!-- ============================================================
+       Rocket — flying up-and-right through the top of the ring
+       Composed of: nose triangle, body, exhaust fin
+       Positioned at planet's upper area, rotated ~30° clockwise
+       ============================================================ -->
+  <g transform="translate(560 220) rotate(38)">
+    <!-- Rocket body (elongated diamond) -->
+    <path d="M 0,-130 L 28,-40 L 28,80 L 0,110 L -28,80 L -28,-40 Z"
+          fill="url(#llg-rocket)"/>
+    <!-- Nose tip highlight -->
+    <path d="M 0,-130 L 14,-50 L -14,-50 Z" fill="#E0CDFF"/>
+    <!-- Left fin -->
+    <path d="M -28,80 L -55,110 L -28,40 Z" fill="#7B3FE0"/>
+    <!-- Right fin -->
+    <path d="M 28,80 L 55,110 L 28,40 Z" fill="#A878F0"/>
+    <!-- Window/porthole -->
+    <circle cx="0" cy="-10" r="9" fill="#3B0E78" opacity="0.6"/>
+  </g>
+</svg>
