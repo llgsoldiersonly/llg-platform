@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2400 700" role="img" aria-label="Legal Leads Group — Rocket Fuel For Your Firm">
+  <title>Legal Leads Group (horizontal)</title>
+
+  <defs>
+    <radialGradient id="llg-planet-h" cx="62%" cy="32%" r="78%">
+      <stop offset="0%"   stop-color="#A878F0"/>
+      <stop offset="35%"  stop-color="#7B3FE0"/>
+      <stop offset="70%"  stop-color="#5816B6"/>
+      <stop offset="100%" stop-color="#3B0E78"/>
+    </radialGradient>
+    <linearGradient id="llg-ring-h" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#7B3FE0"/>
+      <stop offset="50%"  stop-color="#A878F0"/>
+      <stop offset="100%" stop-color="#7B3FE0"/>
+    </linearGradient>
+    <linearGradient id="llg-rocket-h" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#C9A6FF"/>
+      <stop offset="100%" stop-color="#7B3FE0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- MARK on left, scaled to 0.6 of natural mark size, positioned to fit 700px tall canvas -->
+  <g transform="translate(50 0) scale(0.6)">
+    <g transform="rotate(-12 500 520)">
+      <path d="M 120,520 A 380,110 0 0,1 880,520" fill="none" stroke="url(#llg-ring-h)" stroke-width="42" stroke-linecap="round"/>
+    </g>
+    <circle cx="500" cy="500" r="225" fill="url(#llg-planet-h)"/>
+    <ellipse cx="430" cy="430" rx="90" ry="60" fill="#A878F0" opacity="0.18" transform="rotate(-30 430 430)"/>
+    <g transform="rotate(-12 500 520)">
+      <path d="M 120,520 A 380,110 0 0,0 880,520" fill="none" stroke="url(#llg-ring-h)" stroke-width="42" stroke-linecap="round"/>
+    </g>
+    <g transform="translate(560 220) rotate(38)">
+      <path d="M 0,-130 L 28,-40 L 28,80 L 0,110 L -28,80 L -28,-40 Z" fill="url(#llg-rocket-h)"/>
+      <path d="M 0,-130 L 14,-50 L -14,-50 Z" fill="#E0CDFF"/>
+      <path d="M -28,80 L -55,110 L -28,40 Z" fill="#7B3FE0"/>
+      <path d="M 28,80 L 55,110 L 28,40 Z" fill="#A878F0"/>
+      <circle cx="0" cy="-10" r="9" fill="#3B0E78" opacity="0.6"/>
+    </g>
+  </g>
+
+  <!-- WORDMARK on right -->
+  <text x="730" y="395"
+        font-family="'Cinzel', 'Trajan Pro', 'Times New Roman', serif"
+        font-size="135" font-weight="600" letter-spacing="6"
+        fill="#9000FF">LEGAL LEADS GROUP</text>
+
+  <text x="735" y="490"
+        font-family="'Cinzel', 'Times New Roman', serif"
+        font-size="56" font-weight="400" letter-spacing="2"
+        fill="currentColor" class="llg-tagline">Rocket Fuel For Your Firm</text>
+</svg>
