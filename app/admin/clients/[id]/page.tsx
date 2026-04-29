@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ImpersonateCard } from '@/components/admin/impersonate-card'
 import { InviteClientCard } from '@/components/admin/invite-client-card'
+import { HardDeleteCard } from '@/components/admin/hard-delete-card'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,7 +31,7 @@ export default async function ClientSummaryPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ impersonation_error?: string }>
+  searchParams: Promise<{ impersonation_error?: string; delete_error?: string }>
 }) {
   const { id } = await params
   const sp = await searchParams
@@ -209,6 +210,14 @@ export default async function ClientSummaryPage({
           clientId={client.id}
           clientName={client.firm_name}
           errorMessage={sp.impersonation_error}
+        />
+      )}
+
+      {showImpersonate && (
+        <HardDeleteCard
+          clientId={client.id}
+          clientName={client.firm_name}
+          errorMessage={sp.delete_error}
         />
       )}
     </div>
