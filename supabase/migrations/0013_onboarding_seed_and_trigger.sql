@@ -63,6 +63,12 @@ on conflict (package_code, code) do nothing;
 -- ============================================================================
 -- TRIGGER: auto-generate client_onboarding_tasks on subscription insert
 -- ============================================================================
+-- KNOWN LIMITATION: only fires on INSERT. If a subscription is later updated
+-- to change started_at or package_id, the existing client_onboarding_tasks
+-- rows will NOT be regenerated and their due_date will be stale. Treat
+-- subscriptions.started_at and subscriptions.package_id as immutable post-
+-- insert; cancel + re-insert if you need to change them. A v1.1 enhancement
+-- could add an UPDATE trigger that re-derives due_date when started_at moves.
 create or replace function generate_onboarding_tasks_on_subscription_insert()
 returns trigger
 language plpgsql

@@ -43,7 +43,7 @@ export default async function ProfilePage() {
           <CardTitle className="text-base">Coming soon</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-slate-500">
-          Editable name, password reset link, and notification preferences ship in Phase 10.
+          Editable name, password reset, and notification preferences are coming in v1.1. For now, contact your account manager to update profile info.
         </CardContent>
       </Card>
     </div>

@@ -83,7 +83,7 @@ export async function hardDeleteClient(formData: FormData): Promise<Result<{ arc
     return err('INTERNAL', `Failed to write archive: ${archiveErr?.message ?? 'unknown'}`)
   }
 
-  await admin.from('activity_log').insert({
+  const { error: logErr } = await admin.from('activity_log').insert({
     actor_id: user.id,
     entity_type: 'client',
     entity_id: clientId,
@@ -91,6 +91,9 @@ export async function hardDeleteClient(formData: FormData): Promise<Result<{ arc
     before: { firm_name: client.firm_name },
     after: { archive_id: archive.id, reason: reason.trim() },
   })
+  if (logErr) {
+    return err('INTERNAL', `Archive id ${archive.id} written but activity_log insert failed: ${logErr.message}. Halting before delete to preserve audit trail.`)
+  }
 
   // Cascade delete via FKs takes care of all child tables.
   const { error: deleteErr } = await admin

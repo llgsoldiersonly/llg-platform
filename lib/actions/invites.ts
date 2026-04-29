@@ -43,14 +43,17 @@ export async function inviteStaff(input: InviteStaffInput): Promise<Result<{ use
 
   const userId = inviteData.user.id
 
-  await admin.auth.admin.updateUserById(userId, {
+  const { error: roleErr } = await admin.auth.admin.updateUserById(userId, {
     app_metadata: { role: input.role },
   })
+  if (roleErr) {
+    return err('INTERNAL', `Invite created but role assignment failed: ${roleErr.message}. User ${userId} needs manual fix.`)
+  }
 
   // Profile row was created by the on_auth_user_created trigger with role
   // defaulted from raw_app_meta_data at insert time — that was empty when
   // the user was just created, so we override here.
-  await admin
+  const { error: profileErr } = await admin
     .from('profiles')
     .update({
       role: input.role,
@@ -59,6 +62,9 @@ export async function inviteStaff(input: InviteStaffInput): Promise<Result<{ use
       title: input.title ?? null,
     })
     .eq('id', userId)
+  if (profileErr) {
+    return err('INTERNAL', `Invite created but profile patch failed: ${profileErr.message}. User ${userId} needs manual fix.`)
+  }
 
   revalidatePath('/admin/settings/users')
   return ok({ user_id: userId })
@@ -100,9 +106,12 @@ export async function inviteClientUser(input: InviteClientInput): Promise<Result
 
   const userId = inviteData.user.id
 
-  await admin.auth.admin.updateUserById(userId, {
+  const { error: roleErr } = await admin.auth.admin.updateUserById(userId, {
     app_metadata: { role: 'client_user' },
   })
+  if (roleErr) {
+    return err('INTERNAL', `Invite created but role assignment failed: ${roleErr.message}. User ${userId} needs manual fix.`)
+  }
 
   const { error: linkErr } = await admin
     .from('client_users')
@@ -111,10 +120,13 @@ export async function inviteClientUser(input: InviteClientInput): Promise<Result
     return err('INTERNAL', `Failed to link user to client: ${linkErr.message}`)
   }
 
-  await admin
+  const { error: profileErr } = await admin
     .from('profiles')
     .update({ full_name: input.full_name, role: 'client_user' })
     .eq('id', userId)
+  if (profileErr) {
+    return err('INTERNAL', `Invite created but profile patch failed: ${profileErr.message}. User ${userId} needs manual fix.`)
+  }
 
   revalidatePath(`/admin/clients/${input.client_id}`)
   return ok({ user_id: userId })

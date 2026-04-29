@@ -63,19 +63,6 @@ export default async function AdminDashboardPage() {
         ))}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Coming in later phases</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-slate-500">
-          <ul className="space-y-1">
-            <li>• Phase 5 — open tickets / SLA breaches</li>
-            <li>• Phase 6 — sync error rollup (last 24h)</li>
-            <li>• Phase 9 — overdue tasks across teams</li>
-            <li>• Phase 10 — MRR by tier</li>
-          </ul>
-        </CardContent>
-      </Card>
     </div>
   )
 }

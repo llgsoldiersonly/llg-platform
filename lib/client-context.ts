@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { isAgencyStaff } from '@/lib/auth/rbac'
+import { isSuperAdmin } from '@/lib/auth/rbac'
 import { getActiveImpersonation } from '@/lib/impersonation'
 
 export type ClientLocation = {
@@ -72,18 +72,26 @@ export async function getClientContext(searchParams?: URLSearchParams): Promise<
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  // Staff impersonating a specific client (super-admin "View as" mode):
-  // pin the context to the impersonated client_id instead of whatever RLS
-  // picks first. Non-staff with a stray cookie are ignored.
-  const impersonation = isAgencyStaff(user) ? await getActiveImpersonation() : null
+  // Super-admin impersonating a specific client ("View as" mode): pin the
+  // context to the impersonated client_id instead of whatever RLS picks
+  // first. We re-verify isSuperAdmin on every read (not just at start) so
+  // a demoted ex-super-admin loses access immediately, not after the cookie
+  // expires. Non-super-admins with a stray cookie are ignored.
+  const impersonation = isSuperAdmin(user) ? await getActiveImpersonation() : null
 
-  const baseQuery = supabase
-    .from('clients')
-    .select('id, firm_name, primary_domain, is_demo_only')
+  const baseQuery = () =>
+    supabase.from('clients').select('id, firm_name, primary_domain, is_demo_only')
 
-  const { data: clients } = impersonation
-    ? await baseQuery.eq('id', impersonation.clientId).limit(1)
-    : await baseQuery.limit(1)
+  let clients = impersonation
+    ? (await baseQuery().eq('id', impersonation.clientId).limit(1)).data
+    : (await baseQuery().limit(1)).data
+
+  // Stale cookie: impersonated client was hard-deleted while the session was
+  // active. Fall back to the default lookup so layouts don't crash; the
+  // ImpersonationBanner remains visible so the user can click Exit to clear.
+  if (impersonation && (clients?.length ?? 0) === 0) {
+    clients = (await baseQuery().limit(1)).data
+  }
 
   const client = clients?.[0]
   if (!client) return null
