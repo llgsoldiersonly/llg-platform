@@ -8,6 +8,7 @@ import {
   ClipboardList,
   TrendingUp,
   Briefcase,
+  Megaphone,
   Activity,
   Settings,
 } from 'lucide-react'
@@ -26,6 +27,7 @@ const items: NavItem[] = [
   { href: '/admin/tickets', label: 'Tickets', icon: Briefcase },
   { href: '/admin/tasks', label: 'Tasks', icon: ClipboardList },
   { href: '/admin/workload', label: 'Workload', icon: TrendingUp },
+  { href: '/admin/ads', label: 'Ads', icon: Megaphone },
   { href: '/admin/system/health', label: 'System health', icon: Activity },
   { href: '/admin/settings/users', label: 'Settings', icon: Settings, phase: 'Phase 10' },
 ]

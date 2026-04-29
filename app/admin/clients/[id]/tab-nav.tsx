@@ -17,6 +17,7 @@ export function ClientTabNav({ clientId }: { clientId: string }) {
     { href: `${base}/content`,             label: 'Content' },
     { href: `${base}/calls`,               label: 'Calls' },
     { href: `${base}/social`,              label: 'Social' },
+    { href: `${base}/ads`,                 label: 'Ads' },
     { href: `${base}/rankings`,            label: 'Rankings',     phase: 'Phase 7' },
     { href: `${base}/local`,               label: 'Local',        phase: 'Phase 8' },
     { href: `${base}/tickets`,             label: 'Tickets',      phase: 'global view exists' },
