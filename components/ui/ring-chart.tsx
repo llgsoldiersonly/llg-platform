@@ -50,7 +50,7 @@ export function RingChart({
     resolved === 'green' ? 'text-emerald-700'
     : resolved === 'amber' ? 'text-amber-700'
     : resolved === 'red' ? 'text-red-700'
-    : resolved === 'purple' ? 'text-(--color-llg-purple-800)'
+    : resolved === 'purple' ? 'text-(--color-llg-purple-700)'
     : 'text-slate-500'
 
   return (

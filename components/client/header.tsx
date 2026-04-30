@@ -36,7 +36,7 @@ export async function ClientHeader() {
             href="/profile"
             className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-1.5 transition-colors hover:bg-slate-50"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-(--color-llg-purple-100) text-sm font-semibold text-(--color-llg-purple-800)">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-(--color-llg-purple-100) text-sm font-semibold text-(--color-llg-purple-700)">
               {initial}
             </span>
             <span className="hidden text-left leading-tight md:block">

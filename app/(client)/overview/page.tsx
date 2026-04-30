@@ -153,10 +153,12 @@ export default async function OverviewPage({
 
   const creds = credsRes.data ?? null
   const integrationLinks: IntegrationLink[] = []
-  if (creds?.ga4_property_url) integrationLinks.push({ key: 'ga4', url: creds.ga4_property_url })
-  if (creds?.gsc_property_url) integrationLinks.push({ key: 'gsc', url: creds.gsc_property_url })
-  if (creds?.google_ads_account_url) integrationLinks.push({ key: 'google_ads', url: creds.google_ads_account_url })
-  if (creds?.lsa_account_url) integrationLinks.push({ key: 'lsa', url: creds.lsa_account_url })
+  if (creds?.ga4_property_url) integrationLinks.push({ key: 'ga4', href: creds.ga4_property_url, external: true })
+  if (creds?.gsc_property_url) integrationLinks.push({ key: 'gsc', href: creds.gsc_property_url, external: true })
+  if (creds?.google_ads_account_url) integrationLinks.push({ key: 'google_ads', href: creds.google_ads_account_url, external: true })
+  if (creds?.lsa_account_url) integrationLinks.push({ key: 'lsa', href: creds.lsa_account_url, external: true })
+  // Always-on internal link to the SEO Plan keyword tracking section.
+  integrationLinks.push({ key: 'keyword_tool', href: '/plan', external: false })
 
   // Support team is empty until we model per-client team assignments
   // (planned for v1.5 — see project memory). Empty state renders cleanly.

@@ -42,18 +42,17 @@ export function SupportTicketsCard({ tickets }: { tickets: TicketSummary[] }) {
         ) : (
           <ul className="space-y-2">
             {tickets.slice(0, 5).map((t) => (
-              <li
-                key={t.id}
-                className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-2.5"
-              >
+              <li key={t.id}>
                 <Link
                   href={`/tickets/${t.id}`}
-                  className="flex-1 truncate text-sm text-slate-800 hover:text-(--color-llg-purple-800)"
+                  className="group flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-3 py-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-(--color-llg-purple-100) hover:bg-(--color-llg-purple-50) hover:shadow-(--shadow-card)"
                 >
-                  <span className="text-slate-400">#{t.ticket_number}</span>{' '}
-                  {t.subject}
+                  <span className="flex-1 truncate text-sm text-slate-800 group-hover:text-(--color-llg-purple-700)">
+                    <span className="text-slate-400">#{t.ticket_number}</span>{' '}
+                    {t.subject}
+                  </span>
+                  <TicketStatusBadge status={t.status} />
                 </Link>
-                <TicketStatusBadge status={t.status} />
               </li>
             ))}
             {tickets.length > 5 && (

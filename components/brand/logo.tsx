@@ -10,7 +10,7 @@ export function LlgMark({ className }: { className?: string }) {
       className={cn('h-10 w-10', className)}
       aria-hidden="true"
     >
-      <rect width="48" height="48" rx="10" fill="var(--color-llg-purple-800)" />
+      <rect width="48" height="48" rx="10" fill="var(--color-llg-purple-700)" />
       <path
         d="M24 11 L34 15 V24 C34 30 29 35 24 37 C19 35 14 30 14 24 V15 Z"
         fill="none"

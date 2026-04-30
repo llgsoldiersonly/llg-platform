@@ -41,7 +41,7 @@ export function ClientTopNav() {
             className={cn(
               'relative whitespace-nowrap py-2 text-sm transition-colors',
               active && !upcoming
-                ? 'font-medium text-(--color-llg-purple-800)'
+                ? 'font-medium text-(--color-llg-purple-700)'
                 : 'text-slate-600 hover:text-slate-900',
               upcoming && 'cursor-not-allowed text-slate-400 hover:text-slate-400'
             )}
@@ -55,7 +55,7 @@ export function ClientTopNav() {
               )}
             </span>
             {active && !upcoming && (
-              <span className="absolute -bottom-[17px] left-0 right-0 h-0.5 bg-(--color-llg-purple-800)" />
+              <span className="absolute -bottom-[17px] left-0 right-0 h-0.5 bg-(--color-llg-purple-700)" />
             )}
           </Link>
         )
