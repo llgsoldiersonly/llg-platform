@@ -1,32 +1,15 @@
 import { cn } from '@/lib/utils/cn'
 
-// LLG mark — purple rounded square with a white shield outline. Inline SVG
-// so it scales freely and never 404s. Sized via a className override for
-// responsive contexts.
+// LLG mark — sourced from public/llg-logo.svg (the canonical brand asset).
+// Plain <img> rather than next/image because SVGs don't benefit from the
+// optimization pipeline and the markup is simpler.
 export function LlgMark({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 48 48"
-      className={cn('h-10 w-10', className)}
-      aria-hidden="true"
-    >
-      <rect width="48" height="48" rx="10" fill="#6d28d9" />
-      <path
-        d="M24 11 L34 15 V24 C34 30 29 35 24 37 C19 35 14 30 14 24 V15 Z"
-        fill="none"
-        stroke="#ffffff"
-        strokeWidth="2.2"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M19.5 24.5 L23 28 L29 21"
-        fill="none"
-        stroke="#ffffff"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <img
+      src="/llg-logo.svg"
+      alt="Legal Leads Group"
+      className={cn('h-10 w-10 rounded-md', className)}
+    />
   )
 }
 
