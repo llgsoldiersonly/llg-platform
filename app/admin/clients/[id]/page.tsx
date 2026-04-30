@@ -106,27 +106,27 @@ export default async function ClientSummaryPage({
         </CardHeader>
         <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
           <div>
-            <p className="text-xs uppercase text-slate-500">Primary contact</p>
+            <p className="text-xs uppercase text-slate-600">Primary contact</p>
             <p className="text-slate-900">{client.primary_contact_name ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs uppercase text-slate-500">Email</p>
+            <p className="text-xs uppercase text-slate-600">Email</p>
             <p className="text-slate-900">{client.primary_contact_email ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs uppercase text-slate-500">Phone</p>
+            <p className="text-xs uppercase text-slate-600">Phone</p>
             <p className="text-slate-900">{client.primary_contact_phone ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs uppercase text-slate-500">Domain</p>
+            <p className="text-xs uppercase text-slate-600">Domain</p>
             <p className="text-slate-900">{client.primary_domain ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs uppercase text-slate-500">Vertical</p>
+            <p className="text-xs uppercase text-slate-600">Vertical</p>
             <p className="text-slate-900">{client.vertical ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs uppercase text-slate-500">Onboarded</p>
+            <p className="text-xs uppercase text-slate-600">Onboarded</p>
             <p className="text-slate-900">{client.onboarded_at ?? '—'}</p>
           </div>
         </CardContent>
@@ -138,7 +138,7 @@ export default async function ClientSummaryPage({
         </CardHeader>
         <CardContent>
           {subscriptions.length === 0 ? (
-            <p className="text-sm text-slate-500">No subscriptions yet.</p>
+            <p className="text-sm text-slate-600">No subscriptions yet.</p>
           ) : (
             <ul className="space-y-3">
               {subscriptions.map((s) => (
@@ -156,7 +156,7 @@ export default async function ClientSummaryPage({
                         {s.status}
                       </Badge>
                     </div>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-slate-600">
                       {s.location ? `${s.location.label} · ${s.location.city}, ${s.location.state}` : 'No location assigned'} · started {s.started_at}
                     </p>
                   </div>
@@ -164,7 +164,7 @@ export default async function ClientSummaryPage({
                     <p className="text-sm font-medium text-slate-900">
                       ${((s.package?.monthly_fee_cents ?? 0) / 100).toLocaleString()}
                     </p>
-                    <p className="text-xs text-slate-500">/ month</p>
+                    <p className="text-xs text-slate-600">/ month</p>
                   </div>
                 </li>
               ))}
@@ -179,7 +179,7 @@ export default async function ClientSummaryPage({
         </CardHeader>
         <CardContent>
           {locations.length === 0 ? (
-            <p className="text-sm text-slate-500">No locations yet.</p>
+            <p className="text-sm text-slate-600">No locations yet.</p>
           ) : (
             <ul className="grid gap-2 sm:grid-cols-2">
               {locations.map((l) => (
@@ -189,7 +189,7 @@ export default async function ClientSummaryPage({
                 >
                   <div>
                     <p className="font-medium text-slate-900">{l.label}</p>
-                    <p className="text-xs text-slate-500">{l.city}, {l.state}</p>
+                    <p className="text-xs text-slate-600">{l.city}, {l.state}</p>
                   </div>
                   {l.is_primary && <Badge variant="outline">Primary</Badge>}
                 </li>

@@ -79,7 +79,7 @@ export function AddCustomDeliverableButton({ clientId, subscriptions }: Props) {
 
   if (subscriptions.length === 0) {
     return (
-      <span className="text-xs text-slate-500">
+      <span className="text-xs text-slate-600">
         Add a subscription before creating custom deliverables.
       </span>
     )

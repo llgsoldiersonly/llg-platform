@@ -41,7 +41,7 @@ export async function ClientHeader() {
             </span>
             <span className="hidden text-left leading-tight md:block">
               <span className="block text-sm font-medium text-slate-900">{firmName}</span>
-              <span className="block text-[10px] uppercase tracking-wide text-slate-500">
+              <span className="block text-[10px] uppercase tracking-wide text-slate-600">
                 {(user?.app_metadata?.role as string) ?? 'client'}
               </span>
             </span>

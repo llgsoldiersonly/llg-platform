@@ -24,7 +24,7 @@ export default function ClientPortalError({
         This page failed to load. Please try again, or contact your account manager
         if it keeps happening.
         {error.digest && (
-          <span className="mt-2 block font-mono text-[10px] text-slate-400">
+          <span className="mt-2 block font-mono text-[10px] text-slate-500">
             ref: {error.digest}
           </span>
         )}

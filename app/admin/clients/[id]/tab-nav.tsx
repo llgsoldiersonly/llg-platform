@@ -40,13 +40,13 @@ export function ClientTabNav({ clientId }: { clientId: string }) {
               active
                 ? 'border-slate-900 font-medium text-slate-900'
                 : 'border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-900',
-              upcoming && 'cursor-not-allowed text-slate-400 hover:border-transparent hover:text-slate-400'
+              upcoming && 'cursor-not-allowed text-slate-500 hover:border-transparent hover:text-slate-500'
             )}
           >
             <span className="flex items-center gap-1.5">
               {tab.label}
               {tab.phase && (
-                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono text-slate-500">
+                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono text-slate-600">
                   {tab.phase}
                 </span>
               )}

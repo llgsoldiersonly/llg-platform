@@ -26,7 +26,7 @@ export function IntegrationsCard({ links }: { links: IntegrationLink[] }) {
       </CardHeader>
       <CardContent>
         {links.length === 0 ? (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-600">
             Once your accounts are linked, you&apos;ll see direct click-out links here.
           </p>
         ) : (
@@ -46,7 +46,7 @@ export function IntegrationsCard({ links }: { links: IntegrationLink[] }) {
                       {cta}
                     </div>
                   </div>
-                  {l.external && <ExternalLink className="h-3.5 w-3.5 text-slate-400" />}
+                  {l.external && <ExternalLink className="h-3.5 w-3.5 text-slate-500" />}
                 </>
               )
               return (

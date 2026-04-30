@@ -55,7 +55,7 @@ export function NewTicketForm({ clientId }: { clientId: string }) {
             <input type="radio" name="type" value="bug" defaultChecked className="mt-1" />
             <div>
               <p className="text-sm font-medium text-slate-900">Bug</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-600">
                 Something's broken on our end. Doesn't count against your quota.
               </p>
             </div>
@@ -64,7 +64,7 @@ export function NewTicketForm({ clientId }: { clientId: string }) {
             <input type="radio" name="type" value="request" className="mt-1" />
             <div>
               <p className="text-sm font-medium text-slate-900">Request</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-600">
                 Something new or different. Counts against your weekly limit.
               </p>
             </div>

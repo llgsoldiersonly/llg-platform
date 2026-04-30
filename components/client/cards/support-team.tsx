@@ -22,7 +22,7 @@ export function SupportTeamCard({ members }: { members: TeamMember[] }) {
       </CardHeader>
       <CardContent className="space-y-3">
         {members.length === 0 ? (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-600">
             Your account team will appear here as roles are assigned.
           </p>
         ) : (
@@ -39,7 +39,7 @@ export function SupportTeamCard({ members }: { members: TeamMember[] }) {
                     {initials(m.full_name)}
                   </span>
                   <div className="leading-tight">
-                    <div className="text-xs uppercase tracking-wide text-slate-500">
+                    <div className="text-xs uppercase tracking-wide text-slate-600">
                       {m.role_label}
                     </div>
                     <div className="text-sm font-medium text-slate-900">{m.full_name}</div>
@@ -47,7 +47,7 @@ export function SupportTeamCard({ members }: { members: TeamMember[] }) {
                 </div>
               ))}
             </div>
-            <p className="pt-2 text-center text-xs text-slate-400">
+            <p className="pt-2 text-center text-xs text-slate-500">
               Reference these names in your support tickets.
             </p>
           </>

@@ -28,16 +28,16 @@ export function SupportTicketsCard({ tickets }: { tickets: TicketSummary[] }) {
         <div className="grid grid-cols-2 gap-2 border-b border-slate-100 pb-3 text-center">
           <div>
             <div className="text-2xl font-semibold text-slate-900">{open.length}</div>
-            <div className="text-xs uppercase tracking-wider text-slate-500">Open</div>
+            <div className="text-xs uppercase tracking-wider text-slate-600">Open</div>
           </div>
           <div>
             <div className="text-2xl font-semibold text-slate-900">{closed.length}</div>
-            <div className="text-xs uppercase tracking-wider text-slate-500">Closed</div>
+            <div className="text-xs uppercase tracking-wider text-slate-600">Closed</div>
           </div>
         </div>
 
         {tickets.length === 0 ? (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-600">
             No tickets yet. Open one any time something needs the team&apos;s attention.
           </p>
         ) : (
@@ -49,7 +49,7 @@ export function SupportTicketsCard({ tickets }: { tickets: TicketSummary[] }) {
                   className="group flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-3 py-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-(--color-llg-purple-100) hover:bg-(--color-llg-purple-50) hover:shadow-(--shadow-card)"
                 >
                   <span className="flex-1 truncate text-sm text-slate-800 group-hover:text-(--color-llg-purple-700)">
-                    <span className="text-slate-400">#{t.ticket_number}</span>{' '}
+                    <span className="text-slate-500">#{t.ticket_number}</span>{' '}
                     {t.subject}
                   </span>
                   <TicketStatusBadge status={t.status} />

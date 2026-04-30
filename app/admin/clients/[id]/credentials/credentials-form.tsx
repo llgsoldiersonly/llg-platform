@@ -72,7 +72,7 @@ export function CredentialsForm({
             <option value="tag">Tag slug</option>
             <option value="path">URL path prefix (/es/, etc.)</option>
           </Select>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-600">
             How EN vs ES posts get identified for BLOG_EN / BLOG_ES auto-tracking.
           </p>
         </div>
@@ -167,7 +167,7 @@ function Field({
     <div className="space-y-2">
       <Label htmlFor={name}>{label}</Label>
       <Input id={name} name={name} defaultValue={defaultValue} placeholder={placeholder} />
-      {help && <p className="text-xs text-slate-500">{help}</p>}
+      {help && <p className="text-xs text-slate-600">{help}</p>}
     </div>
   )
 }

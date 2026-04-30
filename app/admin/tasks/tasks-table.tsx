@@ -37,7 +37,7 @@ export function TasksTable({ tasks }: { tasks: Task[] }) {
   if (tasks.length === 0) {
     return (
       <Card>
-        <CardContent className="p-6 text-sm text-slate-500">
+        <CardContent className="p-6 text-sm text-slate-600">
           No tasks yet. Create one with the button above, or convert a deliverable into a task from the client deliverables page.
         </CardContent>
       </Card>
@@ -48,7 +48,7 @@ export function TasksTable({ tasks }: { tasks: Task[] }) {
     <Card>
       <CardContent className="p-0">
         <table className="w-full text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
             <tr>
               <th className="px-6 py-3 text-left font-medium">Task</th>
               <th className="px-6 py-3 text-left font-medium">Client</th>
@@ -100,20 +100,20 @@ function Row({ task }: { task: Task }) {
     <tr className={overdue ? 'bg-red-50/30' : ''}>
       <td className="px-6 py-4">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-500">#{task.task_number}</span>
+          <span className="text-xs text-slate-600">#{task.task_number}</span>
           <span className="font-medium text-slate-900">{task.title}</span>
           {task.priority === 'urgent' && <Badge variant="destructive">URGENT</Badge>}
           {task.priority === 'high' && <Badge variant="warning">High</Badge>}
         </div>
         {task.department && (
-          <p className="mt-1 text-xs text-slate-500">{task.department.name}</p>
+          <p className="mt-1 text-xs text-slate-600">{task.department.name}</p>
         )}
       </td>
       <td className="px-6 py-4 text-slate-600">
-        {task.client?.firm_name ?? <span className="text-slate-400">internal</span>}
+        {task.client?.firm_name ?? <span className="text-slate-500">internal</span>}
       </td>
       <td className="px-6 py-4 text-slate-600">
-        {task.assignee?.full_name ?? <span className="text-slate-400">unassigned</span>}
+        {task.assignee?.full_name ?? <span className="text-slate-500">unassigned</span>}
       </td>
       <td className={`px-6 py-4 text-xs ${overdue ? 'font-medium text-red-700' : 'text-slate-600'}`}>
         {task.due_date ?? '—'}
@@ -141,7 +141,7 @@ function Row({ task }: { task: Task }) {
           disabled={isPending}
           aria-label="Delete task"
         >
-          <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-600" />
+          <Trash2 className="h-4 w-4 text-slate-500 hover:text-red-600" />
         </Button>
         {error && <p className="text-xs text-red-600">{error}</p>}
       </td>

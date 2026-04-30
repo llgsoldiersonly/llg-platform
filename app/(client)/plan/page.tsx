@@ -73,7 +73,7 @@ export default async function PlanPage({
     <div className="mx-auto max-w-5xl space-y-6 p-8">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Your plan</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-600">
           {ctx.selectedSubscriptions.length} active subscription
           {ctx.selectedSubscriptions.length === 1 ? '' : 's'}
           {ctx.selectedLocation && (
@@ -100,7 +100,7 @@ export default async function PlanPage({
 
       {orderedModules.length === 0 && customDeliverables.length === 0 && (
         <Card>
-          <CardContent className="p-6 text-sm text-slate-500">
+          <CardContent className="p-6 text-sm text-slate-600">
             No modules enabled for your current selection. If you expect to see something here, contact your account manager.
           </CardContent>
         </Card>

@@ -45,7 +45,7 @@ export function ModuleCard({ title, subtitle, config, deliverables, phase }: Pro
         <div className="flex items-start justify-between">
           <div>
             <CardTitle className="text-lg">{title}</CardTitle>
-            {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+            {subtitle && <p className="mt-1 text-sm text-slate-600">{subtitle}</p>}
           </div>
           {phase && (
             <Badge variant="outline" className="font-mono">
@@ -57,13 +57,13 @@ export function ModuleCard({ title, subtitle, config, deliverables, phase }: Pro
       <CardContent className="space-y-4">
         {Object.keys(config).length > 0 && (
           <div className="rounded-md bg-slate-50 p-3 text-xs text-slate-600">
-            <p className="mb-1 font-medium uppercase tracking-wide text-slate-500">
+            <p className="mb-1 font-medium uppercase tracking-wide text-slate-600">
               Plan limits
             </p>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
               {Object.entries(config).map(([k, v]) => (
                 <div key={k} className="contents">
-                  <dt className="text-slate-500">{k.replace(/_/g, ' ')}</dt>
+                  <dt className="text-slate-600">{k.replace(/_/g, ' ')}</dt>
                   <dd className="text-right text-slate-900">{String(v)}</dd>
                 </div>
               ))}
@@ -72,7 +72,7 @@ export function ModuleCard({ title, subtitle, config, deliverables, phase }: Pro
         )}
 
         {deliverables.length === 0 ? (
-          <p className="text-sm text-slate-500">No items in this module yet.</p>
+          <p className="text-sm text-slate-600">No items in this module yet.</p>
         ) : (
           <ul className="space-y-2">
             {deliverables.map((d) => {
@@ -93,7 +93,7 @@ export function ModuleCard({ title, subtitle, config, deliverables, phase }: Pro
                       </div>
                       {target && (
                         <div className="mt-2">
-                          <div className="flex items-center justify-between text-xs text-slate-500">
+                          <div className="flex items-center justify-between text-xs text-slate-600">
                             <span>{completed} of {target} {d.target_unit ?? ''}</span>
                             <span>{pct}%</span>
                           </div>

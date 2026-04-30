@@ -85,7 +85,7 @@ export default async function AdminTasksPage({
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Tasks</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-600">
             {open.length} open · {tasks.length} total
           </p>
         </div>
@@ -118,7 +118,7 @@ export default async function AdminTasksPage({
             {filterStatus && (
               <a
                 href="/admin/tasks"
-                className="text-xs text-slate-500 hover:text-slate-900"
+                className="text-xs text-slate-600 hover:text-slate-900"
               >
                 clear
               </a>

@@ -113,7 +113,7 @@ export default async function ClientCallsPage({
         </CardHeader>
         <CardContent className="p-0">
           <table className="w-full text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
               <tr>
                 <th className="px-6 py-3 text-left font-medium">When</th>
                 <th className="px-6 py-3 text-left font-medium">Caller</th>
@@ -131,7 +131,7 @@ export default async function ClientCallsPage({
                   </td>
                   <td className="px-6 py-3">
                     <div className="font-medium text-slate-900">{c.caller_name ?? '—'}</div>
-                    <div className="text-xs text-slate-500">{c.caller_number ?? '—'}</div>
+                    <div className="text-xs text-slate-600">{c.caller_number ?? '—'}</div>
                   </td>
                   <td className="px-6 py-3 text-slate-600">{c.source ?? '—'}</td>
                   <td className="px-6 py-3 text-slate-600">{c.tracker ?? '—'}</td>

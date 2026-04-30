@@ -38,12 +38,12 @@ export function InviteClientCard({
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Mail className="h-4 w-4 text-slate-500" />
+          <Mail className="h-4 w-4 text-slate-600" />
           Invite client to portal
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="mb-3 text-sm text-slate-500">
+        <p className="mb-3 text-sm text-slate-600">
           Send a magic-link email so this client can log in to their portal. Pre-filled
           from the primary contact below — edit if a different person should get access.
         </p>

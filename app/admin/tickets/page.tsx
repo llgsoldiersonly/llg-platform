@@ -71,7 +71,7 @@ export default async function AdminTicketsPage() {
     <div className="mx-auto max-w-6xl space-y-6 p-8">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Tickets</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-600">
           {open.length} open · {closed.length} closed (last 100)
         </p>
       </div>
@@ -82,7 +82,7 @@ export default async function AdminTicketsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {open.length === 0 ? (
-            <p className="p-6 text-sm text-slate-500">No open tickets.</p>
+            <p className="p-6 text-sm text-slate-600">No open tickets.</p>
           ) : (
             <ul className="divide-y divide-slate-100">
               {open.map((t) => {
@@ -101,13 +101,13 @@ export default async function AdminTicketsPage() {
                           </Badge>
                           <span className="text-slate-700">{t.subject}</span>
                         </div>
-                        <p className="mt-1 text-xs text-slate-500">
+                        <p className="mt-1 text-xs text-slate-600">
                           {t.client?.firm_name ?? '—'} · {formatTicketCategory(t.category)}
                           {t.department && <> → {t.department.name}</>}
                           {t.assigned_user?.full_name && <> → {t.assigned_user.full_name}</>}
                         </p>
                       </div>
-                      <div className="col-span-2 text-xs text-slate-500">
+                      <div className="col-span-2 text-xs text-slate-600">
                         {new Date(t.created_at).toLocaleDateString()}
                       </div>
                       <div className="col-span-2">
@@ -117,7 +117,7 @@ export default async function AdminTicketsPage() {
                         <Badge variant={statusVariant[t.status] ?? 'secondary'}>
                           {formatTicketStatus(t.status)}
                         </Badge>
-                        <ChevronRight className="h-4 w-4 text-slate-400" />
+                        <ChevronRight className="h-4 w-4 text-slate-500" />
                       </div>
                     </Link>
                   </li>
@@ -142,9 +142,9 @@ export default async function AdminTicketsPage() {
                     className="flex items-center justify-between px-6 py-3 text-sm hover:bg-slate-50"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-slate-500">#{t.ticket_number}</span>
+                      <span className="text-slate-600">#{t.ticket_number}</span>
                       <span className="text-slate-700">{t.subject}</span>
-                      <span className="text-xs text-slate-400">{t.client?.firm_name ?? '—'}</span>
+                      <span className="text-xs text-slate-500">{t.client?.firm_name ?? '—'}</span>
                     </div>
                     <Badge variant="secondary">{t.status}</Badge>
                   </Link>

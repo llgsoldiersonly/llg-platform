@@ -23,7 +23,7 @@ export default function AdminError({
       <p className="text-sm text-slate-600">
         This page failed to load. Our team has been notified.
         {error.digest && (
-          <span className="mt-2 block font-mono text-[10px] text-slate-400">
+          <span className="mt-2 block font-mono text-[10px] text-slate-500">
             ref: {error.digest}
           </span>
         )}

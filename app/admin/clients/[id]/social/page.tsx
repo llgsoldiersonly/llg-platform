@@ -107,7 +107,7 @@ export default async function ClientSocialPage({
         </CardHeader>
         <CardContent className="p-0">
           <table className="w-full text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
               <tr>
                 <th className="px-6 py-3 text-left font-medium">Period</th>
                 <th className="px-6 py-3 text-left font-medium">Channel</th>
@@ -139,7 +139,7 @@ export default async function ClientSocialPage({
 function Row({ label, value }: { label: string; value: number | string | null }) {
   return (
     <div className="flex justify-between">
-      <dt className="text-slate-500">{label}</dt>
+      <dt className="text-slate-600">{label}</dt>
       <dd className="text-slate-900">{value ?? '—'}</dd>
     </div>
   )

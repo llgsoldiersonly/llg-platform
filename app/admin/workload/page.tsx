@@ -56,7 +56,7 @@ export default async function WorkloadPage() {
     <div className="mx-auto max-w-6xl space-y-6 p-8">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Workload</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-600">
           {totalOpen} open + in-progress tasks across {list.length} team member{list.length === 1 ? '' : 's'}
         </p>
       </div>
@@ -73,7 +73,7 @@ export default async function WorkloadPage() {
                     <CardTitle className="text-base">
                       {s.full_name ?? s.id.slice(0, 8)}
                     </CardTitle>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-slate-600">
                       {s.department?.name ?? 'No department'}
                       {s.is_department_manager && ' · manager'}
                       {s.role === 'super_admin' && ' · super admin'}
@@ -89,15 +89,15 @@ export default async function WorkloadPage() {
               <CardContent>
                 <dl className="space-y-1 text-sm">
                   <div className="flex justify-between">
-                    <dt className="text-slate-500">Open</dt>
+                    <dt className="text-slate-600">Open</dt>
                     <dd>{c.open}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-slate-500">In progress / review</dt>
+                    <dt className="text-slate-600">In progress / review</dt>
                     <dd>{c.in_progress}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-slate-500">Done</dt>
+                    <dt className="text-slate-600">Done</dt>
                     <dd className="text-emerald-600">{c.done}</dd>
                   </div>
                 </dl>
@@ -112,7 +112,7 @@ export default async function WorkloadPage() {
           <CardHeader>
             <CardTitle className="text-base">Unassigned</CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-slate-500">
+          <CardContent className="text-sm text-slate-600">
             {counts.unassigned.total} task{counts.unassigned.total === 1 ? '' : 's'} have no assignee — pick them up at /admin/tasks.
           </CardContent>
         </Card>

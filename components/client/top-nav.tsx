@@ -43,13 +43,13 @@ export function ClientTopNav() {
               active && !upcoming
                 ? 'font-medium text-(--color-llg-purple-700)'
                 : 'text-slate-600 hover:text-slate-900',
-              upcoming && 'cursor-not-allowed text-slate-400 hover:text-slate-400'
+              upcoming && 'cursor-not-allowed text-slate-500 hover:text-slate-500'
             )}
           >
             <span className="flex items-center gap-1.5">
               {item.label}
               {item.phase && (
-                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono text-slate-500">
+                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono text-slate-600">
                   {item.phase}
                 </span>
               )}

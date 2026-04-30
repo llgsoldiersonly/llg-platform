@@ -57,7 +57,7 @@ export default async function ClientTicketsPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Tickets</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-600">
             Submit a bug if something's broken, or a request for new work
           </p>
         </div>
@@ -85,25 +85,25 @@ export default async function ClientTicketsPage() {
                 <span className="text-slate-900">
                   {quota.used_this_week}
                   {quota.cap !== 'unlimited' && (
-                    <span className="text-slate-500"> / {quota.total_allowance}</span>
+                    <span className="text-slate-600"> / {quota.total_allowance}</span>
                   )}
                 </span>
               </div>
               {quota.cap === 'unlimited' ? (
                 <Badge variant="success">Unlimited</Badge>
               ) : quota.remaining === 0 ? (
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-600">
                   No request slots left this week. Bug reports are always allowed.
                   Your next request slot opens Monday.
                 </p>
               ) : (
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-600">
                   {quota.remaining as number} request slot{quota.remaining === 1 ? '' : 's'} remaining this week.
                 </p>
               )}
             </div>
           ) : (
-            <p className="text-sm text-slate-500">No active subscription.</p>
+            <p className="text-sm text-slate-600">No active subscription.</p>
           )}
         </CardContent>
       </Card>
@@ -114,7 +114,7 @@ export default async function ClientTicketsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {open.length === 0 ? (
-            <p className="p-6 text-sm text-slate-500">No open tickets. Nice.</p>
+            <p className="p-6 text-sm text-slate-600">No open tickets. Nice.</p>
           ) : (
             <ul className="divide-y divide-slate-100">
               {open.map((t) => (
@@ -159,7 +159,7 @@ function TicketLi({ t }: { t: TicketRow }) {
             </Badge>
             {t.priority === 'urgent' && <Badge variant="destructive">Urgent</Badge>}
           </div>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-600">
             {formatTicketCategory(t.category)} · opened {new Date(t.created_at).toLocaleDateString()}
             {t.sla_deadline_at && (
               <> · SLA {new Date(t.sla_deadline_at).toLocaleString()}</>
@@ -169,7 +169,7 @@ function TicketLi({ t }: { t: TicketRow }) {
         <Badge variant={statusVariant[t.status] ?? 'secondary'}>
           {formatTicketStatus(t.status)}
         </Badge>
-        <ChevronRight className="h-4 w-4 text-slate-400" />
+        <ChevronRight className="h-4 w-4 text-slate-500" />
       </Link>
     </li>
   )

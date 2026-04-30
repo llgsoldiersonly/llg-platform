@@ -18,17 +18,17 @@ export default async function ProfilePage() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <div>
-            <p className="text-xs uppercase text-slate-500">Email</p>
+            <p className="text-xs uppercase text-slate-600">Email</p>
             <p className="text-slate-900">{user?.email}</p>
           </div>
           <div>
-            <p className="text-xs uppercase text-slate-500">Role</p>
+            <p className="text-xs uppercase text-slate-600">Role</p>
             <Badge variant="secondary">
               {(user?.app_metadata?.role as string) ?? 'client_user'}
             </Badge>
           </div>
           <div>
-            <p className="text-xs uppercase text-slate-500">Last sign-in</p>
+            <p className="text-xs uppercase text-slate-600">Last sign-in</p>
             <p className="text-slate-900">
               {user?.last_sign_in_at
                 ? new Date(user.last_sign_in_at).toLocaleString()
@@ -42,7 +42,7 @@ export default async function ProfilePage() {
         <CardHeader>
           <CardTitle className="text-base">Coming soon</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-slate-500">
+        <CardContent className="text-sm text-slate-600">
           Editable name, password reset, and notification preferences are coming in v1.1. For now, contact your account manager to update profile info.
         </CardContent>
       </Card>

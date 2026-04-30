@@ -31,7 +31,7 @@ const CELL_STYLES: Record<Health, string> = {
   green:  'bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200',
   yellow: 'bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200',
   red:    'bg-red-50 text-red-800 ring-1 ring-inset ring-red-200',
-  never:  'bg-slate-50 text-slate-500 ring-1 ring-inset ring-slate-200',
+  never:  'bg-slate-50 text-slate-600 ring-1 ring-inset ring-slate-200',
 }
 
 export default async function SystemHealthPage() {
@@ -77,7 +77,7 @@ export default async function SystemHealthPage() {
     <div className="mx-auto max-w-7xl space-y-6 p-8">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">System health</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-600">
           Last successful sync per client × integration. Green is fresh; yellow is overdue; red is stale or never synced.
         </p>
       </div>
@@ -98,16 +98,16 @@ export default async function SystemHealthPage() {
             <table className="w-full text-sm">
               <thead className="border-b border-slate-200 bg-slate-50">
                 <tr>
-                  <th className="sticky left-0 z-10 bg-slate-50 px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
+                  <th className="sticky left-0 z-10 bg-slate-50 px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600">
                     Client
                   </th>
                   {INTEGRATIONS.map((it) => (
                     <th
                       key={it.source}
-                      className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500"
+                      className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600"
                     >
                       <div>{it.label}</div>
-                      <div className="text-[10px] font-normal normal-case text-slate-400">{it.cadence}</div>
+                      <div className="text-[10px] font-normal normal-case text-slate-500">{it.cadence}</div>
                     </th>
                   ))}
                 </tr>
@@ -144,7 +144,7 @@ export default async function SystemHealthPage() {
                 ))}
                 {(clients ?? []).length === 0 && (
                   <tr>
-                    <td colSpan={INTEGRATIONS.length + 1} className="px-6 py-8 text-center text-sm text-slate-500">
+                    <td colSpan={INTEGRATIONS.length + 1} className="px-6 py-8 text-center text-sm text-slate-600">
                       No active clients to display.
                     </td>
                   </tr>
@@ -174,7 +174,7 @@ export default async function SystemHealthPage() {
               two or more intervals stale
             </li>
             <li>
-              <span className="inline-flex w-20 text-xs font-medium uppercase text-slate-500">No data</span>
+              <span className="inline-flex w-20 text-xs font-medium uppercase text-slate-600">No data</span>
               no successful sync in the last 90 days (often: credentials not yet configured)
             </li>
           </ul>
@@ -203,7 +203,7 @@ function HealthCount({
           'text-emerald-700': variant === 'green',
           'text-amber-700':   variant === 'yellow',
           'text-red-700':     variant === 'red',
-          'text-slate-500':   variant === 'never',
+          'text-slate-600':   variant === 'never',
         })}>
           {count}
         </p>

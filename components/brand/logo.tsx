@@ -48,7 +48,7 @@ export function LlgWordmark({
           Legal Leads Group
         </h1>
         {showTagline && (
-          <p className={cn('uppercase tracking-[0.18em] text-slate-500 mt-0.5', dims.tag)}>
+          <p className={cn('uppercase tracking-[0.18em] text-slate-600 mt-0.5', dims.tag)}>
             Rocket Fuel For Your Firm
           </p>
         )}

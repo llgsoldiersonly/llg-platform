@@ -96,7 +96,7 @@ export default async function ClientDeliverablesPage({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Deliverables</h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-600">
             {deliverables.length} tracked items — package items + custom/incentive add-ons
           </p>
         </div>
@@ -109,12 +109,12 @@ export default async function ClientDeliverablesPage({
         </CardHeader>
         <CardContent className="p-0">
           {deliverables.length === 0 ? (
-            <p className="p-6 text-sm text-slate-500">
+            <p className="p-6 text-sm text-slate-600">
               No deliverables yet. They'll be auto-generated as subscriptions roll into a new period, or you can add a custom one above.
             </p>
           ) : (
             <table className="w-full text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
                 <tr>
                   <th className="px-6 py-3 text-left font-medium">Item</th>
                   <th className="px-6 py-3 text-left font-medium">Source</th>
@@ -136,7 +136,7 @@ export default async function ClientDeliverablesPage({
                     <tr key={d.id}>
                       <td className="px-6 py-4">
                         <div className="font-medium text-slate-900">{title}</div>
-                        <div className="text-xs text-slate-500">
+                        <div className="text-xs text-slate-600">
                           {d.subscription.package?.code ?? '—'}
                           {d.template?.department_slug && (
                             <> · {d.template.department_slug}</>

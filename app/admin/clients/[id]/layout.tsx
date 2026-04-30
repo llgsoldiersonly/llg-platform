@@ -26,13 +26,13 @@ export default async function ClientDetailLayout({
       <div className="mx-auto max-w-6xl px-8 py-6">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">Client</p>
+            <p className="text-xs uppercase tracking-wide text-slate-600">Client</p>
             <div className="mt-1 flex items-center gap-2">
               <h1 className="text-2xl font-semibold text-slate-900">{client.firm_name}</h1>
               {client.is_demo_only && <Badge variant="warning">DEMO</Badge>}
               <Badge variant="secondary">{client.status}</Badge>
             </div>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-600">
               {[client.vertical, client.primary_contact_name, client.primary_domain]
                 .filter(Boolean)
                 .join(' · ')}
@@ -40,7 +40,7 @@ export default async function ClientDetailLayout({
           </div>
           <Link
             href="/admin/clients"
-            className="text-xs text-slate-500 hover:text-slate-700"
+            className="text-xs text-slate-600 hover:text-slate-700"
           >
             ← back to all clients
           </Link>

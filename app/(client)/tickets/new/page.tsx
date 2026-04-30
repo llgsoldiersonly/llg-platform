@@ -14,7 +14,7 @@ export default async function NewTicketPage() {
       <Card>
         <CardHeader>
           <CardTitle>New ticket</CardTitle>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-600">
             Bug = something's broken on our end. Request = something new you'd like us to do.
             Bugs are always free; requests count against your weekly quota.
           </p>

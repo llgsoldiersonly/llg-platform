@@ -53,7 +53,7 @@ export default async function AdminUsersPage() {
     <div className="mx-auto max-w-5xl space-y-6 p-8">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Staff users</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-600">
           Manage who can access the admin side of the platform. Invitees receive a
           magic-link email from Supabase.
         </p>
@@ -65,7 +65,7 @@ export default async function AdminUsersPage() {
         </CardHeader>
         <CardContent className="p-0">
           <table className="w-full text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
               <tr>
                 <th className="px-6 py-3 text-left font-medium">Name</th>
                 <th className="px-6 py-3 text-left font-medium">Role</th>
@@ -96,7 +96,7 @@ export default async function AdminUsersPage() {
               ))}
               {profiles.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-sm text-slate-500">
+                  <td colSpan={5} className="px-6 py-8 text-center text-sm text-slate-600">
                     No staff users yet.
                   </td>
                 </tr>

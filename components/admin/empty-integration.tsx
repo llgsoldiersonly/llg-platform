@@ -22,7 +22,7 @@ export function EmptyIntegration({ clientId, serviceName, reason, helpText }: Pr
             <p className="text-sm font-medium text-slate-700">
               {serviceName} is not connected for this client yet.
             </p>
-            <p className="max-w-md text-xs text-slate-500">
+            <p className="max-w-md text-xs text-slate-600">
               {helpText ?? `Add the ${serviceName} credentials in the credentials tab to start syncing.`}
             </p>
             <Link href={`/admin/clients/${clientId}/credentials`}>
@@ -34,7 +34,7 @@ export function EmptyIntegration({ clientId, serviceName, reason, helpText }: Pr
             <p className="text-sm font-medium text-slate-700">
               {serviceName} is connected, but no data has come through yet.
             </p>
-            <p className="max-w-md text-xs text-slate-500">
+            <p className="max-w-md text-xs text-slate-600">
               {helpText ?? `Cron pulls run nightly. If this is the first day after setup, data will appear by tomorrow morning.`}
             </p>
           </>

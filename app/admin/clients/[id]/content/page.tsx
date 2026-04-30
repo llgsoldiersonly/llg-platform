@@ -102,7 +102,7 @@ export default async function ClientContentPage({
           <CardContent>
             <div className="flex flex-wrap gap-1">
               {topCats.length === 0 ? (
-                <span className="text-xs text-slate-500">no categories</span>
+                <span className="text-xs text-slate-600">no categories</span>
               ) : (
                 topCats.map(([cat, n]) => (
                   <Badge key={cat} variant="secondary">
@@ -123,7 +123,7 @@ export default async function ClientContentPage({
                 <Badge key={l!} variant="info">{l}</Badge>
               ))}
               {list.every((p) => !p.language) && (
-                <span className="text-xs text-slate-500">none detected</span>
+                <span className="text-xs text-slate-600">none detected</span>
               )}
             </div>
           </CardContent>
@@ -148,10 +148,10 @@ export default async function ClientContentPage({
                     >
                       {p.title ?? p.slug ?? '(untitled)'}
                     </a>
-                    <p className="mt-1 line-clamp-2 text-sm text-slate-500">
+                    <p className="mt-1 line-clamp-2 text-sm text-slate-600">
                       {(p.excerpt ?? '').replace(/<[^>]+>/g, '').slice(0, 200)}
                     </p>
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600">
                       <Badge variant="secondary">{p.source_type}</Badge>
                       {p.language && <Badge variant="info">{p.language}</Badge>}
                       {(p.categories ?? []).slice(0, 3).map((c) => (
@@ -159,7 +159,7 @@ export default async function ClientContentPage({
                       ))}
                     </div>
                   </div>
-                  <div className="text-right text-xs text-slate-500">
+                  <div className="text-right text-xs text-slate-600">
                     {p.published_at ? new Date(p.published_at).toLocaleDateString() : '—'}
                   </div>
                 </div>

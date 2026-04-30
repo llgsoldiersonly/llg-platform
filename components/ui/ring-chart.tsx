@@ -51,7 +51,7 @@ export function RingChart({
     : resolved === 'amber' ? 'text-amber-700'
     : resolved === 'red' ? 'text-red-700'
     : resolved === 'purple' ? 'text-(--color-llg-purple-700)'
-    : 'text-slate-500'
+    : 'text-slate-600'
 
   return (
     <div className={cn('flex flex-col items-center gap-1', className)}>

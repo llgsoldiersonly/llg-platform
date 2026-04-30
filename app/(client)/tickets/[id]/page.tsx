@@ -74,7 +74,7 @@ export default async function ClientTicketDetailPage({
     <div className="mx-auto max-w-3xl space-y-6 p-8">
       <Link
         href="/tickets"
-        className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900"
       >
         <ChevronLeft className="h-4 w-4" />
         Back to tickets
@@ -84,7 +84,7 @@ export default async function ClientTicketDetailPage({
         <CardHeader>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs uppercase text-slate-500">Ticket #{ticket.ticket_number}</p>
+              <p className="text-xs uppercase text-slate-600">Ticket #{ticket.ticket_number}</p>
               <CardTitle className="mt-1 text-xl">{ticket.subject}</CardTitle>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <Badge variant={ticket.type === 'bug' ? 'destructive' : 'info'}>
@@ -99,12 +99,12 @@ export default async function ClientTicketDetailPage({
                 </Badge>
               </div>
               {ticket.sla_deadline_at && ticket.status !== 'closed' && (
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-slate-600">
                   SLA deadline: {new Date(ticket.sla_deadline_at).toLocaleString()}
                 </p>
               )}
               {ticket.closed_at && (
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-slate-600">
                   Closed {new Date(ticket.closed_at).toLocaleString()}
                   {ticket.close_reason && <> — {ticket.close_reason}</>}
                 </p>
@@ -121,7 +121,7 @@ export default async function ClientTicketDetailPage({
         <CardContent className="space-y-4">
           {(messages ?? []).map((m) => (
             <div key={m.id} className="rounded-md border border-slate-100 p-4">
-              <p className="mb-1 text-xs text-slate-500">
+              <p className="mb-1 text-xs text-slate-600">
                 {new Date(m.created_at).toLocaleString()}
               </p>
               <p className="whitespace-pre-wrap text-sm text-slate-900">{m.body}</p>
@@ -143,7 +143,7 @@ function ReopenButton({ ticketId }: { ticketId: string }) {
       <Button variant="outline" type="submit">
         Reopen this ticket
       </Button>
-      <p className="mt-2 text-xs text-slate-500">
+      <p className="mt-2 text-xs text-slate-600">
         This ticket was auto-closed for inactivity. Reopening it brings it back to your queue.
       </p>
     </form>

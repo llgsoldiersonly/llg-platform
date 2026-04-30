@@ -25,7 +25,7 @@ export function RecentUpdatesCard({ updates }: { updates: RecentUpdate[] }) {
       </CardHeader>
       <CardContent>
         {updates.length === 0 ? (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-600">
             Recent activity (blog posts, videos, calls) will show up here as it lands.
           </p>
         ) : (
@@ -34,9 +34,9 @@ export function RecentUpdatesCard({ updates }: { updates: RecentUpdate[] }) {
               <li key={u.id} className="flex items-start gap-3">
                 <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${KIND_DOT[u.kind]}`} />
                 <div className="flex-1 min-w-0 leading-tight">
-                  <div className="text-[10px] uppercase tracking-wider text-slate-400">recent</div>
+                  <div className="text-[10px] uppercase tracking-wider text-slate-500">recent</div>
                   <div className="truncate text-sm text-slate-800">{u.title}</div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-slate-600">
                     {formatDistanceToNow(new Date(u.occurred_at), { addSuffix: true })}
                   </div>
                 </div>

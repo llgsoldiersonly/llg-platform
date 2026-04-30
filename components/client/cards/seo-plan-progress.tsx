@@ -43,7 +43,7 @@ export function SeoPlanProgressCard({ packageHeader, deliverables }: Props) {
         )}
 
         {deliverables.length === 0 ? (
-          <p className="text-sm text-slate-500">No active deliverables this period.</p>
+          <p className="text-sm text-slate-600">No active deliverables this period.</p>
         ) : (
           <ul className="space-y-4">
             {deliverables.map((d) => {
@@ -63,7 +63,7 @@ export function SeoPlanProgressCard({ packageHeader, deliverables }: Props) {
                         {d.title}
                       </span>
                     </span>
-                    <span className="text-xs font-medium text-slate-500">
+                    <span className="text-xs font-medium text-slate-600">
                       {target > 0 ? `${actual}/${target}` : '—'}
                     </span>
                   </div>
