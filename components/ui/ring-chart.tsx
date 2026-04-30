@@ -5,6 +5,11 @@ type Props = {
   /** 0-100 max. Defaults to 100 (typical lighthouse-style score). */
   max?: number
   label?: string
+  /** One-line plain-English explanation shown on hover. */
+  tooltip?: string
+  /** When true, shows a small "Good / Needs work / Poor" band label
+   *  underneath the metric label. Off by default. */
+  showBandLabel?: boolean
   /** Override band color. By default: ≥90 green, ≥70 amber, ≥0 red, null gray. */
   variant?: 'auto' | 'purple' | 'green' | 'amber' | 'red' | 'gray'
   size?: 'sm' | 'md'
@@ -28,11 +33,13 @@ function autoVariant(value: number | null): Exclude<Props['variant'], 'auto' | u
 }
 
 // SVG ring with the score in the center. Used for lighthouse-style metrics
-// (Performance / Accessibility / Best Practices / SEO).
+// (Page Speed / Accessibility / Code Quality / SEO).
 export function RingChart({
   value,
   max = 100,
   label,
+  tooltip,
+  showBandLabel = false,
   variant = 'auto',
   size = 'md',
   className,
@@ -53,8 +60,19 @@ export function RingChart({
     : resolved === 'purple' ? 'text-fg-brand'
     : 'text-body'
 
+  // Plain-English band label: "Good" ≥90, "Needs work" ≥50, "Poor" <50.
+  // Skipped when no value or band-label is opted out.
+  const bandLabel =
+    value == null ? null
+    : value >= 90 ? 'Good'
+    : value >= 50 ? 'Needs work'
+    : 'Poor'
+
   return (
-    <div className={cn('flex flex-col items-center gap-1', className)}>
+    <div
+      className={cn('flex flex-col items-center gap-1', className)}
+      title={tooltip}
+    >
       <div className="relative" style={{ width: dim, height: dim }}>
         <svg width={dim} height={dim} className="-rotate-90">
           <circle
@@ -88,6 +106,11 @@ export function RingChart({
         </span>
       </div>
       {label && <span className="text-xs text-body">{label}</span>}
+      {showBandLabel && bandLabel && (
+        <span className={cn('text-[10px] uppercase tracking-wider', labelClass)}>
+          {bandLabel}
+        </span>
+      )}
     </div>
   )
 }
