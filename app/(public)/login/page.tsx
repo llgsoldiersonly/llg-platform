@@ -63,7 +63,7 @@ function LoginForm() {
         <div className="mb-6 flex justify-center">
           <LlgWordmark size="md" />
         </div>
-        <CardTitle className="font-serif text-2xl">Welcome back</CardTitle>
+        <CardTitle className="text-2xl">Welcome back</CardTitle>
         <CardDescription>
           We&apos;ll email you a magic link. No password to remember.
         </CardDescription>

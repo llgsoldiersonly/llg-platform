@@ -41,7 +41,7 @@ export function AdminSidebar() {
       <div className="flex items-center gap-3 border-b border-slate-200 px-5 py-4">
         <LlgMark className="h-9 w-9" />
         <div className="leading-tight">
-          <h1 className="font-serif text-sm text-slate-900">Legal Leads Group</h1>
+          <h1 className="text-sm text-slate-900">Legal Leads Group</h1>
           <p className="text-[10px] uppercase tracking-wider text-slate-600">Admin</p>
         </div>
       </div>

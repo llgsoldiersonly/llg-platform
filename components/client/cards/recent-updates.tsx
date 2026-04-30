@@ -21,7 +21,7 @@ export function RecentUpdatesCard({ updates }: { updates: RecentUpdate[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-serif text-lg">Recent Updates</CardTitle>
+        <CardTitle className="text-lg">Recent Updates</CardTitle>
       </CardHeader>
       <CardContent>
         {updates.length === 0 ? (

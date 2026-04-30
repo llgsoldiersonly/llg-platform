@@ -22,7 +22,7 @@ export function IntegrationsCard({ links }: { links: IntegrationLink[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-serif text-lg">Integrations</CardTitle>
+        <CardTitle className="text-lg">Integrations</CardTitle>
       </CardHeader>
       <CardContent>
         {links.length === 0 ? (

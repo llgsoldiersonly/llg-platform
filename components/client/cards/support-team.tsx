@@ -18,7 +18,7 @@ export function SupportTeamCard({ members }: { members: TeamMember[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-serif text-lg">Your Support Team</CardTitle>
+        <CardTitle className="text-lg">Your Support Team</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {members.length === 0 ? (

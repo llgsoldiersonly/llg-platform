@@ -14,7 +14,7 @@ export function LighthouseScoresCard({ scores }: { scores: LighthouseScores | nu
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-serif text-lg">Site Lighthouse Scores</CardTitle>
+        <CardTitle className="text-lg">Site Lighthouse Scores</CardTitle>
       </CardHeader>
       <CardContent>
         {!scores || (scores.performance == null && scores.seo == null) ? (

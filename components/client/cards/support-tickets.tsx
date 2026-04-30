@@ -19,7 +19,7 @@ export function SupportTicketsCard({ tickets }: { tickets: TicketSummary[] }) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="font-serif text-lg">Support &amp; Tickets</CardTitle>
+        <CardTitle className="text-lg">Support &amp; Tickets</CardTitle>
         <Link href="/tickets/new">
           <Button size="sm">Create new ticket</Button>
         </Link>

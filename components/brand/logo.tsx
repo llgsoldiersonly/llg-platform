@@ -44,7 +44,7 @@ export function LlgWordmark({
     <div className={cn('flex items-center gap-3', className)}>
       <LlgMark className={dims.mark} />
       <div className="leading-tight">
-        <h1 className={cn('font-serif text-slate-900', dims.heading)}>
+        <h1 className={cn('text-slate-900', dims.heading)}>
           Legal Leads Group
         </h1>
         {showTagline && (
