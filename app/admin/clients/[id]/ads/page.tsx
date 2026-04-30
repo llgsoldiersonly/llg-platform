@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
 
 export default async function ClientAdsPlaceholder({
   params,

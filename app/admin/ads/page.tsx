@@ -1,7 +1,7 @@
 import { Megaphone } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
 
 export default function AdminAdsPlaceholder() {
   return (
