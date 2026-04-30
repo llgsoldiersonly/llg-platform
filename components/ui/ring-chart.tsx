@@ -25,10 +25,16 @@ const BAND_STROKE: Record<Exclude<Props['variant'], undefined>, string> = {
   gray: 'stroke-fg-disabled',
 }
 
+// Standard PageSpeed Insights band scheme:
+//   ≥90  green ("Good")
+//   ≥50  amber ("Needs work")
+//   <50  red   ("Poor")
+// Color thresholds match the band labels below the ring so the score
+// color and the text band agree.
 function autoVariant(value: number | null): Exclude<Props['variant'], 'auto' | undefined> {
   if (value == null) return 'gray'
   if (value >= 90) return 'green'
-  if (value >= 70) return 'amber'
+  if (value >= 50) return 'amber'
   return 'red'
 }
 
@@ -70,10 +76,16 @@ export function RingChart({
 
   return (
     <div
-      className={cn('flex flex-col items-center gap-1', className)}
-      title={tooltip}
+      className={cn(
+        'group relative flex flex-col items-center gap-1',
+        tooltip && 'cursor-help',
+        className
+      )}
     >
-      <div className="relative" style={{ width: dim, height: dim }}>
+      <div
+        className="relative transition-transform duration-200 group-hover:scale-105"
+        style={{ width: dim, height: dim }}
+      >
         <svg width={dim} height={dim} className="-rotate-90">
           <circle
             cx={dim / 2}
@@ -110,6 +122,23 @@ export function RingChart({
         <span className={cn('text-[10px] uppercase tracking-wider', labelClass)}>
           {bandLabel}
         </span>
+      )}
+
+      {/* Custom hover tooltip — appears immediately on hover, styled to
+       * match the rest of the design system. Replaces the native HTML
+       * `title` attribute which had a long delay + OS-styled chrome. */}
+      {tooltip && (
+        <div
+          role="tooltip"
+          className={cn(
+            'pointer-events-none absolute -bottom-2 left-1/2 z-20 w-48 -translate-x-1/2 translate-y-full',
+            'rounded-card border border-border-default bg-dark px-3 py-2',
+            'text-xs leading-snug text-white shadow-md',
+            'opacity-0 transition-opacity duration-150 group-hover:opacity-100'
+          )}
+        >
+          {tooltip}
+        </div>
       )}
     </div>
   )
