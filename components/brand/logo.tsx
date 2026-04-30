@@ -10,18 +10,18 @@ export function LlgMark({ className }: { className?: string }) {
       className={cn('h-10 w-10', className)}
       aria-hidden="true"
     >
-      <rect width="48" height="48" rx="10" fill="var(--color-llg-purple-700)" />
+      <rect width="48" height="48" rx="10" fill="#6d28d9" />
       <path
         d="M24 11 L34 15 V24 C34 30 29 35 24 37 C19 35 14 30 14 24 V15 Z"
         fill="none"
-        stroke="white"
+        stroke="#ffffff"
         strokeWidth="2.2"
         strokeLinejoin="round"
       />
       <path
         d="M19.5 24.5 L23 28 L29 21"
         fill="none"
-        stroke="white"
+        stroke="#ffffff"
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
