@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1000" role="img" aria-label="Legal Leads Group — Rocket Fuel For Your Firm">
+  <title>Legal Leads Group (white)</title>
+
+  <!-- Single-color WHITE version for dark backgrounds.
+       Uses currentColor — set parent's `color: white` (or use fill
+       on a wrapping element) to tint the whole logo. -->
+  <g transform="translate(400 -100)" fill="currentColor" stroke="currentColor">
+    <g transform="rotate(-12 500 520)">
+      <path d="M 120,520 A 380,110 0 0,1 880,520"
+            fill="none" stroke-width="42" stroke-linecap="round"/>
+    </g>
+    <circle cx="500" cy="500" r="225" stroke="none"/>
+    <g transform="rotate(-12 500 520)">
+      <path d="M 120,520 A 380,110 0 0,0 880,520"
+            fill="none" stroke-width="42" stroke-linecap="round"/>
+    </g>
+    <g transform="translate(560 220) rotate(38)" stroke="none">
+      <path d="M 0,-130 L 28,-40 L 28,80 L 0,110 L -28,80 L -28,-40 Z"/>
+      <path d="M -28,80 L -55,110 L -28,40 Z"/>
+      <path d="M 28,80 L 55,110 L 28,40 Z"/>
+    </g>
+  </g>
+
+  <text x="900" y="800" text-anchor="middle"
+        font-family="'Cinzel', 'Trajan Pro', 'Times New Roman', serif"
+        font-size="135" font-weight="600" letter-spacing="6"
+        fill="currentColor">LEGAL LEADS GROUP</text>
+
+  <text x="900" y="900" text-anchor="middle"
+        font-family="'Cinzel', 'Times New Roman', serif"
+        font-size="58" font-weight="400" letter-spacing="2"
+        fill="currentColor">Rocket Fuel For Your Firm</text>
+</svg>
