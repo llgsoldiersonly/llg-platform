@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getClientContext } from '@/lib/client-context'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { formatTicketType, formatTicketCategory, formatTicketPriority, formatTicketStatus } from '@/lib/tickets'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft } from 'lucide-react'
 import { ClientReplyBox } from './reply-box'
@@ -86,13 +87,15 @@ export default async function ClientTicketDetailPage({
               <p className="text-xs uppercase text-slate-500">Ticket #{ticket.ticket_number}</p>
               <CardTitle className="mt-1 text-xl">{ticket.subject}</CardTitle>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Badge variant={ticket.type === 'bug' ? 'destructive' : 'info'}>{ticket.type}</Badge>
-                <Badge variant="secondary">{ticket.category ?? 'other'}</Badge>
+                <Badge variant={ticket.type === 'bug' ? 'destructive' : 'info'}>
+                  {formatTicketType(ticket.type)}
+                </Badge>
+                <Badge variant="secondary">{formatTicketCategory(ticket.category)}</Badge>
                 <Badge variant={ticket.priority === 'urgent' ? 'destructive' : 'secondary'}>
-                  {ticket.priority}
+                  {formatTicketPriority(ticket.priority)}
                 </Badge>
                 <Badge variant={statusVariant[ticket.status] ?? 'secondary'}>
-                  {ticket.status.replace(/_/g, ' ')}
+                  {formatTicketStatus(ticket.status)}
                 </Badge>
               </div>
               {ticket.sla_deadline_at && ticket.status !== 'closed' && (

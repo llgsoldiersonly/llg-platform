@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getClientContext } from '@/lib/client-context'
 import { getQuotaState } from '@/lib/tickets/quota'
+import { formatTicketType, formatTicketCategory, formatTicketStatus } from '@/lib/tickets'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -154,19 +155,19 @@ function TicketLi({ t }: { t: TicketRow }) {
             <span className="font-medium text-slate-900">#{t.ticket_number}</span>
             <span className="text-slate-700">{t.subject}</span>
             <Badge variant={t.type === 'bug' ? 'destructive' : 'info'}>
-              {t.type}
+              {formatTicketType(t.type)}
             </Badge>
-            {t.priority === 'urgent' && <Badge variant="destructive">URGENT</Badge>}
+            {t.priority === 'urgent' && <Badge variant="destructive">Urgent</Badge>}
           </div>
           <p className="mt-1 text-xs text-slate-500">
-            {t.category ?? '—'} · opened {new Date(t.created_at).toLocaleDateString()}
+            {formatTicketCategory(t.category)} · opened {new Date(t.created_at).toLocaleDateString()}
             {t.sla_deadline_at && (
               <> · SLA {new Date(t.sla_deadline_at).toLocaleString()}</>
             )}
           </p>
         </div>
         <Badge variant={statusVariant[t.status] ?? 'secondary'}>
-          {t.status.replace(/_/g, ' ')}
+          {formatTicketStatus(t.status)}
         </Badge>
         <ChevronRight className="h-4 w-4 text-slate-400" />
       </Link>

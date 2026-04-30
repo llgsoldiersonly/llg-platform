@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { formatTicketType, formatTicketCategory, formatTicketStatus } from '@/lib/tickets'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ChevronRight } from 'lucide-react'
@@ -95,11 +96,13 @@ export default async function AdminTicketsPage() {
                       <div className="col-span-7">
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-slate-900">#{t.ticket_number}</span>
-                          <Badge variant={t.type === 'bug' ? 'destructive' : 'info'}>{t.type}</Badge>
+                          <Badge variant={t.type === 'bug' ? 'destructive' : 'info'}>
+                            {formatTicketType(t.type)}
+                          </Badge>
                           <span className="text-slate-700">{t.subject}</span>
                         </div>
                         <p className="mt-1 text-xs text-slate-500">
-                          {t.client?.firm_name ?? '—'} · {t.category ?? '—'}
+                          {t.client?.firm_name ?? '—'} · {formatTicketCategory(t.category)}
                           {t.department && <> → {t.department.name}</>}
                           {t.assigned_user?.full_name && <> → {t.assigned_user.full_name}</>}
                         </p>
@@ -112,7 +115,7 @@ export default async function AdminTicketsPage() {
                       </div>
                       <div className="col-span-1 flex items-center justify-end gap-2">
                         <Badge variant={statusVariant[t.status] ?? 'secondary'}>
-                          {t.status.replace(/_/g, ' ')}
+                          {formatTicketStatus(t.status)}
                         </Badge>
                         <ChevronRight className="h-4 w-4 text-slate-400" />
                       </div>

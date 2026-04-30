@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { formatTicketStatus } from '@/lib/tickets'
 
 export type TicketSummary = {
   id: string
@@ -70,13 +71,12 @@ export function SupportTicketsCard({ tickets }: { tickets: TicketSummary[] }) {
 }
 
 function TicketStatusBadge({ status }: { status: TicketSummary['status'] }) {
-  const map: Record<TicketSummary['status'], { label: string; variant: 'success' | 'warning' | 'info' | 'secondary' }> = {
-    open: { label: 'open', variant: 'info' },
-    in_progress: { label: 'in progress', variant: 'warning' },
-    waiting_on_client: { label: 'waiting on you', variant: 'warning' },
-    resolved: { label: 'resolved', variant: 'success' },
-    closed: { label: 'closed', variant: 'secondary' },
+  const variantMap: Record<TicketSummary['status'], 'success' | 'warning' | 'info' | 'secondary'> = {
+    open: 'info',
+    in_progress: 'warning',
+    waiting_on_client: 'warning',
+    resolved: 'success',
+    closed: 'secondary',
   }
-  const cfg = map[status]
-  return <Badge variant={cfg.variant}>{cfg.label}</Badge>
+  return <Badge variant={variantMap[status]}>{formatTicketStatus(status)}</Badge>
 }

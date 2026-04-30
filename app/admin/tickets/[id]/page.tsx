@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { formatTicketType, formatTicketCategory, formatTicketPriority, formatTicketStatus } from '@/lib/tickets'
 import { ChevronLeft } from 'lucide-react'
 import { AdminTicketActions } from './ticket-actions'
 
@@ -99,13 +100,15 @@ export default async function AdminTicketDetailPage({
               </p>
               <CardTitle className="mt-1 text-xl">{ticket.subject}</CardTitle>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Badge variant={ticket.type === 'bug' ? 'destructive' : 'info'}>{ticket.type}</Badge>
-                <Badge variant="secondary">{ticket.category ?? 'other'}</Badge>
+                <Badge variant={ticket.type === 'bug' ? 'destructive' : 'info'}>
+                  {formatTicketType(ticket.type)}
+                </Badge>
+                <Badge variant="secondary">{formatTicketCategory(ticket.category)}</Badge>
                 <Badge variant={ticket.priority === 'urgent' ? 'destructive' : 'secondary'}>
-                  {ticket.priority}
+                  {formatTicketPriority(ticket.priority)}
                 </Badge>
                 <Badge variant={statusVariant[ticket.status] ?? 'secondary'}>
-                  {ticket.status.replace(/_/g, ' ')}
+                  {formatTicketStatus(ticket.status)}
                 </Badge>
                 {ticket.escalated_at && <Badge variant="destructive">Escalated</Badge>}
               </div>
