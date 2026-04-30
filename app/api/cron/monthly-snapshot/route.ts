@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { snapshotMonthFor } from '@/lib/dates'
 
 // Monthly snapshot cron — runs at 00:00 UTC on the 1st of each month.
 // Captures KPI snapshot for the *previous* full month per client; one
@@ -18,12 +19,10 @@ export async function POST(req: Request) {
   const supa = createAdminClient()
   const start = Date.now()
 
-  // Snapshot month = first day of the month that just ended.
-  const now = new Date()
-  const snapshotMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1))
-  const monthStartIso = snapshotMonth.toISOString().slice(0, 10)
-  const monthEndExclusive = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
-  const yearStartIso = `${snapshotMonth.getUTCFullYear()}-01-01`
+  // Snapshot month = first day of the month that just ended (extracted to
+  // lib/dates so we can unit-test year-rollover edge cases).
+  const { monthStartIso, monthEndExclusiveIso, monthEndExclusiveTsIso, yearStartIso } =
+    snapshotMonthFor(new Date())
 
   const { data: clients } = await supa
     .from('clients')
@@ -50,18 +49,18 @@ export async function POST(req: Request) {
           .select('keyword, position')
           .eq('client_id', client.id)
           .gte('captured_on', monthStartIso)
-          .lt('captured_on', monthEndExclusive.toISOString().slice(0, 10)),
+          .lt('captured_on', monthEndExclusiveIso),
         supa
           .from('calls')
           .select('id', { count: 'exact', head: true })
           .eq('client_id', client.id)
           .gte('started_at', monthStartIso)
-          .lt('started_at', monthEndExclusive.toISOString()),
+          .lt('started_at', monthEndExclusiveTsIso),
         supa
           .from('citations')
           .select('health_score, captured_on')
           .eq('client_id', client.id)
-          .lte('captured_on', monthEndExclusive.toISOString().slice(0, 10))
+          .lte('captured_on', monthEndExclusiveIso)
           .order('captured_on', { ascending: false })
           .limit(1)
           .maybeSingle(),
@@ -69,7 +68,7 @@ export async function POST(req: Request) {
           .from('gmb_snapshots')
           .select('rating, review_count, posts_30d, captured_on')
           .eq('client_id', client.id)
-          .lte('captured_on', monthEndExclusive.toISOString().slice(0, 10))
+          .lte('captured_on', monthEndExclusiveIso)
           .order('captured_on', { ascending: false })
           .limit(1)
           .maybeSingle(),
@@ -78,13 +77,13 @@ export async function POST(req: Request) {
           .select('posts_count, followers')
           .eq('client_id', client.id)
           .gte('period_start', monthStartIso)
-          .lt('period_start', monthEndExclusive.toISOString().slice(0, 10)),
+          .lt('period_start', monthEndExclusiveIso),
         supa
           .from('social_stats')
           .select('ad_spend_cents')
           .eq('client_id', client.id)
           .gte('period_start', yearStartIso)
-          .lt('period_start', monthEndExclusive.toISOString().slice(0, 10)),
+          .lt('period_start', monthEndExclusiveIso),
       ])
 
       const rankings = rankingsRes.data ?? []

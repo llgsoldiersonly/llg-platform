@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isSuperAdmin } from '@/lib/auth/rbac'
 import { ok, err, type Result } from '@/lib/errors'
+import { exportArchiveToStorage, type ArchiveData } from '@/lib/archive-export'
 
 // Hard-deletes a client after archiving everything we know about them
 // into client_archives. Cascade deletes via FKs do the rest. Type-firm-name
@@ -102,6 +103,38 @@ export async function hardDeleteClient(formData: FormData): Promise<Result<{ arc
     .eq('id', clientId)
   if (deleteErr) {
     return err('INTERNAL', `Delete failed AFTER archive (id ${archive.id}): ${deleteErr.message}`)
+  }
+
+  // Export the archive as a ZIP to Supabase Storage and notify the actor.
+  // Both steps are best-effort — failures here don't roll back the delete
+  // (which is already done), but they do log so an operator can re-sign
+  // from client_archives later if needed.
+  try {
+    const { signedUrl, path } = await exportArchiveToStorage(
+      admin,
+      archive.id,
+      client.firm_name,
+      archive_data as ArchiveData
+    )
+    await admin.from('notifications').insert({
+      user_id: user.id,
+      type: 'client_archive',
+      subject: `Archive ready: ${client.firm_name}`,
+      body:
+        signedUrl
+          ? `Hard-delete archive for ${client.firm_name} is ready. Download link expires in 30 days.`
+          : `Hard-delete archive for ${client.firm_name} stored at ${path}. Signed-URL generation failed; re-sign via admin SDK.`,
+      link: signedUrl ?? null,
+    })
+  } catch (exportErr) {
+    const message = exportErr instanceof Error ? exportErr.message : 'unknown'
+    await admin.from('activity_log').insert({
+      actor_id: user.id,
+      entity_type: 'client_archive',
+      entity_id: clientId,
+      action: 'export_failed',
+      after: { archive_id: archive.id, error: message },
+    })
   }
 
   revalidatePath('/admin/clients')

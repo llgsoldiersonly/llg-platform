@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils/cn'
+import { classify, relativeAge, type Health } from '@/lib/health'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,24 +26,6 @@ const INTEGRATIONS: Array<{
   { source: 'cron:lighthouse', label: 'Lighthouse', cadence: 'weekly',  expectedHours: 24 * 8 },
   { source: 'cron:citations',  label: 'Citations',  cadence: 'monthly', expectedHours: 24 * 35 },
 ]
-
-type Health = 'green' | 'yellow' | 'red' | 'never'
-
-function classify(lastOkAt: string | null, expectedHours: number): Health {
-  if (!lastOkAt) return 'never'
-  const elapsedHours = (Date.now() - new Date(lastOkAt).getTime()) / 3_600_000
-  if (elapsedHours < expectedHours) return 'green'
-  if (elapsedHours < expectedHours * 2) return 'yellow'
-  return 'red'
-}
-
-function relativeAge(iso: string | null): string {
-  if (!iso) return 'never'
-  const elapsedMin = (Date.now() - new Date(iso).getTime()) / 60_000
-  if (elapsedMin < 60) return `${Math.round(elapsedMin)}m ago`
-  if (elapsedMin < 60 * 24) return `${Math.round(elapsedMin / 60)}h ago`
-  return `${Math.round(elapsedMin / (60 * 24))}d ago`
-}
 
 const CELL_STYLES: Record<Health, string> = {
   green:  'bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200',
