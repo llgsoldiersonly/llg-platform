@@ -13,6 +13,8 @@
    ========================================================================== */
 
 :root {
+  color-scheme: light;
+
   /* Backgrounds — neutrals */
   --color-neutral-primary-soft:     #ffffff;
   --color-neutral-primary:          #ffffff;
@@ -103,76 +105,15 @@
   --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-neutral-primary-soft:     #101828;
-    --color-neutral-primary:          #030712;
-    --color-neutral-primary-medium:   #1e2939;
-    --color-neutral-primary-strong:   #333e4f;
-    --color-neutral-secondary-soft:   #101828;
-    --color-neutral-secondary:        #030712;
-    --color-neutral-secondary-medium: #1e2939;
-    --color-neutral-secondary-strong: #333e4f;
-    --color-neutral-tertiary-soft:    #101828;
-    --color-neutral-tertiary:         #1e2939;
-    --color-neutral-tertiary-medium:  #333e4f;
-    --color-neutral-quaternary:       #333e4f;
-    --color-quaternary-medium:        #4a5565;
-    --color-gray:                     #4a5565;
-
-    --color-brand-softer:             #3b0764;
-    --color-brand-soft:               #581c87;
-    --color-brand:                    #9333ea;
-    --color-brand-medium:             #581c87;
-    --color-brand-strong:             #7e22cf;
-
-    --color-success-soft:             #002c22;
-    --color-success:                  #009966;
-    --color-success-medium:           #004f3b;
-    --color-success-strong:           #007a55;
-    --color-danger-soft:              #4d0218;
-    --color-danger-medium:            #8b0836;
-    --color-warning-soft:             #7c2d12;
-    --color-warning-medium:           #7c2d12;
-
-    --color-heading:                  #ffffff;
-    --color-body:                     #9ca3af;
-    --color-body-subtle:              #9ca3af;
-    --color-fg-brand:                 #a855f7;
-    --color-fg-brand-strong:          #e9d5ff;
-    --color-fg-success:               #065f46;
-    --color-fg-success-strong:        #10b981;
-    --color-fg-danger:                #f43f5e;
-    --color-fg-danger-strong:         #f87171;
-    --color-fg-warning:               #fbbf24;
-    --color-fg-warning-subtle:        #f97316;
-    --color-fg-disabled:              #6b7280;
-
-    --color-border-muted:             #111827;
-    --color-border-light:             #1f2937;
-    --color-border-light-medium:      #374151;
-    --color-border-default-subtle:    #111827;
-    --color-border-default:           #1f2937;
-    --color-border-default-medium:    #374151;
-    --color-border-default-strong:    #4b5563;
-    --color-border-success-subtle:    #064e3b;
-    --color-border-success:           #065f46;
-    --color-border-danger-subtle:     #881337;
-    --color-border-warning-subtle:    #7c2d12;
-    --color-border-warning:           #f97316;
-    --color-border-brand-subtle:      #581c87;
-    --color-border-brand-light:       #9333ea;
-    --color-border-brand:             #a855f7;
-    --color-border-buffer:            #030712;
-
-    --color-dark:                     #1f2937;
-    --color-dark-strong:              #374151;
-    --color-disabled:                 #1f2937;
-
-    --color-1-400: rgba(255, 255, 255, 0.12);
-    --color-1-700: rgba(0, 0, 0, 0.25);
-  }
-}
+/* Auto dark-mode swap is disabled until every page uses design tokens.
+ * Right now several pages (admin dashboard, etc.) hardcode bg-slate-50 and
+ * similar Tailwind utilities that don't respond to prefers-color-scheme,
+ * so an auto-swap produces a half-light-half-dark page. Re-enable this
+ * @media block once all surfaces have been migrated to semantic tokens
+ * (bg-neutral-primary-soft / text-heading / etc.).
+ *
+ * In the meantime we force light theme universally via the
+ * `color-scheme: light` declaration on :root above. */
 
 @theme {
   /* Fonts */
