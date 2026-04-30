@@ -37,6 +37,7 @@
   --color-brand:                    #7e22cf;
   --color-brand-medium:             #e9d5ff;
   --color-brand-strong:             #6b21a8;
+  --color-brand-deep:               #4c1d95;  /* deepest brand for top-of-page banners / hero ribbons */
 
   /* Status */
   --color-success-soft:             #ecfdf5;
@@ -140,6 +141,7 @@
   --color-brand:                    var(--color-brand);
   --color-brand-medium:             var(--color-brand-medium);
   --color-brand-strong:             var(--color-brand-strong);
+  --color-brand-deep:               var(--color-brand-deep);
 
   /* Status */
   --color-success-soft:             var(--color-success-soft);
