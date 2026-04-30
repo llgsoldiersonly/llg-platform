@@ -4,16 +4,25 @@
   --background: #ffffff;
   --foreground: #171717;
 
-  /* LLG brand palette — vivid purple primary. Mirrors Tailwind's violet
-   * scale so existing slate-vs-violet contrasts stay legible.
-   *
-   *   llg-purple-950 — impersonation banner, dark surfaces        (#2e1065)
-   *   llg-purple-700 — primary buttons, logo background, accents  (#6d28d9)
-   *   llg-purple-600 — hover state on primary buttons             (#7c3aed)
-   *   llg-purple-100 — soft tint backgrounds                      (#ede9fe)
-   *
-   * Lightened from violet-800 (2026-04-29) for a less heavy feel.
-   */
+  /* Soft layered shadow for cards — closer to a "lift off page" feel
+   * than the default flat shadow-sm. */
+  --shadow-card:       0 1px 3px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.04);
+  --shadow-card-hover: 0 2px 6px rgba(15, 23, 42, 0.08), 0 16px 36px rgba(15, 23, 42, 0.06);
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-serif-display);
+
+  /* Brand palette — values are defined in :root above; mapping into
+   * @theme exposes them as Tailwind utilities (bg-llg-purple-700, etc.)
+   * AND keeps the original CSS variable names resolvable via var(...)
+   * inside SVG fills. The previous "@theme inline" block created a
+   * circular self-reference that made var() resolve to nothing in SVG. */
   --color-llg-purple-950: #2e1065;
   --color-llg-purple-900: #4c1d95;
   --color-llg-purple-800: #5b21b6;
@@ -22,29 +31,6 @@
   --color-llg-purple-500: #8b5cf6;
   --color-llg-purple-100: #ede9fe;
   --color-llg-purple-50:  #f5f3ff;
-
-  /* Soft layered shadow for cards — closer to a "lift off page" feel
-   * than the default flat shadow-sm. */
-  --shadow-card:       0 1px 3px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.04);
-  --shadow-card-hover: 0 2px 6px rgba(15, 23, 42, 0.08), 0 16px 36px rgba(15, 23, 42, 0.06);
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-serif: var(--font-serif-display);
-
-  --color-llg-purple-950: var(--color-llg-purple-950);
-  --color-llg-purple-900: var(--color-llg-purple-900);
-  --color-llg-purple-800: var(--color-llg-purple-800);
-  --color-llg-purple-700: var(--color-llg-purple-700);
-  --color-llg-purple-600: var(--color-llg-purple-600);
-  --color-llg-purple-500: var(--color-llg-purple-500);
-  --color-llg-purple-100: var(--color-llg-purple-100);
-  --color-llg-purple-50:  var(--color-llg-purple-50);
 }
 
 @media (prefers-color-scheme: dark) {
