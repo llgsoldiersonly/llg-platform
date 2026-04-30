@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { NumberTicker } from '@/components/ui/number-ticker'
 import { Users, UserPlus, Briefcase, MapPin, ClipboardList, Gift, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
@@ -84,7 +85,7 @@ export default async function AdminDashboardPage() {
                     {card.label}
                   </p>
                   <p className={cn('mt-1 text-3xl font-semibold tabular-nums', styles.value)}>
-                    {card.value}
+                    <NumberTicker value={card.value} className="text-inherit" />
                   </p>
                 </div>
               </CardContent>
