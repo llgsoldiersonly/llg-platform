@@ -8,7 +8,7 @@ export type TeamMember = {
 }
 
 const AVATAR_BG = {
-  purple: 'bg-(--color-llg-purple-100) text-(--color-llg-purple-700)',
+  purple: 'bg-brand-soft text-fg-brand',
   sky: 'bg-sky-100 text-sky-800',
   amber: 'bg-amber-100 text-amber-800',
   emerald: 'bg-emerald-100 text-emerald-800',

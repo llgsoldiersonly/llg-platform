@@ -1,47 +1,271 @@
 @import "tailwindcss";
 
+/* ============================================================================
+   LLG Design System tokens
+   ----------------------------------------------------------------------------
+   Per the design system spec (typography.md / colors.md / radius.md / etc.).
+   - Tokens are agnostic; we map them into @theme below so Tailwind exposes
+     them as utilities (bg-brand, text-heading, rounded-card, shadow-xs, ...).
+   - Light mode = root values. Dark mode swaps the same names via the
+     prefers-color-scheme block.
+   - Component code should reach for token utilities (bg-neutral-primary-soft,
+     text-heading, border-default) — not raw slate-* classes.
+   ========================================================================== */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Backgrounds — neutrals */
+  --color-neutral-primary-soft:     #ffffff;
+  --color-neutral-primary:          #ffffff;
+  --color-neutral-primary-medium:   #ffffff;
+  --color-neutral-primary-strong:   #ffffff;
+  --color-neutral-secondary-soft:   #f9fafb;
+  --color-neutral-secondary:        #f9fafb;
+  --color-neutral-secondary-medium: #f9fafb;
+  --color-neutral-secondary-strong: #f9fafb;
+  --color-neutral-tertiary-soft:    #f3f4f6;
+  --color-neutral-tertiary:         #f3f4f6;
+  --color-neutral-tertiary-medium:  #f3f4f6;
+  --color-neutral-quaternary:       #e5e7eb;
+  --color-quaternary-medium:        #e5e7eb;
+  --color-gray:                     #d1d5dc;
 
-  /* Soft layered shadow for cards — closer to a "lift off page" feel
-   * than the default flat shadow-sm. */
-  --shadow-card:       0 1px 3px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.04);
-  --shadow-card-hover: 0 2px 6px rgba(15, 23, 42, 0.08), 0 16px 36px rgba(15, 23, 42, 0.06);
-}
+  /* Brand */
+  --color-brand-softer:             #faf5ff;
+  --color-brand-soft:               #f3e8ff;
+  --color-brand:                    #7e22cf;
+  --color-brand-medium:             #e9d5ff;
+  --color-brand-strong:             #6b21a8;
 
-@theme {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Status */
+  --color-success-soft:             #ecfdf5;
+  --color-success:                  #007a55;
+  --color-success-medium:           #d0fae5;
+  --color-success-strong:           #006045;
+  --color-danger-soft:              #fef0f2;
+  --color-danger:                   #c70036;
+  --color-danger-medium:            #ffe4e6;
+  --color-danger-strong:            #a50036;
+  --color-warning-soft:             #fff7ed;
+  --color-warning:                  #f97316;
+  --color-warning-medium:           #ffedd5;
+  --color-warning-strong:           #c2410c;
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-serif: var(--font-serif-display);
+  /* Text */
+  --color-heading:                  #111827;
+  --color-body:                     #4b5563;
+  --color-body-subtle:              #6b7280;
+  --color-fg-brand:                 #7e22cf;
+  --color-fg-brand-strong:          #6b21a8;
+  --color-fg-brand-subtle:          #e9d5ff;
+  --color-fg-success:               #047857;
+  --color-fg-success-strong:        #065f46;
+  --color-fg-danger:                #be123c;
+  --color-fg-danger-strong:         #881337;
+  --color-fg-warning:               #7c2d12;
+  --color-fg-warning-subtle:        #ea580c;
+  --color-fg-disabled:              #9ca3af;
 
-  /* Brand palette — values are defined in :root above; mapping into
-   * @theme exposes them as Tailwind utilities (bg-llg-purple-700, etc.)
-   * AND keeps the original CSS variable names resolvable via var(...)
-   * inside SVG fills. The previous "@theme inline" block created a
-   * circular self-reference that made var() resolve to nothing in SVG. */
-  --color-llg-purple-950: #2e1065;
-  --color-llg-purple-900: #4c1d95;
-  --color-llg-purple-800: #5b21b6;
-  --color-llg-purple-700: #6d28d9;
-  --color-llg-purple-600: #7c3aed;
-  --color-llg-purple-500: #8b5cf6;
-  --color-llg-purple-100: #ede9fe;
-  --color-llg-purple-50:  #f5f3ff;
+  /* Borders */
+  --color-border-muted:             #f9fafb;
+  --color-border-light:             #f3f4f6;
+  --color-border-light-medium:      #f3f4f6;
+  --color-border-default-subtle:    #e5e7eb;
+  --color-border-default:           #e5e7eb;
+  --color-border-default-medium:    #e5e7eb;
+  --color-border-default-strong:    #e5e7eb;
+  --color-border-success-subtle:    #a7f3d0;
+  --color-border-success:           #047857;
+  --color-border-danger-subtle:     #fecdd3;
+  --color-border-danger:            #be123c;
+  --color-border-warning-subtle:    #fed7aa;
+  --color-border-warning:           #ea580c;
+  --color-border-brand-subtle:      #e9d5ff;
+  --color-border-brand-light:       #9333ea;
+  --color-border-brand:             #7e22cf;
+  --color-border-buffer:            #ffffff;
+
+  /* Utility */
+  --color-dark:                     #1f2937;
+  --color-dark-strong:              #111827;
+  --color-disabled:                 #f3f4f6;
+
+  /* Button glint effect — used in box-shadow on every non-ghost / non-disabled button */
+  --color-1-400:                    rgba(255, 255, 255, 0.25);
+  --color-1-700:                    rgba(0, 0, 0, 0.12);
+
+  /* Shadow scale */
+  --shadow-2xs: 0 1px rgb(0 0 0 / 0.05);
+  --shadow-xs:  0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm:  0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md:  0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg:  0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl:  0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --color-neutral-primary-soft:     #101828;
+    --color-neutral-primary:          #030712;
+    --color-neutral-primary-medium:   #1e2939;
+    --color-neutral-primary-strong:   #333e4f;
+    --color-neutral-secondary-soft:   #101828;
+    --color-neutral-secondary:        #030712;
+    --color-neutral-secondary-medium: #1e2939;
+    --color-neutral-secondary-strong: #333e4f;
+    --color-neutral-tertiary-soft:    #101828;
+    --color-neutral-tertiary:         #1e2939;
+    --color-neutral-tertiary-medium:  #333e4f;
+    --color-neutral-quaternary:       #333e4f;
+    --color-quaternary-medium:        #4a5565;
+    --color-gray:                     #4a5565;
+
+    --color-brand-softer:             #3b0764;
+    --color-brand-soft:               #581c87;
+    --color-brand:                    #9333ea;
+    --color-brand-medium:             #581c87;
+    --color-brand-strong:             #7e22cf;
+
+    --color-success-soft:             #002c22;
+    --color-success:                  #009966;
+    --color-success-medium:           #004f3b;
+    --color-success-strong:           #007a55;
+    --color-danger-soft:              #4d0218;
+    --color-danger-medium:            #8b0836;
+    --color-warning-soft:             #7c2d12;
+    --color-warning-medium:           #7c2d12;
+
+    --color-heading:                  #ffffff;
+    --color-body:                     #9ca3af;
+    --color-body-subtle:              #9ca3af;
+    --color-fg-brand:                 #a855f7;
+    --color-fg-brand-strong:          #e9d5ff;
+    --color-fg-success:               #065f46;
+    --color-fg-success-strong:        #10b981;
+    --color-fg-danger:                #f43f5e;
+    --color-fg-danger-strong:         #f87171;
+    --color-fg-warning:               #fbbf24;
+    --color-fg-warning-subtle:        #f97316;
+    --color-fg-disabled:              #6b7280;
+
+    --color-border-muted:             #111827;
+    --color-border-light:             #1f2937;
+    --color-border-light-medium:      #374151;
+    --color-border-default-subtle:    #111827;
+    --color-border-default:           #1f2937;
+    --color-border-default-medium:    #374151;
+    --color-border-default-strong:    #4b5563;
+    --color-border-success-subtle:    #064e3b;
+    --color-border-success:           #065f46;
+    --color-border-danger-subtle:     #881337;
+    --color-border-warning-subtle:    #7c2d12;
+    --color-border-warning:           #f97316;
+    --color-border-brand-subtle:      #581c87;
+    --color-border-brand-light:       #9333ea;
+    --color-border-brand:             #a855f7;
+    --color-border-buffer:            #030712;
+
+    --color-dark:                     #1f2937;
+    --color-dark-strong:              #374151;
+    --color-disabled:                 #1f2937;
+
+    --color-1-400: rgba(255, 255, 255, 0.12);
+    --color-1-700: rgba(0, 0, 0, 0.25);
   }
 }
 
+@theme {
+  /* Fonts */
+  --font-sans: var(--font-roboto), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-roboto-mono), ui-monospace, monospace;
+
+  /* Backgrounds — neutrals */
+  --color-neutral-primary-soft:     var(--color-neutral-primary-soft);
+  --color-neutral-primary:          var(--color-neutral-primary);
+  --color-neutral-primary-medium:   var(--color-neutral-primary-medium);
+  --color-neutral-primary-strong:   var(--color-neutral-primary-strong);
+  --color-neutral-secondary-soft:   var(--color-neutral-secondary-soft);
+  --color-neutral-secondary:        var(--color-neutral-secondary);
+  --color-neutral-secondary-medium: var(--color-neutral-secondary-medium);
+  --color-neutral-secondary-strong: var(--color-neutral-secondary-strong);
+  --color-neutral-tertiary-soft:    var(--color-neutral-tertiary-soft);
+  --color-neutral-tertiary:         var(--color-neutral-tertiary);
+  --color-neutral-tertiary-medium:  var(--color-neutral-tertiary-medium);
+  --color-neutral-quaternary:       var(--color-neutral-quaternary);
+
+  /* Brand */
+  --color-brand-softer:             var(--color-brand-softer);
+  --color-brand-soft:               var(--color-brand-soft);
+  --color-brand:                    var(--color-brand);
+  --color-brand-medium:             var(--color-brand-medium);
+  --color-brand-strong:             var(--color-brand-strong);
+
+  /* Status */
+  --color-success-soft:             var(--color-success-soft);
+  --color-success:                  var(--color-success);
+  --color-success-medium:           var(--color-success-medium);
+  --color-success-strong:           var(--color-success-strong);
+  --color-danger-soft:              var(--color-danger-soft);
+  --color-danger:                   var(--color-danger);
+  --color-danger-medium:            var(--color-danger-medium);
+  --color-danger-strong:            var(--color-danger-strong);
+  --color-warning-soft:             var(--color-warning-soft);
+  --color-warning:                  var(--color-warning);
+  --color-warning-medium:           var(--color-warning-medium);
+  --color-warning-strong:           var(--color-warning-strong);
+
+  /* Text */
+  --color-heading:                  var(--color-heading);
+  --color-body:                     var(--color-body);
+  --color-body-subtle:              var(--color-body-subtle);
+  --color-fg-brand:                 var(--color-fg-brand);
+  --color-fg-brand-strong:          var(--color-fg-brand-strong);
+  --color-fg-brand-subtle:          var(--color-fg-brand-subtle);
+  --color-fg-success:               var(--color-fg-success);
+  --color-fg-success-strong:        var(--color-fg-success-strong);
+  --color-fg-danger:                var(--color-fg-danger);
+  --color-fg-danger-strong:         var(--color-fg-danger-strong);
+  --color-fg-warning:               var(--color-fg-warning);
+  --color-fg-warning-subtle:        var(--color-fg-warning-subtle);
+  --color-fg-disabled:              var(--color-fg-disabled);
+
+  /* Borders */
+  --color-border-default-subtle:    var(--color-border-default-subtle);
+  --color-border-default:           var(--color-border-default);
+  --color-border-default-medium:    var(--color-border-default-medium);
+  --color-border-default-strong:    var(--color-border-default-strong);
+  --color-border-success-subtle:    var(--color-border-success-subtle);
+  --color-border-success:           var(--color-border-success);
+  --color-border-danger-subtle:     var(--color-border-danger-subtle);
+  --color-border-danger:            var(--color-border-danger);
+  --color-border-warning-subtle:    var(--color-border-warning-subtle);
+  --color-border-warning:           var(--color-border-warning);
+  --color-border-brand-subtle:      var(--color-border-brand-subtle);
+  --color-border-brand:             var(--color-border-brand);
+  --color-border-buffer:            var(--color-border-buffer);
+
+  /* Utility */
+  --color-dark:                     var(--color-dark);
+  --color-dark-strong:              var(--color-dark-strong);
+  --color-disabled:                 var(--color-disabled);
+
+  /* Radius scale */
+  --radius-pill: 9999px;
+  --radius-card: 24px;
+  --radius-sm:   4px;
+
+  /* Shadows */
+  --shadow-2xs: var(--shadow-2xs);
+  --shadow-xs:  var(--shadow-xs);
+  --shadow-sm:  var(--shadow-sm);
+  --shadow-md:  var(--shadow-md);
+  --shadow-lg:  var(--shadow-lg);
+  --shadow-xl:  var(--shadow-xl);
+  --shadow-2xl: var(--shadow-2xl);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  background: var(--color-neutral-primary-soft);
+  color: var(--color-body);
+  font-family: var(--font-sans);
 }

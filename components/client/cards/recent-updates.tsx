@@ -9,7 +9,7 @@ export type RecentUpdate = {
 }
 
 const KIND_DOT = {
-  blog: 'bg-(--color-llg-purple-700)',
+  blog: 'bg-brand',
   video: 'bg-amber-500',
   call: 'bg-sky-500',
   review: 'bg-emerald-500',

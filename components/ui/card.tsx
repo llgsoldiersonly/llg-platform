@@ -1,6 +1,13 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils/cn'
 
+// Card per cards.md.
+//   Background:     neutral-primary-soft
+//   Border:         1px border-default
+//   Radius:         24px (--radius-card)
+//   Shadow:         shadow-xs
+//   Interactive:    add hover:bg-neutral-secondary-medium when used as a link/button.
+//                   Static info cards stay still.
 export const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -8,7 +15,7 @@ export const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'rounded-xl border border-slate-200/80 bg-white shadow-(--shadow-card)',
+      'rounded-card border border-border-default bg-neutral-primary-soft shadow-xs',
       className
     )}
     {...props}
@@ -30,7 +37,10 @@ export const CardTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h3
     ref={ref}
-    className={cn('text-xl font-semibold leading-none tracking-tight text-slate-900', className)}
+    className={cn(
+      'text-xl md:text-xl font-medium leading-tight tracking-tight text-heading',
+      className
+    )}
     {...props}
   />
 ))
@@ -40,7 +50,7 @@ export const CardDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
-  <p ref={ref} className={cn('text-sm text-slate-600', className)} {...props} />
+  <p ref={ref} className={cn('text-sm text-body', className)} {...props} />
 ))
 CardDescription.displayName = 'CardDescription'
 

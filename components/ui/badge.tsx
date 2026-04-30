@@ -2,21 +2,34 @@ import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils/cn'
 
+// Badge per badges.md. Pill-shaped (9999px radius), 1px border, 12px font /
+// 6px×2px padding by default. 7 variants from the spec — legacy aliases
+// (default, secondary, info) preserved for existing call sites.
 const badgeVariants = cva(
-  'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
+  'inline-flex items-center rounded-pill border px-1.5 py-0.5 text-xs font-medium transition-colors',
   {
     variants: {
       variant: {
-        default: 'bg-slate-900 text-white',
-        secondary: 'bg-slate-100 text-slate-700',
-        success: 'bg-emerald-100 text-emerald-800',
-        warning: 'bg-amber-100 text-amber-800',
-        destructive: 'bg-red-100 text-red-800',
-        info: 'bg-sky-100 text-sky-800',
-        outline: 'border border-slate-200 text-slate-700',
+        brand:       'bg-brand-softer       border-border-brand-subtle   text-fg-brand-strong',
+        alternative: 'bg-neutral-primary-soft border-border-default      text-heading',
+        gray:        'bg-neutral-secondary-medium border-border-default  text-heading',
+        danger:      'bg-danger-soft        border-border-danger-subtle  text-fg-danger-strong',
+        success:     'bg-success-soft       border-border-success-subtle text-fg-success-strong',
+        warning:     'bg-warning-soft       border-border-warning-subtle text-fg-warning',
+        dark:        'bg-dark               border-transparent           text-white',
+        // Legacy aliases used across the existing codebase
+        default:     'bg-dark               border-transparent           text-white',
+        secondary:   'bg-neutral-secondary-medium border-border-default  text-heading',
+        destructive: 'bg-danger-soft        border-border-danger-subtle  text-fg-danger-strong',
+        info:        'bg-brand-softer       border-border-brand-subtle   text-fg-brand-strong',
+        outline:     'bg-transparent        border-border-default        text-body',
+      },
+      size: {
+        default: 'px-1.5 py-0.5 text-xs',
+        lg:      'px-2   py-1   text-sm',
       },
     },
-    defaultVariants: { variant: 'default' },
+    defaultVariants: { variant: 'gray', size: 'default' },
   }
 )
 
@@ -24,6 +37,6 @@ export interface BadgeProps
   extends React.HTMLAttributes<HTMLSpanElement>,
     VariantProps<typeof badgeVariants> {}
 
-export function Badge({ className, variant, ...props }: BadgeProps) {
-  return <span className={cn(badgeVariants({ variant }), className)} {...props} />
+export function Badge({ className, variant, size, ...props }: BadgeProps) {
+  return <span className={cn(badgeVariants({ variant, size }), className)} {...props} />
 }

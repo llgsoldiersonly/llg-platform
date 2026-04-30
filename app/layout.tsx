@@ -1,22 +1,19 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono, DM_Serif_Display } from 'next/font/google'
+import { Roboto, Roboto_Mono } from 'next/font/google'
 import './globals.css'
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+// Roboto across the board per the design system spec (typography.md).
+// 400 = body / placeholders, 500 = labels + buttons + nav active, 600 =
+// headings, 700 reserved for super-emphasis if ever needed.
+const roboto = Roboto({
+  variable: '--font-roboto',
+  weight: ['400', '500', '600', '700'],
   subsets: ['latin'],
 })
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-})
-
-// LLG brand serif — used for major headings (firm name in topbar, big page
-// titles, card titles on the client portal). Sans stays Geist for body.
-const dmSerifDisplay = DM_Serif_Display({
-  variable: '--font-serif-display',
-  weight: '400',
+const robotoMono = Roboto_Mono({
+  variable: '--font-roboto-mono',
+  weight: ['400', '500'],
   subsets: ['latin'],
 })
 
@@ -31,9 +28,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${dmSerifDisplay.variable} h-full antialiased`}
+      className={`${roboto.variable} ${robotoMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900">
+      <body className="min-h-full flex flex-col bg-neutral-primary-soft text-body">
         {children}
       </body>
     </html>

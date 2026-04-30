@@ -13,7 +13,7 @@ type Props = {
 
 const BAND_STROKE: Record<Exclude<Props['variant'], undefined>, string> = {
   auto: '',                           // resolved at render
-  purple: 'stroke-(--color-llg-purple-700)',
+  purple: 'stroke-brand',
   green: 'stroke-emerald-500',
   amber: 'stroke-amber-500',
   red: 'stroke-red-500',
@@ -50,7 +50,7 @@ export function RingChart({
     resolved === 'green' ? 'text-emerald-700'
     : resolved === 'amber' ? 'text-amber-700'
     : resolved === 'red' ? 'text-red-700'
-    : resolved === 'purple' ? 'text-(--color-llg-purple-700)'
+    : resolved === 'purple' ? 'text-fg-brand'
     : 'text-slate-600'
 
   return (

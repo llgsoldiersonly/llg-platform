@@ -15,7 +15,7 @@ const META = {
   gsc:           { label: 'Google Search Console',  cta: 'Open Console',   Icon: KeyRound,  color: 'bg-slate-100 text-slate-700' },
   google_ads:    { label: 'Google Ads',             cta: 'View account',   Icon: Megaphone, color: 'bg-blue-100 text-blue-700' },
   lsa:           { label: 'LSA',                    cta: 'View account',   Icon: Megaphone, color: 'bg-emerald-100 text-emerald-700' },
-  keyword_tool:  { label: 'Keyword Tool',           cta: 'Open SEO Plan',  Icon: Search,    color: 'bg-(--color-llg-purple-100) text-(--color-llg-purple-700)' },
+  keyword_tool:  { label: 'Keyword Tool',           cta: 'Open SEO Plan',  Icon: Search,    color: 'bg-brand-soft text-fg-brand' },
 } as const
 
 export function IntegrationsCard({ links }: { links: IntegrationLink[] }) {
@@ -34,7 +34,7 @@ export function IntegrationsCard({ links }: { links: IntegrationLink[] }) {
             {links.map((l) => {
               const { label, cta, Icon, color } = META[l.key]
               const className =
-                'group flex items-center gap-3 rounded-lg border border-slate-100 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-(--color-llg-purple-100) hover:bg-(--color-llg-purple-50) hover:shadow-(--shadow-card)'
+                'group flex items-center gap-3 rounded-lg border border-slate-100 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-border-brand-subtle hover:bg-brand-softer hover:shadow-md'
               const inner = (
                 <>
                   <span className={`flex h-9 w-9 items-center justify-center rounded-md ${color}`}>
@@ -42,7 +42,7 @@ export function IntegrationsCard({ links }: { links: IntegrationLink[] }) {
                   </span>
                   <div className="flex-1 min-w-0 leading-tight">
                     <div className="text-sm font-medium text-slate-900">{label}</div>
-                    <div className="text-xs text-(--color-llg-purple-700) group-hover:underline">
+                    <div className="text-xs text-fg-brand group-hover:underline">
                       {cta}
                     </div>
                   </div>

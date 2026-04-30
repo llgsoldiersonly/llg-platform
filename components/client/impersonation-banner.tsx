@@ -18,7 +18,7 @@ export async function ImpersonationBanner() {
     .maybeSingle()
 
   return (
-    <div className="bg-(--color-llg-purple-950) px-4 py-3 text-sm text-white">
+    <div className="bg-dark px-4 py-3 text-sm text-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
         <span>
           You&apos;re viewing as <strong>{client?.firm_name ?? 'this client'}</strong>

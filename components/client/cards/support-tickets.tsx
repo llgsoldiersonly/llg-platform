@@ -46,9 +46,9 @@ export function SupportTicketsCard({ tickets }: { tickets: TicketSummary[] }) {
               <li key={t.id}>
                 <Link
                   href={`/tickets/${t.id}`}
-                  className="group flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-3 py-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-(--color-llg-purple-100) hover:bg-(--color-llg-purple-50) hover:shadow-(--shadow-card)"
+                  className="group flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-3 py-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-border-brand-subtle hover:bg-brand-softer hover:shadow-md"
                 >
-                  <span className="flex-1 truncate text-sm text-slate-800 group-hover:text-(--color-llg-purple-700)">
+                  <span className="flex-1 truncate text-sm text-slate-800 group-hover:text-fg-brand">
                     <span className="text-slate-500">#{t.ticket_number}</span>{' '}
                     {t.subject}
                   </span>
@@ -58,7 +58,7 @@ export function SupportTicketsCard({ tickets }: { tickets: TicketSummary[] }) {
             ))}
             {tickets.length > 5 && (
               <li className="pt-1 text-right">
-                <Link href="/tickets" className="text-xs text-(--color-llg-purple-700) hover:underline">
+                <Link href="/tickets" className="text-xs text-fg-brand hover:underline">
                   View all {tickets.length} tickets →
                 </Link>
               </li>
