@@ -18,16 +18,16 @@ export async function ImpersonationBanner() {
     .maybeSingle()
 
   return (
-    <div className="border-b border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+    <div className="bg-(--color-llg-purple-950) px-4 py-3 text-sm text-white">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
         <span>
-          You are viewing as <strong>{client?.firm_name ?? 'this client'}</strong>. Your
-          actions are recorded.
+          You&apos;re viewing as <strong>{client?.firm_name ?? 'this client'}</strong>
+          {' '}— your actions are recorded.
         </span>
         <form action={stopImpersonationFormAction}>
           <button
             type="submit"
-            className="rounded-md border border-amber-400 bg-white px-3 py-1 text-xs font-medium text-amber-900 transition-colors hover:bg-amber-100"
+            className="rounded-md border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-white/20"
           >
             Exit impersonation
           </button>

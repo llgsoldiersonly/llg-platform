@@ -13,6 +13,7 @@ import {
   Settings,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import { LlgMark } from '@/components/brand/logo'
 
 type NavItem = {
   href: string
@@ -37,9 +38,12 @@ export function AdminSidebar() {
 
   return (
     <aside className="hidden w-56 shrink-0 border-r border-slate-200 bg-white md:flex md:flex-col">
-      <div className="border-b border-slate-200 px-5 py-4">
-        <h1 className="text-sm font-semibold text-slate-900">LLG Platform</h1>
-        <p className="text-xs text-slate-500">Admin</p>
+      <div className="flex items-center gap-3 border-b border-slate-200 px-5 py-4">
+        <LlgMark className="h-9 w-9" />
+        <div className="leading-tight">
+          <h1 className="font-serif text-sm text-slate-900">Legal Leads Group</h1>
+          <p className="text-[10px] uppercase tracking-wider text-slate-500">Admin</p>
+        </div>
       </div>
       <nav className="flex-1 space-y-1 px-3 py-4">
         {items.map((item) => {
@@ -56,7 +60,7 @@ export function AdminSidebar() {
               className={cn(
                 'flex items-center justify-between rounded-md px-3 py-2 text-sm transition-colors',
                 active && !upcoming
-                  ? 'bg-slate-100 text-slate-900 font-medium'
+                  ? 'bg-(--color-llg-purple-50) text-(--color-llg-purple-800) font-medium'
                   : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
                 upcoming && 'cursor-not-allowed text-slate-400 hover:bg-transparent hover:text-slate-400'
               )}

@@ -16,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { LlgWordmark } from '@/components/brand/logo'
 
 const schema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -59,9 +60,12 @@ function LoginForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Sign in to LLG Platform</CardTitle>
+        <div className="mb-6 flex justify-center">
+          <LlgWordmark size="md" />
+        </div>
+        <CardTitle className="font-serif text-2xl">Welcome back</CardTitle>
         <CardDescription>
-          We'll email you a magic link. No password to remember.
+          We&apos;ll email you a magic link. No password to remember.
         </CardDescription>
       </CardHeader>
       <CardContent>

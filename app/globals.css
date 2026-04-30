@@ -3,13 +3,41 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* LLG brand palette — deep purple primary. Mirrors Tailwind's violet
+   * scale so existing slate-vs-violet contrasts stay legible.
+   *
+   *   llg-purple-950 — impersonation banner, dark surfaces        (#2e1065)
+   *   llg-purple-800 — primary buttons, logo background, accents  (#5b21b6)
+   *   llg-purple-700 — hover state on primary buttons             (#6d28d9)
+   *   llg-purple-100 — soft tint backgrounds                      (#ede9fe)
+   */
+  --color-llg-purple-950: #2e1065;
+  --color-llg-purple-900: #4c1d95;
+  --color-llg-purple-800: #5b21b6;
+  --color-llg-purple-700: #6d28d9;
+  --color-llg-purple-600: #7c3aed;
+  --color-llg-purple-500: #8b5cf6;
+  --color-llg-purple-100: #ede9fe;
+  --color-llg-purple-50:  #f5f3ff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-serif-display);
+
+  --color-llg-purple-950: var(--color-llg-purple-950);
+  --color-llg-purple-900: var(--color-llg-purple-900);
+  --color-llg-purple-800: var(--color-llg-purple-800);
+  --color-llg-purple-700: var(--color-llg-purple-700);
+  --color-llg-purple-600: var(--color-llg-purple-600);
+  --color-llg-purple-500: var(--color-llg-purple-500);
+  --color-llg-purple-100: var(--color-llg-purple-100);
+  --color-llg-purple-50:  var(--color-llg-purple-50);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +50,5 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
