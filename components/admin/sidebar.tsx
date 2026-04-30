@@ -38,11 +38,11 @@ export function AdminSidebar() {
 
   return (
     <aside className="hidden w-56 shrink-0 border-r border-border-default bg-neutral-primary-soft md:flex md:flex-col">
-      <div className="flex items-center gap-3 border-b border-border-default px-5 py-4">
+      <div className="flex items-center gap-3 border-b border-border-default bg-brand-softer px-5 py-4">
         <LlgMark className="h-9 w-9" />
         <div className="leading-tight">
-          <h1 className="text-sm text-heading">Legal Leads Group</h1>
-          <p className="text-[10px] uppercase tracking-wider text-body">Admin</p>
+          <h1 className="text-sm font-medium text-heading">Legal Leads Group</h1>
+          <p className="text-[10px] uppercase tracking-wider text-fg-brand-strong">Admin</p>
         </div>
       </div>
       <nav className="flex-1 space-y-1 px-3 py-4">
@@ -58,16 +58,23 @@ export function AdminSidebar() {
               href={upcoming ? '#' : item.href}
               aria-disabled={upcoming}
               className={cn(
-                'flex items-center justify-between rounded-md px-3 py-2 text-sm transition-colors',
+                'group flex items-center justify-between rounded-md px-3 py-2 text-sm transition-colors',
                 active && !upcoming
-                  ? 'bg-brand-softer text-fg-brand font-medium'
+                  ? 'bg-brand-softer text-fg-brand-strong font-medium'
                   : 'text-body hover:bg-neutral-secondary-soft hover:text-heading',
                 upcoming && 'cursor-not-allowed text-body-subtle hover:bg-transparent hover:text-body-subtle'
               )}
               onClick={(e) => upcoming && e.preventDefault()}
             >
               <span className="flex items-center gap-3">
-                <Icon className="h-4 w-4" />
+                <Icon
+                  className={cn(
+                    'h-4 w-4 transition-colors',
+                    active && !upcoming
+                      ? 'text-fg-brand'
+                      : 'text-body-subtle group-hover:text-fg-brand'
+                  )}
+                />
                 {item.label}
               </span>
               {item.phase && (
@@ -79,6 +86,9 @@ export function AdminSidebar() {
           )
         })}
       </nav>
+      <div className="border-t border-border-default px-5 py-3 text-[10px] uppercase tracking-wider text-body-subtle">
+        Rocket Fuel For Your Firm
+      </div>
     </aside>
   )
 }
