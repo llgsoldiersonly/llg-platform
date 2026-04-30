@@ -52,8 +52,8 @@ export default async function AdminUsersPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-8">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Staff users</h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <h1 className="text-2xl font-semibold text-heading">Staff users</h1>
+        <p className="mt-1 text-sm text-body">
           Manage who can access the admin side of the platform. Invitees receive a
           magic-link email from Supabase.
         </p>
@@ -65,7 +65,7 @@ export default async function AdminUsersPage() {
         </CardHeader>
         <CardContent className="p-0">
           <table className="w-full text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
+            <thead className="border-b border-border-default bg-neutral-secondary-soft text-xs uppercase tracking-wide text-body">
               <tr>
                 <th className="px-6 py-3 text-left font-medium">Name</th>
                 <th className="px-6 py-3 text-left font-medium">Role</th>
@@ -74,17 +74,17 @@ export default async function AdminUsersPage() {
                 <th className="px-6 py-3 text-left font-medium">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border-light">
               {profiles.map((p) => (
                 <tr key={p.id}>
-                  <td className="px-6 py-3 font-medium text-slate-900">{p.full_name ?? '—'}</td>
+                  <td className="px-6 py-3 font-medium text-heading">{p.full_name ?? '—'}</td>
                   <td className="px-6 py-3">
                     <Badge variant={p.role === 'super_admin' ? 'destructive' : 'secondary'}>
                       {p.role}
                     </Badge>
                   </td>
-                  <td className="px-6 py-3 text-slate-600">{p.department?.name ?? '—'}</td>
-                  <td className="px-6 py-3 text-slate-600">{p.title ?? '—'}</td>
+                  <td className="px-6 py-3 text-body">{p.department?.name ?? '—'}</td>
+                  <td className="px-6 py-3 text-body">{p.title ?? '—'}</td>
                   <td className="px-6 py-3">
                     {p.is_active ? (
                       <Badge variant="success">Active</Badge>
@@ -96,7 +96,7 @@ export default async function AdminUsersPage() {
               ))}
               {profiles.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-sm text-slate-600">
+                  <td colSpan={5} className="px-6 py-8 text-center text-sm text-body">
                     No staff users yet.
                   </td>
                 </tr>

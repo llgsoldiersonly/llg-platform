@@ -22,7 +22,7 @@ export async function ClientHeader() {
   const initial = (firmName[0] ?? 'C').toUpperCase()
 
   return (
-    <header className="border-b border-slate-200 bg-white">
+    <header className="border-b border-border-default bg-neutral-primary-soft">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4">
         <Link href="/overview" className="shrink-0">
           <LlgWordmark size="md" />
@@ -34,14 +34,14 @@ export async function ClientHeader() {
           {ctx?.client.is_demo_only && <Badge variant="warning">DEMO</Badge>}
           <Link
             href="/profile"
-            className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-1.5 transition-colors hover:bg-slate-50"
+            className="flex items-center gap-2 rounded-md border border-border-default px-3 py-1.5 transition-colors hover:bg-neutral-secondary-soft"
           >
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-fg-brand">
               {initial}
             </span>
             <span className="hidden text-left leading-tight md:block">
-              <span className="block text-sm font-medium text-slate-900">{firmName}</span>
-              <span className="block text-[10px] uppercase tracking-wide text-slate-600">
+              <span className="block text-sm font-medium text-heading">{firmName}</span>
+              <span className="block text-[10px] uppercase tracking-wide text-body">
                 {(user?.app_metadata?.role as string) ?? 'client'}
               </span>
             </span>
@@ -55,7 +55,7 @@ export async function ClientHeader() {
       </div>
 
       {ctx && ctx.locations.length > 1 && (
-        <div className="border-t border-slate-100 bg-slate-50/60 px-6 py-2">
+        <div className="border-t border-border-light bg-neutral-secondary-soft/60 px-6 py-2">
           <div className="mx-auto flex max-w-7xl items-center justify-end">
             <LocationSwitcher locations={ctx.locations} />
           </div>

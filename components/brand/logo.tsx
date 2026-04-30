@@ -44,11 +44,11 @@ export function LlgWordmark({
     <div className={cn('flex items-center gap-3', className)}>
       <LlgMark className={dims.mark} />
       <div className="leading-tight">
-        <h1 className={cn('text-slate-900', dims.heading)}>
+        <h1 className={cn('text-heading', dims.heading)}>
           Legal Leads Group
         </h1>
         {showTagline && (
-          <p className={cn('uppercase tracking-[0.18em] text-slate-600 mt-0.5', dims.tag)}>
+          <p className={cn('uppercase tracking-[0.18em] text-body mt-0.5', dims.tag)}>
             Rocket Fuel For Your Firm
           </p>
         )}

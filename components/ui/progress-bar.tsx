@@ -25,13 +25,13 @@ export function ProgressBar({ value, max, variant = 'auto', className }: Props) 
       : variant
 
   const fillStyles = {
-    green: 'bg-emerald-500',
+    green: 'bg-success-soft0',
     yellow: 'bg-amber-400',
-    gray: 'bg-slate-200',
+    gray: 'bg-neutral-quaternary',
   }[band]
 
   return (
-    <div className={cn('h-1.5 w-full overflow-hidden rounded-full bg-slate-100', className)}>
+    <div className={cn('h-1.5 w-full overflow-hidden rounded-full bg-neutral-tertiary-soft', className)}>
       <div
         className={cn('h-full rounded-full transition-all', fillStyles)}
         style={{ width: `${pct}%` }}

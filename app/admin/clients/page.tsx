@@ -44,7 +44,7 @@ export default async function ClientsListPage() {
     return (
       <div className="p-8">
         <Card>
-          <CardContent className="p-6 text-sm text-red-600">
+          <CardContent className="p-6 text-sm text-fg-danger">
             Failed to load clients: {error.message}
           </CardContent>
         </Card>
@@ -55,8 +55,8 @@ export default async function ClientsListPage() {
   return (
     <div className="mx-auto max-w-6xl p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900">Clients</h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <h1 className="text-2xl font-semibold text-heading">Clients</h1>
+        <p className="mt-1 text-sm text-body">
           {clients?.length ?? 0} total — click a row to drill in
         </p>
       </div>
@@ -64,7 +64,7 @@ export default async function ClientsListPage() {
       <Card>
         <CardContent className="p-0">
           <table className="w-full text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
+            <thead className="border-b border-border-default bg-neutral-secondary-soft text-xs uppercase tracking-wide text-body">
               <tr>
                 <th className="px-6 py-3 text-left font-medium">Firm</th>
                 <th className="px-6 py-3 text-left font-medium">Vertical</th>
@@ -74,24 +74,24 @@ export default async function ClientsListPage() {
                 <th className="px-6 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border-light">
               {clients?.map((c) => (
-                <tr key={c.id} className="hover:bg-slate-50">
+                <tr key={c.id} className="hover:bg-neutral-secondary-soft">
                   <td className="px-6 py-4">
                     <Link href={`/admin/clients/${c.id}`} className="block">
-                      <div className="flex items-center gap-2 font-medium text-slate-900">
+                      <div className="flex items-center gap-2 font-medium text-heading">
                         {c.firm_name}
                         {c.is_demo_only && <Badge variant="warning">DEMO</Badge>}
                       </div>
                       {c.primary_contact_name && (
-                        <p className="text-xs text-slate-600">{c.primary_contact_name}</p>
+                        <p className="text-xs text-body">{c.primary_contact_name}</p>
                       )}
                       {c.primary_domain && (
-                        <p className="text-xs text-slate-500">{c.primary_domain}</p>
+                        <p className="text-xs text-body-subtle">{c.primary_domain}</p>
                       )}
                     </Link>
                   </td>
-                  <td className="px-6 py-4 text-slate-600">{c.vertical ?? '—'}</td>
+                  <td className="px-6 py-4 text-body">{c.vertical ?? '—'}</td>
                   <td className="px-6 py-4">
                     <div className="flex flex-wrap gap-1">
                       {c.subscriptions.map((s) => (
@@ -101,7 +101,7 @@ export default async function ClientsListPage() {
                       ))}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-slate-600">{c.locations.length}</td>
+                  <td className="px-6 py-4 text-body">{c.locations.length}</td>
                   <td className="px-6 py-4">
                     <Badge variant={statusVariant[c.status] ?? 'secondary'}>
                       {c.status}
@@ -110,7 +110,7 @@ export default async function ClientsListPage() {
                   <td className="px-6 py-4 text-right">
                     <Link
                       href={`/admin/clients/${c.id}`}
-                      className="text-slate-500 hover:text-slate-600"
+                      className="text-body-subtle hover:text-body"
                       aria-label={`View ${c.firm_name}`}
                     >
                       <ChevronRight className="h-4 w-4" />

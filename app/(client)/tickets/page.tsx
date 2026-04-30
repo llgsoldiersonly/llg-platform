@@ -56,8 +56,8 @@ export default async function ClientTicketsPage() {
     <div className="mx-auto max-w-4xl space-y-6 p-8">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Tickets</h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <h1 className="text-2xl font-semibold text-heading">Tickets</h1>
+          <p className="mt-1 text-sm text-body">
             Submit a bug if something's broken, or a request for new work
           </p>
         </div>
@@ -77,33 +77,33 @@ export default async function ClientTicketsPage() {
           {quota.tier ? (
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-slate-600">Plan</span>
+                <span className="text-body">Plan</span>
                 <Badge variant="secondary">{quota.tier}</Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-600">Requests used this week</span>
-                <span className="text-slate-900">
+                <span className="text-body">Requests used this week</span>
+                <span className="text-heading">
                   {quota.used_this_week}
                   {quota.cap !== 'unlimited' && (
-                    <span className="text-slate-600"> / {quota.total_allowance}</span>
+                    <span className="text-body"> / {quota.total_allowance}</span>
                   )}
                 </span>
               </div>
               {quota.cap === 'unlimited' ? (
                 <Badge variant="success">Unlimited</Badge>
               ) : quota.remaining === 0 ? (
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-body">
                   No request slots left this week. Bug reports are always allowed.
                   Your next request slot opens Monday.
                 </p>
               ) : (
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-body">
                   {quota.remaining as number} request slot{quota.remaining === 1 ? '' : 's'} remaining this week.
                 </p>
               )}
             </div>
           ) : (
-            <p className="text-sm text-slate-600">No active subscription.</p>
+            <p className="text-sm text-body">No active subscription.</p>
           )}
         </CardContent>
       </Card>
@@ -114,9 +114,9 @@ export default async function ClientTicketsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {open.length === 0 ? (
-            <p className="p-6 text-sm text-slate-600">No open tickets. Nice.</p>
+            <p className="p-6 text-sm text-body">No open tickets. Nice.</p>
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-border-light">
               {open.map((t) => (
                 <TicketLi key={t.id} t={t} />
               ))}
@@ -131,7 +131,7 @@ export default async function ClientTicketsPage() {
             <CardTitle className="text-base">Closed ({closed.length})</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-border-light">
               {closed.slice(0, 10).map((t) => (
                 <TicketLi key={t.id} t={t} />
               ))}
@@ -148,18 +148,18 @@ function TicketLi({ t }: { t: TicketRow }) {
     <li>
       <Link
         href={`/tickets/${t.id}`}
-        className="flex items-center justify-between gap-4 px-6 py-4 hover:bg-slate-50"
+        className="flex items-center justify-between gap-4 px-6 py-4 hover:bg-neutral-secondary-soft"
       >
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-slate-900">#{t.ticket_number}</span>
-            <span className="text-slate-700">{t.subject}</span>
+            <span className="font-medium text-heading">#{t.ticket_number}</span>
+            <span className="text-body">{t.subject}</span>
             <Badge variant={t.type === 'bug' ? 'destructive' : 'info'}>
               {formatTicketType(t.type)}
             </Badge>
             {t.priority === 'urgent' && <Badge variant="destructive">Urgent</Badge>}
           </div>
-          <p className="mt-1 text-xs text-slate-600">
+          <p className="mt-1 text-xs text-body">
             {formatTicketCategory(t.category)} · opened {new Date(t.created_at).toLocaleDateString()}
             {t.sla_deadline_at && (
               <> · SLA {new Date(t.sla_deadline_at).toLocaleString()}</>
@@ -169,7 +169,7 @@ function TicketLi({ t }: { t: TicketRow }) {
         <Badge variant={statusVariant[t.status] ?? 'secondary'}>
           {formatTicketStatus(t.status)}
         </Badge>
-        <ChevronRight className="h-4 w-4 text-slate-500" />
+        <ChevronRight className="h-4 w-4 text-body-subtle" />
       </Link>
     </li>
   )

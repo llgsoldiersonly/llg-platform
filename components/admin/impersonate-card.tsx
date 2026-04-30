@@ -21,12 +21,12 @@ export function ImpersonateCard({
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Eye className="h-4 w-4 text-slate-600" />
+          <Eye className="h-4 w-4 text-body" />
           View as client
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="mb-3 text-sm text-slate-600">
+        <p className="mb-3 text-sm text-body">
           Opens the client portal pinned to <strong>{clientName}</strong>. Useful for
           replicating a client&apos;s view of their own dashboard. Your actions while in
           this mode are recorded.
@@ -45,7 +45,7 @@ export function ImpersonateCard({
             />
           </div>
           {errorMessage && (
-            <p className="text-xs text-red-600">{errorMessage}</p>
+            <p className="text-xs text-fg-danger">{errorMessage}</p>
           )}
           <Button type="submit" variant="default" className="w-full">
             Start viewing as {clientName}

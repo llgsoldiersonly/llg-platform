@@ -85,7 +85,7 @@ export default async function AdminTicketDetailPage({
     <div className="mx-auto max-w-4xl space-y-6 p-8">
       <Link
         href="/admin/tickets"
-        className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900"
+        className="inline-flex items-center gap-1 text-sm text-body hover:text-heading"
       >
         <ChevronLeft className="h-4 w-4" />
         Back to all tickets
@@ -95,7 +95,7 @@ export default async function AdminTicketDetailPage({
         <CardHeader>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs uppercase text-slate-600">
+              <p className="text-xs uppercase text-body">
                 Ticket #{ticket.ticket_number} · {ticket.client?.firm_name ?? '—'}
               </p>
               <CardTitle className="mt-1 text-xl">{ticket.subject}</CardTitle>
@@ -113,7 +113,7 @@ export default async function AdminTicketDetailPage({
                 {ticket.escalated_at && <Badge variant="destructive">Escalated</Badge>}
               </div>
               {ticket.sla_deadline_at && ticket.status !== 'closed' && (
-                <p className="mt-2 text-xs text-slate-600">
+                <p className="mt-2 text-xs text-body">
                   SLA: {new Date(ticket.sla_deadline_at).toLocaleString()}
                 </p>
               )}
@@ -141,15 +141,15 @@ export default async function AdminTicketDetailPage({
               key={m.id}
               className={
                 m.is_internal_note
-                  ? 'rounded-md border border-amber-200 bg-amber-50 p-4'
-                  : 'rounded-md border border-slate-100 p-4'
+                  ? 'rounded-md border border-border-warning-subtle bg-warning-soft p-4'
+                  : 'rounded-md border border-border-light p-4'
               }
             >
-              <p className="mb-1 text-xs text-slate-600">
+              <p className="mb-1 text-xs text-body">
                 {new Date(m.created_at).toLocaleString()}
                 {m.is_internal_note && ' · INTERNAL NOTE (clients cannot see)'}
               </p>
-              <p className="whitespace-pre-wrap text-sm text-slate-900">{m.body}</p>
+              <p className="whitespace-pre-wrap text-sm text-heading">{m.body}</p>
             </div>
           ))}
         </CardContent>

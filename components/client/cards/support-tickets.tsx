@@ -25,19 +25,19 @@ export function SupportTicketsCard({ tickets }: { tickets: TicketSummary[] }) {
         </Link>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="grid grid-cols-2 gap-2 border-b border-slate-100 pb-3 text-center">
+        <div className="grid grid-cols-2 gap-2 border-b border-border-light pb-3 text-center">
           <div>
-            <div className="text-2xl font-semibold text-slate-900">{open.length}</div>
-            <div className="text-xs uppercase tracking-wider text-slate-600">Open</div>
+            <div className="text-2xl font-semibold text-heading">{open.length}</div>
+            <div className="text-xs uppercase tracking-wider text-body">Open</div>
           </div>
           <div>
-            <div className="text-2xl font-semibold text-slate-900">{closed.length}</div>
-            <div className="text-xs uppercase tracking-wider text-slate-600">Closed</div>
+            <div className="text-2xl font-semibold text-heading">{closed.length}</div>
+            <div className="text-xs uppercase tracking-wider text-body">Closed</div>
           </div>
         </div>
 
         {tickets.length === 0 ? (
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-body">
             No tickets yet. Open one any time something needs the team&apos;s attention.
           </p>
         ) : (
@@ -46,10 +46,10 @@ export function SupportTicketsCard({ tickets }: { tickets: TicketSummary[] }) {
               <li key={t.id}>
                 <Link
                   href={`/tickets/${t.id}`}
-                  className="group flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-3 py-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-border-brand-subtle hover:bg-brand-softer hover:shadow-md"
+                  className="group flex items-center justify-between gap-3 rounded-lg border border-border-light px-3 py-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-border-brand-subtle hover:bg-brand-softer hover:shadow-md"
                 >
-                  <span className="flex-1 truncate text-sm text-slate-800 group-hover:text-fg-brand">
-                    <span className="text-slate-500">#{t.ticket_number}</span>{' '}
+                  <span className="flex-1 truncate text-sm text-heading group-hover:text-fg-brand">
+                    <span className="text-body-subtle">#{t.ticket_number}</span>{' '}
                     {t.subject}
                   </span>
                   <TicketStatusBadge status={t.status} />

@@ -37,12 +37,12 @@ export function AdminSidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="hidden w-56 shrink-0 border-r border-slate-200 bg-white md:flex md:flex-col">
-      <div className="flex items-center gap-3 border-b border-slate-200 px-5 py-4">
+    <aside className="hidden w-56 shrink-0 border-r border-border-default bg-neutral-primary-soft md:flex md:flex-col">
+      <div className="flex items-center gap-3 border-b border-border-default px-5 py-4">
         <LlgMark className="h-9 w-9" />
         <div className="leading-tight">
-          <h1 className="text-sm text-slate-900">Legal Leads Group</h1>
-          <p className="text-[10px] uppercase tracking-wider text-slate-600">Admin</p>
+          <h1 className="text-sm text-heading">Legal Leads Group</h1>
+          <p className="text-[10px] uppercase tracking-wider text-body">Admin</p>
         </div>
       </div>
       <nav className="flex-1 space-y-1 px-3 py-4">
@@ -61,8 +61,8 @@ export function AdminSidebar() {
                 'flex items-center justify-between rounded-md px-3 py-2 text-sm transition-colors',
                 active && !upcoming
                   ? 'bg-brand-softer text-fg-brand font-medium'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
-                upcoming && 'cursor-not-allowed text-slate-500 hover:bg-transparent hover:text-slate-500'
+                  : 'text-body hover:bg-neutral-secondary-soft hover:text-heading',
+                upcoming && 'cursor-not-allowed text-body-subtle hover:bg-transparent hover:text-body-subtle'
               )}
               onClick={(e) => upcoming && e.preventDefault()}
             >
@@ -71,7 +71,7 @@ export function AdminSidebar() {
                 {item.label}
               </span>
               {item.phase && (
-                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono text-slate-600">
+                <span className="rounded bg-neutral-tertiary-soft px-1.5 py-0.5 text-[10px] font-mono text-body">
                   {item.phase}
                 </span>
               )}

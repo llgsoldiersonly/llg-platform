@@ -28,10 +28,10 @@ const INTEGRATIONS: Array<{
 ]
 
 const CELL_STYLES: Record<Health, string> = {
-  green:  'bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200',
-  yellow: 'bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200',
-  red:    'bg-red-50 text-red-800 ring-1 ring-inset ring-red-200',
-  never:  'bg-slate-50 text-slate-600 ring-1 ring-inset ring-slate-200',
+  green:  'bg-success-soft text-fg-success-strong ring-1 ring-inset ring-border-success-subtle',
+  yellow: 'bg-warning-soft text-fg-warning ring-1 ring-inset ring-border-warning-subtle',
+  red:    'bg-danger-soft text-fg-danger-strong ring-1 ring-inset ring-border-danger-subtle',
+  never:  'bg-neutral-secondary-soft text-body ring-1 ring-inset ring-border-default',
 }
 
 export default async function SystemHealthPage() {
@@ -76,8 +76,8 @@ export default async function SystemHealthPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-8">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">System health</h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <h1 className="text-2xl font-semibold text-heading">System health</h1>
+        <p className="mt-1 text-sm text-body">
           Last successful sync per client × integration. Green is fresh; yellow is overdue; red is stale or never synced.
         </p>
       </div>
@@ -96,26 +96,26 @@ export default async function SystemHealthPage() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50">
+              <thead className="border-b border-border-default bg-neutral-secondary-soft">
                 <tr>
-                  <th className="sticky left-0 z-10 bg-slate-50 px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600">
+                  <th className="sticky left-0 z-10 bg-neutral-secondary-soft px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-body">
                     Client
                   </th>
                   {INTEGRATIONS.map((it) => (
                     <th
                       key={it.source}
-                      className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-600"
+                      className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wide text-body"
                     >
                       <div>{it.label}</div>
-                      <div className="text-[10px] font-normal normal-case text-slate-500">{it.cadence}</div>
+                      <div className="text-[10px] font-normal normal-case text-body-subtle">{it.cadence}</div>
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-border-light">
                 {(clients ?? []).map((c) => (
                   <tr key={c.id}>
-                    <td className="sticky left-0 z-10 whitespace-nowrap bg-white px-6 py-3 font-medium text-slate-900">
+                    <td className="sticky left-0 z-10 whitespace-nowrap bg-neutral-primary-soft px-6 py-3 font-medium text-heading">
                       <Link href={`/admin/clients/${c.id}`} className="hover:underline">
                         {c.firm_name}
                       </Link>
@@ -144,7 +144,7 @@ export default async function SystemHealthPage() {
                 ))}
                 {(clients ?? []).length === 0 && (
                   <tr>
-                    <td colSpan={INTEGRATIONS.length + 1} className="px-6 py-8 text-center text-sm text-slate-600">
+                    <td colSpan={INTEGRATIONS.length + 1} className="px-6 py-8 text-center text-sm text-body">
                       No active clients to display.
                     </td>
                   </tr>
@@ -159,22 +159,22 @@ export default async function SystemHealthPage() {
         <CardHeader>
           <CardTitle className="text-base">How thresholds work</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-slate-600">
+        <CardContent className="text-sm text-body">
           <ul className="space-y-1">
             <li>
-              <span className="inline-flex w-20 text-xs font-medium uppercase text-emerald-700">Green</span>
+              <span className="inline-flex w-20 text-xs font-medium uppercase text-fg-success-strong">Green</span>
               within one expected interval (24h daily / 8d weekly / 35d monthly)
             </li>
             <li>
-              <span className="inline-flex w-20 text-xs font-medium uppercase text-amber-700">Yellow</span>
+              <span className="inline-flex w-20 text-xs font-medium uppercase text-fg-warning">Yellow</span>
               one to two intervals stale
             </li>
             <li>
-              <span className="inline-flex w-20 text-xs font-medium uppercase text-red-700">Red</span>
+              <span className="inline-flex w-20 text-xs font-medium uppercase text-fg-danger-strong">Red</span>
               two or more intervals stale
             </li>
             <li>
-              <span className="inline-flex w-20 text-xs font-medium uppercase text-slate-600">No data</span>
+              <span className="inline-flex w-20 text-xs font-medium uppercase text-body">No data</span>
               no successful sync in the last 90 days (often: credentials not yet configured)
             </li>
           </ul>
@@ -196,14 +196,14 @@ function HealthCount({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-slate-600">{label}</CardTitle>
+        <CardTitle className="text-sm font-medium text-body">{label}</CardTitle>
       </CardHeader>
       <CardContent>
         <p className={cn('text-3xl font-semibold', {
-          'text-emerald-700': variant === 'green',
-          'text-amber-700':   variant === 'yellow',
-          'text-red-700':     variant === 'red',
-          'text-slate-600':   variant === 'never',
+          'text-fg-success-strong': variant === 'green',
+          'text-fg-warning':   variant === 'yellow',
+          'text-fg-danger-strong':     variant === 'red',
+          'text-body':   variant === 'never',
         })}>
           {count}
         </p>

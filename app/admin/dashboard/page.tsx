@@ -38,8 +38,8 @@ export default async function AdminDashboardPage() {
     <div className="mx-auto max-w-6xl space-y-6 p-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Dashboard</h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <h1 className="text-2xl font-semibold text-heading">Dashboard</h1>
+          <p className="mt-1 text-sm text-body">
             Real-time counts across all clients
           </p>
         </div>
@@ -52,12 +52,12 @@ export default async function AdminDashboardPage() {
         {cards.map((card) => (
           <Card key={card.label}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">
+              <CardTitle className="text-sm font-medium text-body">
                 {card.label}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-semibold text-slate-900">{card.value}</p>
+              <p className="text-3xl font-semibold text-heading">{card.value}</p>
             </CardContent>
           </Card>
         ))}

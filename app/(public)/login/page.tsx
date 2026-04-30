@@ -70,7 +70,7 @@ function LoginForm() {
       </CardHeader>
       <CardContent>
         {sent ? (
-          <div className="rounded-md bg-emerald-50 p-4 text-sm text-emerald-900">
+          <div className="rounded-md bg-success-soft p-4 text-sm text-fg-success-strong">
             Check your email for the sign-in link. You can close this tab.
           </div>
         ) : (
@@ -85,11 +85,11 @@ function LoginForm() {
                 {...register('email')}
               />
               {errors.email && (
-                <p className="text-sm text-red-600">{errors.email.message}</p>
+                <p className="text-sm text-fg-danger">{errors.email.message}</p>
               )}
             </div>
             {serverError && (
-              <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+              <div className="rounded-md bg-danger-soft p-3 text-sm text-fg-danger-strong">
                 {serverError}
               </div>
             )}
@@ -105,7 +105,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-neutral-secondary-soft px-4">
       <Suspense fallback={null}>
         <LoginForm />
       </Suspense>

@@ -25,7 +25,7 @@ export function ClientTabNav({ clientId }: { clientId: string }) {
   ]
 
   return (
-    <nav className="-mb-px flex gap-6 overflow-x-auto border-b border-slate-200">
+    <nav className="-mb-px flex gap-6 overflow-x-auto border-b border-border-default">
       {tabs.map((tab) => {
         const active = pathname === tab.href
         const upcoming = !!tab.phase
@@ -38,15 +38,15 @@ export function ClientTabNav({ clientId }: { clientId: string }) {
             className={cn(
               'whitespace-nowrap border-b-2 pb-3 pt-1 text-sm transition-colors',
               active
-                ? 'border-slate-900 font-medium text-slate-900'
-                : 'border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-900',
-              upcoming && 'cursor-not-allowed text-slate-500 hover:border-transparent hover:text-slate-500'
+                ? 'border-heading font-medium text-heading'
+                : 'border-transparent text-body hover:border-border-default-strong hover:text-heading',
+              upcoming && 'cursor-not-allowed text-body-subtle hover:border-transparent hover:text-body-subtle'
             )}
           >
             <span className="flex items-center gap-1.5">
               {tab.label}
               {tab.phase && (
-                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono text-slate-600">
+                <span className="rounded bg-neutral-tertiary-soft px-1.5 py-0.5 text-[10px] font-mono text-body">
                   {tab.phase}
                 </span>
               )}

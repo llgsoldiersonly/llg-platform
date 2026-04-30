@@ -27,14 +27,14 @@ export function ClientReplyBox({ ticketId }: { ticketId: string }) {
   }
 
   return (
-    <div className="space-y-3 rounded-md border border-slate-200 p-4">
+    <div className="space-y-3 rounded-md border border-border-default p-4">
       <Textarea
         rows={4}
         placeholder="Add a reply…"
         value={body}
         onChange={(e) => setBody(e.target.value)}
       />
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-fg-danger">{error}</p>}
       <div className="flex justify-end">
         <Button onClick={onSubmit} disabled={isPending || !body.trim()}>
           {isPending ? 'Sending…' : 'Reply'}

@@ -22,17 +22,17 @@ export default async function ClientDetailLayout({
   if (!client) notFound()
 
   return (
-    <div className="border-b border-slate-200 bg-white">
+    <div className="border-b border-border-default bg-neutral-primary-soft">
       <div className="mx-auto max-w-6xl px-8 py-6">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-600">Client</p>
+            <p className="text-xs uppercase tracking-wide text-body">Client</p>
             <div className="mt-1 flex items-center gap-2">
-              <h1 className="text-2xl font-semibold text-slate-900">{client.firm_name}</h1>
+              <h1 className="text-2xl font-semibold text-heading">{client.firm_name}</h1>
               {client.is_demo_only && <Badge variant="warning">DEMO</Badge>}
               <Badge variant="secondary">{client.status}</Badge>
             </div>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm text-body">
               {[client.vertical, client.primary_contact_name, client.primary_domain]
                 .filter(Boolean)
                 .join(' · ')}
@@ -40,7 +40,7 @@ export default async function ClientDetailLayout({
           </div>
           <Link
             href="/admin/clients"
-            className="text-xs text-slate-600 hover:text-slate-700"
+            className="text-xs text-body hover:text-body"
           >
             ← back to all clients
           </Link>
@@ -49,7 +49,7 @@ export default async function ClientDetailLayout({
           <ClientTabNav clientId={id} />
         </div>
       </div>
-      <div className="bg-slate-50">{children}</div>
+      <div className="bg-neutral-secondary-soft">{children}</div>
     </div>
   )
 }

@@ -70,8 +70,8 @@ export default async function AdminTicketsPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-8">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Tickets</h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <h1 className="text-2xl font-semibold text-heading">Tickets</h1>
+        <p className="mt-1 text-sm text-body">
           {open.length} open · {closed.length} closed (last 100)
         </p>
       </div>
@@ -82,32 +82,32 @@ export default async function AdminTicketsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {open.length === 0 ? (
-            <p className="p-6 text-sm text-slate-600">No open tickets.</p>
+            <p className="p-6 text-sm text-body">No open tickets.</p>
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-border-light">
               {open.map((t) => {
                 const sla = slaState(t.sla_deadline_at)
                 return (
                   <li key={t.id}>
                     <Link
                       href={`/admin/tickets/${t.id}`}
-                      className="grid grid-cols-12 items-center gap-3 px-6 py-4 hover:bg-slate-50"
+                      className="grid grid-cols-12 items-center gap-3 px-6 py-4 hover:bg-neutral-secondary-soft"
                     >
                       <div className="col-span-7">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-slate-900">#{t.ticket_number}</span>
+                          <span className="font-medium text-heading">#{t.ticket_number}</span>
                           <Badge variant={t.type === 'bug' ? 'destructive' : 'info'}>
                             {formatTicketType(t.type)}
                           </Badge>
-                          <span className="text-slate-700">{t.subject}</span>
+                          <span className="text-body">{t.subject}</span>
                         </div>
-                        <p className="mt-1 text-xs text-slate-600">
+                        <p className="mt-1 text-xs text-body">
                           {t.client?.firm_name ?? '—'} · {formatTicketCategory(t.category)}
                           {t.department && <> → {t.department.name}</>}
                           {t.assigned_user?.full_name && <> → {t.assigned_user.full_name}</>}
                         </p>
                       </div>
-                      <div className="col-span-2 text-xs text-slate-600">
+                      <div className="col-span-2 text-xs text-body">
                         {new Date(t.created_at).toLocaleDateString()}
                       </div>
                       <div className="col-span-2">
@@ -117,7 +117,7 @@ export default async function AdminTicketsPage() {
                         <Badge variant={statusVariant[t.status] ?? 'secondary'}>
                           {formatTicketStatus(t.status)}
                         </Badge>
-                        <ChevronRight className="h-4 w-4 text-slate-500" />
+                        <ChevronRight className="h-4 w-4 text-body-subtle" />
                       </div>
                     </Link>
                   </li>
@@ -134,17 +134,17 @@ export default async function AdminTicketsPage() {
             <CardTitle className="text-base">Recently closed</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-border-light">
               {closed.slice(0, 20).map((t) => (
                 <li key={t.id}>
                   <Link
                     href={`/admin/tickets/${t.id}`}
-                    className="flex items-center justify-between px-6 py-3 text-sm hover:bg-slate-50"
+                    className="flex items-center justify-between px-6 py-3 text-sm hover:bg-neutral-secondary-soft"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-slate-600">#{t.ticket_number}</span>
-                      <span className="text-slate-700">{t.subject}</span>
-                      <span className="text-xs text-slate-500">{t.client?.firm_name ?? '—'}</span>
+                      <span className="text-body">#{t.ticket_number}</span>
+                      <span className="text-body">{t.subject}</span>
+                      <span className="text-xs text-body-subtle">{t.client?.firm_name ?? '—'}</span>
                     </div>
                     <Badge variant="secondary">{t.status}</Badge>
                   </Link>

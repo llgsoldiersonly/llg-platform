@@ -72,8 +72,8 @@ export default async function PlanPage({
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-8">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Your plan</h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <h1 className="text-2xl font-semibold text-heading">Your plan</h1>
+        <p className="mt-1 text-sm text-body">
           {ctx.selectedSubscriptions.length} active subscription
           {ctx.selectedSubscriptions.length === 1 ? '' : 's'}
           {ctx.selectedLocation && (
@@ -91,7 +91,7 @@ export default async function PlanPage({
             {ctx.selectedSubscriptions.map((s) => (
               <li key={s.id} className="flex items-center gap-2">
                 <Badge variant="info">{s.package?.code ?? '—'}</Badge>
-                <span className="text-sm text-slate-700">{s.package?.display_name ?? '—'}</span>
+                <span className="text-sm text-body">{s.package?.display_name ?? '—'}</span>
               </li>
             ))}
           </ul>
@@ -100,7 +100,7 @@ export default async function PlanPage({
 
       {orderedModules.length === 0 && customDeliverables.length === 0 && (
         <Card>
-          <CardContent className="p-6 text-sm text-slate-600">
+          <CardContent className="p-6 text-sm text-body">
             No modules enabled for your current selection. If you expect to see something here, contact your account manager.
           </CardContent>
         </Card>
@@ -126,9 +126,9 @@ export default async function PlanPage({
           <CardContent>
             <ul className="space-y-2">
               {customDeliverables.map((d) => (
-                <li key={d.id} className="flex items-center justify-between rounded-md border border-slate-100 p-3">
+                <li key={d.id} className="flex items-center justify-between rounded-md border border-border-light p-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-slate-900">{d.title}</span>
+                    <span className="text-sm font-medium text-heading">{d.title}</span>
                     <Badge variant={d.is_incentive ? 'success' : 'info'}>
                       {d.is_incentive ? 'Free Bonus' : 'Custom'}
                     </Badge>

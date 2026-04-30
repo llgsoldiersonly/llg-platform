@@ -18,12 +18,12 @@ export default function AdminError({
 
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-4 p-12 text-center">
-      <AlertTriangle className="h-10 w-10 text-amber-500" />
-      <h1 className="text-xl font-semibold text-slate-900">Something went wrong</h1>
-      <p className="text-sm text-slate-600">
+      <AlertTriangle className="h-10 w-10 text-fg-warning-subtle" />
+      <h1 className="text-xl font-semibold text-heading">Something went wrong</h1>
+      <p className="text-sm text-body">
         This page failed to load. Our team has been notified.
         {error.digest && (
-          <span className="mt-2 block font-mono text-[10px] text-slate-500">
+          <span className="mt-2 block font-mono text-[10px] text-body-subtle">
             ref: {error.digest}
           </span>
         )}

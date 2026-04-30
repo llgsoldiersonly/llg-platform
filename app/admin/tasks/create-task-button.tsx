@@ -143,7 +143,7 @@ export function CreateTaskButton({
           </div>
 
           {error && (
-            <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p>
+            <p className="rounded-md bg-danger-soft p-3 text-sm text-fg-danger-strong">{error}</p>
           )}
 
           <DialogFooter>

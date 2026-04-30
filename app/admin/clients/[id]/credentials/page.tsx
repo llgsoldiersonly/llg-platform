@@ -27,7 +27,7 @@ export default async function ClientCredentialsPage({
           <CardTitle className="text-base">API & integration credentials</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="mb-6 text-sm text-slate-600">
+          <p className="mb-6 text-sm text-body">
             All credentials are stored encrypted at rest. Sensitive fields (WordPress app password, etc.) are never sent to the browser after save — fields rendering blank below mean a value exists but is masked.
           </p>
           <CredentialsForm clientId={id} initial={credentials ?? {}} />

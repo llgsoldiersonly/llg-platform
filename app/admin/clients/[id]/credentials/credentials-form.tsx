@@ -72,7 +72,7 @@ export function CredentialsForm({
             <option value="tag">Tag slug</option>
             <option value="path">URL path prefix (/es/, etc.)</option>
           </Select>
-          <p className="text-xs text-slate-600">
+          <p className="text-xs text-body">
             How EN vs ES posts get identified for BLOG_EN / BLOG_ES auto-tracking.
           </p>
         </div>
@@ -119,14 +119,14 @@ export function CredentialsForm({
         <Field label="Search Console resource ID" name="gsc_resource_id" defaultValue={initial.gsc_resource_id ?? ''} />
       </Section>
 
-      <div className="flex items-center justify-between border-t border-slate-200 pt-6">
+      <div className="flex items-center justify-between border-t border-border-default pt-6">
         <div>
           {message && (
             <p
               className={
                 message.kind === 'success'
-                  ? 'text-sm text-emerald-700'
-                  : 'text-sm text-red-700'
+                  ? 'text-sm text-fg-success-strong'
+                  : 'text-sm text-fg-danger-strong'
               }
             >
               {message.text}
@@ -144,7 +144,7 @@ export function CredentialsForm({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <fieldset className="space-y-4">
-      <legend className="text-sm font-semibold text-slate-900">{title}</legend>
+      <legend className="text-sm font-semibold text-heading">{title}</legend>
       <div className="grid gap-4 md:grid-cols-2">{children}</div>
     </fieldset>
   )
@@ -167,7 +167,7 @@ function Field({
     <div className="space-y-2">
       <Label htmlFor={name}>{label}</Label>
       <Input id={name} name={name} defaultValue={defaultValue} placeholder={placeholder} />
-      {help && <p className="text-xs text-slate-600">{help}</p>}
+      {help && <p className="text-xs text-body">{help}</p>}
     </div>
   )
 }

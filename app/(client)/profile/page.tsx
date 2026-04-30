@@ -10,7 +10,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-8">
-      <h1 className="text-2xl font-semibold text-slate-900">Profile</h1>
+      <h1 className="text-2xl font-semibold text-heading">Profile</h1>
 
       <Card>
         <CardHeader>
@@ -18,18 +18,18 @@ export default async function ProfilePage() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <div>
-            <p className="text-xs uppercase text-slate-600">Email</p>
-            <p className="text-slate-900">{user?.email}</p>
+            <p className="text-xs uppercase text-body">Email</p>
+            <p className="text-heading">{user?.email}</p>
           </div>
           <div>
-            <p className="text-xs uppercase text-slate-600">Role</p>
+            <p className="text-xs uppercase text-body">Role</p>
             <Badge variant="secondary">
               {(user?.app_metadata?.role as string) ?? 'client_user'}
             </Badge>
           </div>
           <div>
-            <p className="text-xs uppercase text-slate-600">Last sign-in</p>
-            <p className="text-slate-900">
+            <p className="text-xs uppercase text-body">Last sign-in</p>
+            <p className="text-heading">
               {user?.last_sign_in_at
                 ? new Date(user.last_sign_in_at).toLocaleString()
                 : '—'}
@@ -42,7 +42,7 @@ export default async function ProfilePage() {
         <CardHeader>
           <CardTitle className="text-base">Coming soon</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-slate-600">
+        <CardContent className="text-sm text-body">
           Editable name, password reset, and notification preferences are coming in v1.1. For now, contact your account manager to update profile info.
         </CardContent>
       </Card>

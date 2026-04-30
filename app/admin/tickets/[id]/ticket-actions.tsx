@@ -169,7 +169,7 @@ export function AdminTicketActions({
             </>
           )}
           {error && (
-            <span className="text-sm text-red-600">{error}</span>
+            <span className="text-sm text-fg-danger">{error}</span>
           )}
         </CardContent>
       </Card>

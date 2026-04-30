@@ -18,7 +18,7 @@ export function LighthouseScoresCard({ scores }: { scores: LighthouseScores | nu
       </CardHeader>
       <CardContent>
         {!scores || (scores.performance == null && scores.seo == null) ? (
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-body">
             No lighthouse run yet. Scores update weekly once the site is connected.
           </p>
         ) : (
@@ -30,7 +30,7 @@ export function LighthouseScoresCard({ scores }: { scores: LighthouseScores | nu
               <RingChart value={scores.seo} label="SEO" />
             </div>
             {scores.captured_on && (
-              <p className="mt-4 text-center text-[10px] uppercase tracking-wider text-slate-500">
+              <p className="mt-4 text-center text-[10px] uppercase tracking-wider text-body-subtle">
                 As of {new Date(scores.captured_on).toLocaleDateString()}
               </p>
             )}

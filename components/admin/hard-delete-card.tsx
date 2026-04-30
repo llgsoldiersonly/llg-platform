@@ -29,16 +29,16 @@ export function HardDeleteCard({
   return (
     <Card className="border-red-200">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base text-red-700">
+        <CardTitle className="flex items-center gap-2 text-base text-fg-danger-strong">
           <Trash2 className="h-4 w-4" />
           Hard delete
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="mb-3 text-sm text-slate-600">
+        <p className="mb-3 text-sm text-body">
           Permanently removes <strong>{clientName}</strong> and all related data
           (subscriptions, deliverables, calls, posts, rankings, tickets, tasks,
-          credentials). A full snapshot is archived to <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">client_archives</code>{' '}
+          credentials). A full snapshot is archived to <code className="rounded bg-neutral-tertiary-soft px-1 py-0.5 text-xs">client_archives</code>{' '}
           before the cascade runs, so this is technically recoverable — but only
           from a DB-side restore.
         </p>
@@ -46,19 +46,19 @@ export function HardDeleteCard({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="inline-flex items-center gap-1 text-xs font-medium text-red-700 hover:text-red-800"
+          className="inline-flex items-center gap-1 text-xs font-medium text-fg-danger-strong hover:text-red-800"
         >
           <ChevronDown className={`h-3 w-3 transition-transform ${open ? 'rotate-180' : ''}`} />
           {open ? 'Hide delete form' : 'Show delete form'}
         </button>
 
         {open && (
-          <form action={hardDeleteClientFormAction} className="mt-4 space-y-3 rounded-md border border-red-200 bg-red-50 p-4">
+          <form action={hardDeleteClientFormAction} className="mt-4 space-y-3 rounded-md border border-red-200 bg-danger-soft p-4">
             <input type="hidden" name="client_id" value={clientId} />
 
             <div className="space-y-1.5">
               <Label htmlFor="confirm_firm_name">
-                Type the firm name to confirm: <span className="font-mono text-red-700">{clientName}</span>
+                Type the firm name to confirm: <span className="font-mono text-fg-danger-strong">{clientName}</span>
               </Label>
               <Input
                 id="confirm_firm_name"
@@ -84,7 +84,7 @@ export function HardDeleteCard({
             </div>
 
             {errorMessage && (
-              <p className="text-xs text-red-700">{errorMessage}</p>
+              <p className="text-xs text-fg-danger-strong">{errorMessage}</p>
             )}
 
             <Button

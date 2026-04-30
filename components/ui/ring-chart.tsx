@@ -17,7 +17,7 @@ const BAND_STROKE: Record<Exclude<Props['variant'], undefined>, string> = {
   green: 'stroke-emerald-500',
   amber: 'stroke-amber-500',
   red: 'stroke-red-500',
-  gray: 'stroke-slate-300',
+  gray: 'stroke-fg-disabled',
 }
 
 function autoVariant(value: number | null): Exclude<Props['variant'], 'auto' | undefined> {
@@ -47,11 +47,11 @@ export function RingChart({
   const resolved = variant === 'auto' ? autoVariant(value) : variant
   const band = BAND_STROKE[resolved]
   const labelClass =
-    resolved === 'green' ? 'text-emerald-700'
-    : resolved === 'amber' ? 'text-amber-700'
-    : resolved === 'red' ? 'text-red-700'
+    resolved === 'green' ? 'text-fg-success-strong'
+    : resolved === 'amber' ? 'text-fg-warning'
+    : resolved === 'red' ? 'text-fg-danger-strong'
     : resolved === 'purple' ? 'text-fg-brand'
-    : 'text-slate-600'
+    : 'text-body'
 
   return (
     <div className={cn('flex flex-col items-center gap-1', className)}>
@@ -63,7 +63,7 @@ export function RingChart({
             r={r}
             fill="none"
             strokeWidth={stroke}
-            className="stroke-slate-100"
+            className="stroke-neutral-tertiary-soft"
           />
           <circle
             cx={dim / 2}
@@ -87,7 +87,7 @@ export function RingChart({
           {value == null ? '—' : value}
         </span>
       </div>
-      {label && <span className="text-xs text-slate-600">{label}</span>}
+      {label && <span className="text-xs text-body">{label}</span>}
     </div>
   )
 }

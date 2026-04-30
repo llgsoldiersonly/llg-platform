@@ -1,6 +1,8 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils/cn'
 
+// Textarea — multi-line, so we use rounded-card (24px) instead of pill.
+// Same color/shadow story as the Input.
 export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
@@ -8,7 +10,11 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     <textarea
       ref={ref}
       className={cn(
-        'flex min-h-20 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 disabled:cursor-not-allowed disabled:opacity-50',
+        'flex min-h-20 w-full rounded-card border border-border-default-medium bg-neutral-secondary-medium px-4 py-3 text-sm text-heading shadow-xs transition-all duration-200',
+        'placeholder:text-body',
+        'hover:border-border-default-strong',
+        'focus-visible:outline-none focus-visible:border-border-brand focus-visible:ring-1 focus-visible:ring-brand',
+        'disabled:cursor-not-allowed disabled:bg-disabled disabled:text-fg-disabled',
         className
       )}
       {...props}

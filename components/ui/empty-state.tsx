@@ -24,10 +24,10 @@ export function EmptyState({
 }: Props) {
   const inner = (
     <div className={cn('flex flex-col items-center gap-3 p-10 text-center', className)}>
-      {Icon && <Icon className="h-8 w-8 text-slate-300" />}
-      <p className="text-sm font-medium text-slate-700">{title}</p>
+      {Icon && <Icon className="h-8 w-8 text-fg-disabled" />}
+      <p className="text-sm font-medium text-body">{title}</p>
       {description && (
-        <p className="max-w-md text-xs text-slate-600">{description}</p>
+        <p className="max-w-md text-xs text-body">{description}</p>
       )}
       {action && <div className="mt-1">{action}</div>}
     </div>

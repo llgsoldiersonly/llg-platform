@@ -10,8 +10,8 @@ export type TeamMember = {
 const AVATAR_BG = {
   purple: 'bg-brand-soft text-fg-brand',
   sky: 'bg-sky-100 text-sky-800',
-  amber: 'bg-amber-100 text-amber-800',
-  emerald: 'bg-emerald-100 text-emerald-800',
+  amber: 'bg-amber-100 text-fg-warning',
+  emerald: 'bg-emerald-100 text-fg-success-strong',
 }
 
 export function SupportTeamCard({ members }: { members: TeamMember[] }) {
@@ -22,7 +22,7 @@ export function SupportTeamCard({ members }: { members: TeamMember[] }) {
       </CardHeader>
       <CardContent className="space-y-3">
         {members.length === 0 ? (
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-body">
             Your account team will appear here as roles are assigned.
           </p>
         ) : (
@@ -31,7 +31,7 @@ export function SupportTeamCard({ members }: { members: TeamMember[] }) {
               {members.map((m) => (
                 <div
                   key={m.id}
-                  className="flex items-center gap-3 rounded-md border border-slate-100 p-3"
+                  className="flex items-center gap-3 rounded-md border border-border-light p-3"
                 >
                   <span
                     className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold ${AVATAR_BG[m.avatar_color]}`}
@@ -39,15 +39,15 @@ export function SupportTeamCard({ members }: { members: TeamMember[] }) {
                     {initials(m.full_name)}
                   </span>
                   <div className="leading-tight">
-                    <div className="text-xs uppercase tracking-wide text-slate-600">
+                    <div className="text-xs uppercase tracking-wide text-body">
                       {m.role_label}
                     </div>
-                    <div className="text-sm font-medium text-slate-900">{m.full_name}</div>
+                    <div className="text-sm font-medium text-heading">{m.full_name}</div>
                   </div>
                 </div>
               ))}
             </div>
-            <p className="pt-2 text-center text-xs text-slate-500">
+            <p className="pt-2 text-center text-xs text-body-subtle">
               Reference these names in your support tickets.
             </p>
           </>

@@ -16,13 +16,13 @@ export function EmptyIntegration({ clientId, serviceName, reason, helpText }: Pr
   return (
     <Card>
       <CardContent className="flex flex-col items-center gap-3 p-12 text-center">
-        <p className="text-3xl font-semibold text-slate-300">N/A</p>
+        <p className="text-3xl font-semibold text-fg-disabled">N/A</p>
         {reason === 'not_configured' ? (
           <>
-            <p className="text-sm font-medium text-slate-700">
+            <p className="text-sm font-medium text-body">
               {serviceName} is not connected for this client yet.
             </p>
-            <p className="max-w-md text-xs text-slate-600">
+            <p className="max-w-md text-xs text-body">
               {helpText ?? `Add the ${serviceName} credentials in the credentials tab to start syncing.`}
             </p>
             <Link href={`/admin/clients/${clientId}/credentials`}>
@@ -31,10 +31,10 @@ export function EmptyIntegration({ clientId, serviceName, reason, helpText }: Pr
           </>
         ) : (
           <>
-            <p className="text-sm font-medium text-slate-700">
+            <p className="text-sm font-medium text-body">
               {serviceName} is connected, but no data has come through yet.
             </p>
-            <p className="max-w-md text-xs text-slate-600">
+            <p className="max-w-md text-xs text-body">
               {helpText ?? `Cron pulls run nightly. If this is the first day after setup, data will appear by tomorrow morning.`}
             </p>
           </>

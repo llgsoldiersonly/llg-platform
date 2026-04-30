@@ -61,10 +61,10 @@ export function InviteStaffForm({ departments }: { departments: Department[] }) 
         <Label htmlFor="title">Title (optional)</Label>
         <Input id="title" name="title" placeholder="SEO Specialist" />
       </div>
-      <div className="sm:col-span-2 flex items-center justify-between border-t border-slate-200 pt-4">
+      <div className="sm:col-span-2 flex items-center justify-between border-t border-border-default pt-4">
         <div>
           {message && (
-            <p className={message.kind === 'success' ? 'text-sm text-emerald-700' : 'text-sm text-red-700'}>
+            <p className={message.kind === 'success' ? 'text-sm text-fg-success-strong' : 'text-sm text-fg-danger-strong'}>
               {message.text}
             </p>
           )}

@@ -33,7 +33,7 @@ export function SeoPlanProgressCard({ packageHeader, deliverables }: Props) {
       <CardContent className="space-y-5">
         {packageHeader && (
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-700">{packageHeader.display_name}</span>
+            <span className="text-sm text-body">{packageHeader.display_name}</span>
             {packageHeader.monthly_fee_cents != null && (
               <Badge variant="secondary" className="font-medium">
                 ${(packageHeader.monthly_fee_cents / 100).toLocaleString()}/mo
@@ -43,7 +43,7 @@ export function SeoPlanProgressCard({ packageHeader, deliverables }: Props) {
         )}
 
         {deliverables.length === 0 ? (
-          <p className="text-sm text-slate-600">No active deliverables this period.</p>
+          <p className="text-sm text-body">No active deliverables this period.</p>
         ) : (
           <ul className="space-y-4">
             {deliverables.map((d) => {
@@ -57,13 +57,13 @@ export function SeoPlanProgressCard({ packageHeader, deliverables }: Props) {
                       {isDone ? (
                         <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                       ) : (
-                        <Circle className="h-4 w-4 text-slate-300" />
+                        <Circle className="h-4 w-4 text-fg-disabled" />
                       )}
-                      <span className={cn('text-slate-700', isDone && 'text-slate-900')}>
+                      <span className={cn('text-body', isDone && 'text-heading')}>
                         {d.title}
                       </span>
                     </span>
-                    <span className="text-xs font-medium text-slate-600">
+                    <span className="text-xs font-medium text-body">
                       {target > 0 ? `${actual}/${target}` : '—'}
                     </span>
                   </div>

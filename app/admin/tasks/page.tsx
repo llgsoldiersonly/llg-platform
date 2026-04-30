@@ -84,8 +84,8 @@ export default async function AdminTasksPage({
     <div className="mx-auto max-w-6xl space-y-6 p-8">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Tasks</h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <h1 className="text-2xl font-semibold text-heading">Tasks</h1>
+          <p className="mt-1 text-sm text-body">
             {open.length} open · {tasks.length} total
           </p>
         </div>
@@ -108,8 +108,8 @@ export default async function AdminTasksPage({
                 href={filterStatus === s ? '/admin/tasks' : `/admin/tasks?status=${s}`}
                 className={`inline-flex items-center rounded-full px-3 py-1 text-xs ${
                   filterStatus === s
-                    ? 'bg-slate-900 text-white'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    ? 'bg-dark text-white'
+                    : 'bg-neutral-tertiary-soft text-body hover:bg-neutral-quaternary'
                 }`}
               >
                 {s.replace('_', ' ')}
@@ -118,7 +118,7 @@ export default async function AdminTasksPage({
             {filterStatus && (
               <a
                 href="/admin/tasks"
-                className="text-xs text-slate-600 hover:text-slate-900"
+                className="text-xs text-body hover:text-heading"
               >
                 clear
               </a>

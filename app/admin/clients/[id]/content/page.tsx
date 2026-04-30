@@ -89,20 +89,20 @@ export default async function ClientContentPage({
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Posts (last 50)</CardTitle>
+            <CardTitle className="text-sm font-medium text-body">Posts (last 50)</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold text-slate-900">{list.length}</p>
+            <p className="text-3xl font-semibold text-heading">{list.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Top categories</CardTitle>
+            <CardTitle className="text-sm font-medium text-body">Top categories</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-1">
               {topCats.length === 0 ? (
-                <span className="text-xs text-slate-600">no categories</span>
+                <span className="text-xs text-body">no categories</span>
               ) : (
                 topCats.map(([cat, n]) => (
                   <Badge key={cat} variant="secondary">
@@ -115,7 +115,7 @@ export default async function ClientContentPage({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Languages</CardTitle>
+            <CardTitle className="text-sm font-medium text-body">Languages</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-1">
@@ -123,7 +123,7 @@ export default async function ClientContentPage({
                 <Badge key={l!} variant="info">{l}</Badge>
               ))}
               {list.every((p) => !p.language) && (
-                <span className="text-xs text-slate-600">none detected</span>
+                <span className="text-xs text-body">none detected</span>
               )}
             </div>
           </CardContent>
@@ -135,7 +135,7 @@ export default async function ClientContentPage({
           <CardTitle className="text-base">Recent posts</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-border-light">
             {list.map((p) => (
               <li key={p.id} className="px-6 py-4">
                 <div className="flex items-start justify-between gap-3">
@@ -144,14 +144,14 @@ export default async function ClientContentPage({
                       href={p.url ?? '#'}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-medium text-slate-900 hover:underline"
+                      className="font-medium text-heading hover:underline"
                     >
                       {p.title ?? p.slug ?? '(untitled)'}
                     </a>
-                    <p className="mt-1 line-clamp-2 text-sm text-slate-600">
+                    <p className="mt-1 line-clamp-2 text-sm text-body">
                       {(p.excerpt ?? '').replace(/<[^>]+>/g, '').slice(0, 200)}
                     </p>
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-body">
                       <Badge variant="secondary">{p.source_type}</Badge>
                       {p.language && <Badge variant="info">{p.language}</Badge>}
                       {(p.categories ?? []).slice(0, 3).map((c) => (
@@ -159,7 +159,7 @@ export default async function ClientContentPage({
                       ))}
                     </div>
                   </div>
-                  <div className="text-right text-xs text-slate-600">
+                  <div className="text-right text-xs text-body">
                     {p.published_at ? new Date(p.published_at).toLocaleDateString() : '—'}
                   </div>
                 </div>

@@ -12,7 +12,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!isAgencyStaff(user)) redirect('/login?error=forbidden')
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-neutral-secondary-soft">
       <AdminSidebar />
       <div className="flex min-h-screen flex-1 flex-col">
         <AdminTopbar />

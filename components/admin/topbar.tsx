@@ -16,10 +16,10 @@ export async function AdminTopbar() {
     .order('firm_name', { ascending: true })
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-6">
+    <header className="flex h-14 items-center justify-between border-b border-border-default bg-neutral-primary-soft px-6">
       <ClientSwitcher clients={clients ?? []} />
       <div className="flex items-center gap-3">
-        <span className="text-xs text-slate-600">{user?.email}</span>
+        <span className="text-xs text-body">{user?.email}</span>
         <form action={signOutAction}>
           <Button type="submit" variant="outline" size="sm">
             Sign out

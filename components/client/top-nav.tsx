@@ -42,14 +42,14 @@ export function ClientTopNav() {
               'relative whitespace-nowrap py-2 text-sm transition-colors',
               active && !upcoming
                 ? 'font-medium text-fg-brand'
-                : 'text-slate-600 hover:text-slate-900',
-              upcoming && 'cursor-not-allowed text-slate-500 hover:text-slate-500'
+                : 'text-body hover:text-heading',
+              upcoming && 'cursor-not-allowed text-body-subtle hover:text-body-subtle'
             )}
           >
             <span className="flex items-center gap-1.5">
               {item.label}
               {item.phase && (
-                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono text-slate-600">
+                <span className="rounded bg-neutral-tertiary-soft px-1.5 py-0.5 text-[10px] font-mono text-body">
                   {item.phase}
                 </span>
               )}

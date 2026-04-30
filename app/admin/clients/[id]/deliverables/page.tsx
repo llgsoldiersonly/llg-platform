@@ -95,8 +95,8 @@ export default async function ClientDeliverablesPage({
     <div className="mx-auto max-w-6xl space-y-6 p-8">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Deliverables</h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <h2 className="text-lg font-semibold text-heading">Deliverables</h2>
+          <p className="mt-1 text-sm text-body">
             {deliverables.length} tracked items — package items + custom/incentive add-ons
           </p>
         </div>
@@ -109,12 +109,12 @@ export default async function ClientDeliverablesPage({
         </CardHeader>
         <CardContent className="p-0">
           {deliverables.length === 0 ? (
-            <p className="p-6 text-sm text-slate-600">
+            <p className="p-6 text-sm text-body">
               No deliverables yet. They'll be auto-generated as subscriptions roll into a new period, or you can add a custom one above.
             </p>
           ) : (
             <table className="w-full text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
+              <thead className="border-b border-border-default bg-neutral-secondary-soft text-xs uppercase tracking-wide text-body">
                 <tr>
                   <th className="px-6 py-3 text-left font-medium">Item</th>
                   <th className="px-6 py-3 text-left font-medium">Source</th>
@@ -124,7 +124,7 @@ export default async function ClientDeliverablesPage({
                   <th className="px-6 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-border-light">
                 {deliverables.map((d) => {
                   const title = d.template?.display_name ?? d.custom_title ?? '—'
                   const target = d.template?.target_count ?? d.custom_target_count ?? 0
@@ -135,8 +135,8 @@ export default async function ClientDeliverablesPage({
                   return (
                     <tr key={d.id}>
                       <td className="px-6 py-4">
-                        <div className="font-medium text-slate-900">{title}</div>
-                        <div className="text-xs text-slate-600">
+                        <div className="font-medium text-heading">{title}</div>
+                        <div className="text-xs text-body">
                           {d.subscription.package?.code ?? '—'}
                           {d.template?.department_slug && (
                             <> · {d.template.department_slug}</>
@@ -152,10 +152,10 @@ export default async function ClientDeliverablesPage({
                       <td className="px-6 py-4">
                         <Badge variant={source.variant}>{source.label}</Badge>
                       </td>
-                      <td className="px-6 py-4 text-xs text-slate-600">
+                      <td className="px-6 py-4 text-xs text-body">
                         {d.period_start} → {d.period_end}
                       </td>
-                      <td className="px-6 py-4 text-slate-700">
+                      <td className="px-6 py-4 text-body">
                         {d.actual_count} / {target} {unit}
                       </td>
                       <td className="px-6 py-4">

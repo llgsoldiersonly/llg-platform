@@ -81,26 +81,26 @@ export default async function ClientCallsPage({
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Calls (last 100)</CardTitle>
+            <CardTitle className="text-sm font-medium text-body">Calls (last 100)</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold text-slate-900">{totalCalls}</p>
+            <p className="text-3xl font-semibold text-heading">{totalCalls}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">First-time callers</CardTitle>
+            <CardTitle className="text-sm font-medium text-body">First-time callers</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold text-slate-900">{firstCalls}</p>
+            <p className="text-3xl font-semibold text-heading">{firstCalls}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Avg duration</CardTitle>
+            <CardTitle className="text-sm font-medium text-body">Avg duration</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold text-slate-900">
+            <p className="text-3xl font-semibold text-heading">
               {Math.floor(avgDuration / 60)}:{String(avgDuration % 60).padStart(2, '0')}
             </p>
           </CardContent>
@@ -113,7 +113,7 @@ export default async function ClientCallsPage({
         </CardHeader>
         <CardContent className="p-0">
           <table className="w-full text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
+            <thead className="border-b border-border-default bg-neutral-secondary-soft text-xs uppercase tracking-wide text-body">
               <tr>
                 <th className="px-6 py-3 text-left font-medium">When</th>
                 <th className="px-6 py-3 text-left font-medium">Caller</th>
@@ -123,19 +123,19 @@ export default async function ClientCallsPage({
                 <th className="px-6 py-3 text-left font-medium">First?</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border-light">
               {list.map((c) => (
                 <tr key={c.id}>
-                  <td className="px-6 py-3 text-xs text-slate-600">
+                  <td className="px-6 py-3 text-xs text-body">
                     {c.started_at ? new Date(c.started_at).toLocaleString() : '—'}
                   </td>
                   <td className="px-6 py-3">
-                    <div className="font-medium text-slate-900">{c.caller_name ?? '—'}</div>
-                    <div className="text-xs text-slate-600">{c.caller_number ?? '—'}</div>
+                    <div className="font-medium text-heading">{c.caller_name ?? '—'}</div>
+                    <div className="text-xs text-body">{c.caller_number ?? '—'}</div>
                   </td>
-                  <td className="px-6 py-3 text-slate-600">{c.source ?? '—'}</td>
-                  <td className="px-6 py-3 text-slate-600">{c.tracker ?? '—'}</td>
-                  <td className="px-6 py-3 text-slate-600">
+                  <td className="px-6 py-3 text-body">{c.source ?? '—'}</td>
+                  <td className="px-6 py-3 text-body">{c.tracker ?? '—'}</td>
+                  <td className="px-6 py-3 text-body">
                     {c.duration ? `${Math.floor(c.duration / 60)}:${String(c.duration % 60).padStart(2, '0')}` : '—'}
                   </td>
                   <td className="px-6 py-3">

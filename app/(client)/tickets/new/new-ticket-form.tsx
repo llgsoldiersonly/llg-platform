@@ -51,20 +51,20 @@ export function NewTicketForm({ clientId }: { clientId: string }) {
       <div className="space-y-2">
         <Label>Type *</Label>
         <div className="grid grid-cols-2 gap-2">
-          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-slate-200 p-3 hover:border-slate-400">
+          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border-default p-3 hover:border-border-default-strong">
             <input type="radio" name="type" value="bug" defaultChecked className="mt-1" />
             <div>
-              <p className="text-sm font-medium text-slate-900">Bug</p>
-              <p className="text-xs text-slate-600">
+              <p className="text-sm font-medium text-heading">Bug</p>
+              <p className="text-xs text-body">
                 Something's broken on our end. Doesn't count against your quota.
               </p>
             </div>
           </label>
-          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-slate-200 p-3 hover:border-slate-400">
+          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border-default p-3 hover:border-border-default-strong">
             <input type="radio" name="type" value="request" className="mt-1" />
             <div>
-              <p className="text-sm font-medium text-slate-900">Request</p>
-              <p className="text-xs text-slate-600">
+              <p className="text-sm font-medium text-heading">Request</p>
+              <p className="text-xs text-body">
                 Something new or different. Counts against your weekly limit.
               </p>
             </div>
@@ -103,7 +103,7 @@ export function NewTicketForm({ clientId }: { clientId: string }) {
       </div>
 
       {(priority === 'high' || priority === 'urgent') && (
-        <div className="rounded-md bg-amber-50 p-3 text-xs text-amber-900">
+        <div className="rounded-md bg-warning-soft p-3 text-xs text-fg-warning">
           Urgent / High priority tickets get tighter SLAs. Please use this only when something is actively impacting your business.
         </div>
       )}
@@ -114,7 +114,7 @@ export function NewTicketForm({ clientId }: { clientId: string }) {
       </div>
 
       {error && (
-        <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p>
+        <p className="rounded-md bg-danger-soft p-3 text-sm text-fg-danger-strong">{error}</p>
       )}
 
       <div className="flex justify-end gap-3">

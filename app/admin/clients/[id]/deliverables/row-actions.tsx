@@ -76,10 +76,10 @@ export function DeliverableRowActions({
           aria-label="Delete deliverable"
           title="Delete"
         >
-          <Trash2 className="h-4 w-4 text-slate-500 hover:text-red-600" />
+          <Trash2 className="h-4 w-4 text-body-subtle hover:text-fg-danger" />
         </Button>
       )}
-      {error && <span className="text-xs text-red-600">{error}</span>}
+      {error && <span className="text-xs text-fg-danger">{error}</span>}
     </div>
   )
 }

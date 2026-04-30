@@ -177,10 +177,10 @@ export default async function OverviewPage({
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
       <div>
-        <h1 className="text-3xl text-slate-900">
+        <h1 className="text-3xl text-heading">
           Welcome back, {ctx.client.firm_name}
         </h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-body">
           Here&apos;s where your active work stands this period
           {ctx.selectedLocation && <> for {ctx.selectedLocation.label}</>}.
         </p>
