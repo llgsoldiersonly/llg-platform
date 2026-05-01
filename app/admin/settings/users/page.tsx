@@ -5,6 +5,7 @@ import { isSuperAdmin } from '@/lib/auth/rbac'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { InviteStaffForm } from './invite-form'
+import { GoogleAdsConnectCard } from '@/components/admin/google-ads-connect-card'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,7 +25,12 @@ type Department = {
   slug: string
 }
 
-export default async function AdminUsersPage() {
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ google_ads?: string; google_ads_detail?: string }>
+}) {
+  const sp = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -32,7 +38,7 @@ export default async function AdminUsersPage() {
 
   const supa = createAdminClient()
 
-  const [profilesRes, departmentsRes] = await Promise.all([
+  const [profilesRes, departmentsRes, settingsRes] = await Promise.all([
     supa
       .from('profiles')
       .select('id, full_name, role, title, is_active, department_id, department:departments(name, slug)')
@@ -44,10 +50,19 @@ export default async function AdminUsersPage() {
       .select('id, name, slug')
       .order('name')
       .returns<Department[]>(),
+    supa
+      .from('platform_settings')
+      .select('google_ads_refresh_token')
+      .eq('id', 1)
+      .maybeSingle<{ google_ads_refresh_token: string | null }>(),
   ])
 
   const profiles = profilesRes.data ?? []
   const departments = departmentsRes.data ?? []
+  const isGoogleAdsConnected = !!settingsRes.data?.google_ads_refresh_token
+  const googleAdsFlash = sp.google_ads
+    ? { kind: sp.google_ads as 'success' | 'error', detail: sp.google_ads_detail }
+    : null
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-8">
@@ -114,6 +129,11 @@ export default async function AdminUsersPage() {
           <InviteStaffForm departments={departments} />
         </CardContent>
       </Card>
+
+      <GoogleAdsConnectCard
+        isConnected={isGoogleAdsConnected}
+        flash={googleAdsFlash}
+      />
     </div>
   )
 }
