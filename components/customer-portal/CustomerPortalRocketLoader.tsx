@@ -83,7 +83,10 @@ export default function CustomerPortalRocketLoader({
       }`}
       aria-hidden="true"
     >
-      <div className="customer-portal-rocket-loader__stars" />
+      {/* Trail renders behind the rocket so the rocket appears to lead.
+       *  Same animation timing as the rocket — both elements move along
+       *  the identical keyframe path. */}
+      <div className="customer-portal-rocket-loader__trail" />
       {/* Plain <img> — Next/Image's responsive sizing fights the keyframe
        *  transform; we want raw position control here. */}
       <img
@@ -92,9 +95,6 @@ export default function CustomerPortalRocketLoader({
         className="customer-portal-rocket-loader__rocket"
         draggable={false}
       />
-      <div className="customer-portal-rocket-loader__text">
-        Launching your portal...
-      </div>
     </div>
   )
 }
