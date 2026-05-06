@@ -122,7 +122,7 @@
     opacity: 1;
   }
   100% {
-    transform: translate(50vw, -30vh) rotate(-38deg) scale(0.95);
+    transform: translate(50vw, -30vh) rotate(-38deg) scale(1.15);
     opacity: 0;
   }
 }
