@@ -4,6 +4,7 @@ import { isAgencyStaff } from '@/lib/auth/rbac'
 import { getClientContext } from '@/lib/client-context'
 import { ClientHeader } from '@/components/client/header'
 import { ImpersonationBanner } from '@/components/client/impersonation-banner'
+import CustomerPortalRocketLoader from '@/components/customer-portal/CustomerPortalRocketLoader'
 
 export default async function ClientPortalLayout({
   children,
@@ -27,6 +28,7 @@ export default async function ClientPortalLayout({
 
   return (
     <div className="flex min-h-screen flex-col bg-neutral-secondary-soft">
+      <CustomerPortalRocketLoader />
       <ImpersonationBanner />
       <ClientHeader />
       <main className="flex-1">{children}</main>
