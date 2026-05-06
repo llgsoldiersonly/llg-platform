@@ -1,14 +1,19 @@
 /* Branded rocket flyover — client portal only.
  * Mounted from app/(client)/layout.tsx; never global, never admin.
  *
- * Path: rocket originates in the very bottom-left corner of the viewport
- * and flies a full-viewport diagonal up-and-right, exiting through the
- * top-right corner. Anchored to bottom-left so vh/vw translations read
- * intuitively as "how far from the bottom-left start."
+ * Architecture: a single zero-size flight wrapper anchored at the
+ * viewport's bottom-left corner carries the animation. Inside it,
+ * the rocket is centered on the wrapper origin via translate(-50%,
+ * -50%); the trail and halo are positioned with their right-edge
+ * vertical-center at the same wrapper origin via translate(-100%,
+ * -50%). Because all three reference points coincide and the wrapper
+ * applies the animation as a single transform, the elements stay
+ * pixel-aligned no matter what intrinsic aspect ratio the rocket PNG
+ * has — earlier per-element animations broke alignment as soon as
+ * the rocket image's height ≠ its width.
  *
- * Glow stack: a purple inner trail (closest to the rocket) layered with
- * a white outer halo (wider, more diffuse) — purple reads as ignition
- * heat next to the body, white reads as ambient atmosphere. */
+ * Glow stack: inner purple trail (closest to rocket) + outer white
+ * halo. */
 
 .customer-portal-rocket-loader {
   position: fixed;
@@ -29,20 +34,50 @@
   visibility: hidden;
 }
 
-/* Inner purple trail — closest to the rocket. The bright edge of the
- * gradient sits at the right end of the ellipse so it reads as ignition
- * glow trailing behind the rocket nose. transform-origin: right center
- * means this element rotates around the same point the rocket occupies,
- * keeping the trail visually anchored to the rocket throughout the
- * animation. */
-.customer-portal-rocket-loader__trail {
+/* Flight wrapper — zero-size point anchored at bottom-left. The
+ * animation drives this single element; everything else moves with
+ * it as a unit. Transform-origin at 0 0 means rotation pivots on
+ * the wrapper's natural position, so the path translates read as
+ * direct deltas from the bottom-left corner. */
+.customer-portal-rocket-loader__flight {
   position: absolute;
   left: 0;
   bottom: 0;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+  animation: customerPortalRocketFly 2.6s linear infinite;
+  will-change: transform, opacity;
+}
+
+/* Rocket — centered on the wrapper origin. translate(-50%, -50%)
+ * uses the rocket's actual rendered width AND height, so this
+ * works regardless of the PNG's intrinsic aspect ratio. */
+.customer-portal-rocket-loader__rocket {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: clamp(110px, 14vw, 220px);
+  transform: translate(-50%, -50%);
+  filter:
+    drop-shadow(0 0 10px rgba(168, 85, 247, 0.95))
+    drop-shadow(0 0 22px rgba(126, 34, 207, 0.75))
+    drop-shadow(0 0 48px rgba(255, 255, 255, 0.55))
+    drop-shadow(0 0 90px rgba(255, 255, 255, 0.30));
+  user-select: none;
+}
+
+/* Inner purple trail — right-edge vertical-center coincides with
+ * the wrapper origin (which is also the rocket's center). The
+ * radial gradient is hot at the right end and fades leftward, so
+ * it reads as ignition glow trailing behind the rocket nose. */
+.customer-portal-rocket-loader__trail {
+  position: absolute;
+  left: 0;
+  top: 0;
   width: clamp(420px, 48vw, 760px);
   height: clamp(90px, 12vw, 160px);
-  margin-left: calc(clamp(420px, 48vw, 760px) * -1);
-  margin-bottom: calc(clamp(90px, 12vw, 160px) / -2);
+  transform: translate(-100%, -50%);
   border-radius: 9999px;
   background: radial-gradient(
     ellipse at right,
@@ -53,22 +88,18 @@
     rgba(126, 34, 207, 0) 100%
   );
   filter: blur(14px);
-  transform-origin: right center;
-  animation: customerPortalRocketFly 2.6s linear infinite;
-  will-change: transform, opacity;
 }
 
-/* Outer white halo — wider and softer than the purple trail. Sits
- * behind the trail in the stacking order (rendered first in the DOM)
- * so the purple reads as the inner core of the glow. */
+/* Outer white halo — same anchor as the trail, but wider, taller,
+ * and softer. Renders behind the trail (DOM order) so the purple
+ * reads as the inner core of the glow. */
 .customer-portal-rocket-loader__halo {
   position: absolute;
   left: 0;
-  bottom: 0;
+  top: 0;
   width: clamp(560px, 64vw, 980px);
   height: clamp(180px, 22vw, 320px);
-  margin-left: calc(clamp(560px, 64vw, 980px) * -1);
-  margin-bottom: calc(clamp(180px, 22vw, 320px) / -2);
+  transform: translate(-100%, -50%);
   border-radius: 9999px;
   background: radial-gradient(
     ellipse at right,
@@ -78,43 +109,14 @@
     rgba(255, 255, 255, 0) 100%
   );
   filter: blur(28px);
-  transform-origin: right center;
-  animation: customerPortalRocketFly 2.6s linear infinite;
-  will-change: transform, opacity;
 }
 
-.customer-portal-rocket-loader__rocket {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: clamp(110px, 14vw, 220px);
-  margin-left: calc(clamp(110px, 14vw, 220px) / -2);
-  margin-bottom: calc(clamp(110px, 14vw, 220px) / -2);
-  transform-origin: center;
-  animation: customerPortalRocketFly 2.6s linear infinite;
-  /* Stacked drop-shadows: tight purple shadows hug the rocket body
-   * (the inner ignition glow), wider white shadows give the ambient
-   * outer wash. */
-  filter:
-    drop-shadow(0 0 10px rgba(168, 85, 247, 0.95))
-    drop-shadow(0 0 22px rgba(126, 34, 207, 0.75))
-    drop-shadow(0 0 48px rgba(255, 255, 255, 0.55))
-    drop-shadow(0 0 90px rgba(255, 255, 255, 0.30));
-  will-change: transform, opacity;
-  user-select: none;
-}
-
-/* Path: single uninterrupted diagonal across the entire viewport,
- * bottom-left corner to top-right corner. No scale change anywhere —
- * the rocket holds one constant size throughout. Rotation is fixed at
- * -45deg (nose pointing along the direction of travel). The keyframe
- * spacing is calibrated so every percent of the timeline covers the
- * same distance, which combined with linear easing produces uniform
- * velocity from start to finish — no acceleration, no deceleration,
- * no perceptible "stop" before the exit. The 0% and 100% frames sit
- * just beyond the visible band so the fade-in/out happens over the
- * same per-percent distance as the rest of the flight (no velocity
- * discontinuity at the moment opacity changes). */
+/* Path: full-viewport diagonal, bottom-left corner to top-right
+ * corner. Constant scale (none specified = 1.0 throughout), constant
+ * rotation (-45deg, nose along direction of travel). Linear easing
+ * + matched per-percent distance across all four keyframes means
+ * uniform velocity from start to finish — no acceleration, no
+ * deceleration, no perceptible "stop" before exit. */
 @keyframes customerPortalRocketFly {
   0% {
     transform: translate(-24vw, 24vh) rotate(-45deg);
@@ -135,26 +137,18 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .customer-portal-rocket-loader__trail,
-  .customer-portal-rocket-loader__halo,
-  .customer-portal-rocket-loader__rocket {
+  .customer-portal-rocket-loader__flight {
     animation: none;
-  }
-
-  .customer-portal-rocket-loader__rocket {
     left: 50%;
-    top: 35%;
     bottom: auto;
-    margin-left: 0;
-    margin-bottom: 0;
-    transform: translate(-50%, -50%) rotate(-35deg);
-    opacity: 1;
+    top: 35%;
+    transform: rotate(-35deg);
   }
 
   .customer-portal-rocket-loader__trail,
   .customer-portal-rocket-loader__halo {
-    /* Hide the trail entirely under reduced-motion — they only read as
-     * trails when there's actual motion to trail. */
+    /* Trails only read as trails when there's actual motion to
+     * trail. Hide them entirely under reduced-motion. */
     display: none;
   }
 }

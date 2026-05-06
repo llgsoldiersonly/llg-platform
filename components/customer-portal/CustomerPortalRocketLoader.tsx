@@ -83,21 +83,23 @@ export default function CustomerPortalRocketLoader({
       }`}
       aria-hidden="true"
     >
-      {/* Halo + trail render behind the rocket so the rocket appears
-       *  to lead. Same animation timing as the rocket — all three
-       *  elements move along the identical keyframe path. Halo is
-       *  the wider/diffuser outer glow; trail is the brighter inner
-       *  streak nearer the rocket. */}
-      <div className="customer-portal-rocket-loader__halo" />
-      <div className="customer-portal-rocket-loader__trail" />
-      {/* Plain <img> — Next/Image's responsive sizing fights the keyframe
-       *  transform; we want raw position control here. */}
-      <img
-        src="/customer-portal/rocket.png"
-        alt=""
-        className="customer-portal-rocket-loader__rocket"
-        draggable={false}
-      />
+      {/* The flight wrapper is the single element that carries the
+       *  animation — halo, trail, and rocket all live inside it as
+       *  static-positioned children, anchored to a common reference
+       *  point so they stay perfectly aligned regardless of the
+       *  rocket image's intrinsic aspect ratio. */}
+      <div className="customer-portal-rocket-loader__flight">
+        <div className="customer-portal-rocket-loader__halo" />
+        <div className="customer-portal-rocket-loader__trail" />
+        {/* Plain <img> — Next/Image's responsive sizing fights the
+         *  static centering transform; we want raw position control. */}
+        <img
+          src="/customer-portal/rocket.png"
+          alt=""
+          className="customer-portal-rocket-loader__rocket"
+          draggable={false}
+        />
+      </div>
     </div>
   )
 }
