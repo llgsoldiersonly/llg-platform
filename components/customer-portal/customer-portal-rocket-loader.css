@@ -2,9 +2,9 @@
  * Mounted from app/(client)/layout.tsx; never global, never admin.
  *
  * Path: rocket originates in the very bottom-left corner of the viewport
- * and flies up-and-right to the top-middle (menu bar area), then exits
- * through the top of the screen. Anchored to bottom-left so vh/vw
- * translations read intuitively as "how far from the bottom-left start."
+ * and flies a full-viewport diagonal up-and-right, exiting through the
+ * top-right corner. Anchored to bottom-left so vh/vw translations read
+ * intuitively as "how far from the bottom-left start."
  *
  * Glow stack: a purple inner trail (closest to the rocket) layered with
  * a white outer halo (wider, more diffuse) — purple reads as ignition
@@ -104,38 +104,43 @@
   user-select: none;
 }
 
-/* Path: very-bottom-left -> upper-top-middle (menu bar area) -> exit
- * through the top. Anchor is bottom-left, so positive X moves right
- * and negative Y moves up. The rocket's geometric center traces this
- * path; at 88% it is centered horizontally (translateX ~= 50vw) and
- * just below the menu bar (translateY ~= -85vh). */
+/* Path: full-viewport diagonal — rocket traverses the entire screen
+ * from the bottom-left corner to the top-right corner. Anchor is
+ * bottom-left, so positive X moves right and negative Y moves up.
+ * Mid-flight (50%) the rocket sits at viewport center
+ * (translate(50vw, -50vh)). Start and end positions sit beyond the
+ * viewport edges so the rocket flies fully on AND fully off. */
 @keyframes customerPortalRocketFly {
   0% {
-    transform: translate(-25vw, 25vh) rotate(-50deg) scale(0.75);
+    transform: translate(-25vw, 25vh) rotate(-50deg) scale(0.7);
     opacity: 0;
   }
   6% {
-    transform: translate(-8vw, 6vh) rotate(-50deg) scale(0.82);
+    transform: translate(-10vw, 8vh) rotate(-50deg) scale(0.8);
     opacity: 0.5;
   }
   12% {
-    transform: translate(4vw, -4vh) rotate(-50deg) scale(0.9);
+    transform: translate(2vw, -2vh) rotate(-49deg) scale(0.88);
     opacity: 1;
   }
-  35% {
-    transform: translate(18vw, -28vh) rotate(-47deg) scale(0.98);
+  30% {
+    transform: translate(22vw, -22vh) rotate(-47deg) scale(0.96);
     opacity: 1;
   }
-  60% {
-    transform: translate(32vw, -55vh) rotate(-44deg) scale(1.05);
+  50% {
+    transform: translate(50vw, -50vh) rotate(-45deg) scale(1.05);
+    opacity: 1;
+  }
+  70% {
+    transform: translate(75vw, -75vh) rotate(-43deg) scale(1.10);
     opacity: 1;
   }
   88% {
-    transform: translate(50vw, -85vh) rotate(-41deg) scale(1.12);
+    transform: translate(96vw, -96vh) rotate(-41deg) scale(1.13);
     opacity: 1;
   }
   100% {
-    transform: translate(56vw, -118vh) rotate(-39deg) scale(1.12);
+    transform: translate(120vw, -120vh) rotate(-40deg) scale(1.13);
     opacity: 0;
   }
 }
