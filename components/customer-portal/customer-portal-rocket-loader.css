@@ -1,12 +1,14 @@
 /* Branded rocket flyover — client portal only.
  * Mounted from app/(client)/layout.tsx; never global, never admin.
  *
- * Reworked 2026-05-05 per Nathan's feedback: no dark/black overlay
- * anymore — the rocket flies *over* the dashboard graphics. Container
- * is fully transparent and pointer-events: none so clicks pass
- * straight through to the page underneath. Path now goes bottom-left
- * to upper-center (was bottom-left → top-right). Trail element renders
- * a soft white glow streak that follows the rocket. */
+ * Path: rocket originates in the very bottom-left corner of the viewport
+ * and flies up-and-right to the top-middle (menu bar area), then exits
+ * through the top of the screen. Anchored to bottom-left so vh/vw
+ * translations read intuitively as "how far from the bottom-left start."
+ *
+ * Glow stack: a purple inner trail (closest to the rocket) layered with
+ * a white outer halo (wider, more diffuse) — purple reads as ignition
+ * heat next to the body, white reads as ambient atmosphere. */
 
 .customer-portal-rocket-loader {
   position: fixed;
@@ -27,41 +29,46 @@
   visibility: hidden;
 }
 
-/* White glow streak that trails behind the rocket. Two-layer glow:
- * a wider/diffuser outer halo + a tighter inner streak. Same animation
- * as the rocket so they track its position. */
+/* Inner purple trail — closest to the rocket. The bright edge of the
+ * gradient sits at the right end of the ellipse so it reads as ignition
+ * glow trailing behind the rocket nose. transform-origin: right center
+ * means this element rotates around the same point the rocket occupies,
+ * keeping the trail visually anchored to the rocket throughout the
+ * animation. */
 .customer-portal-rocket-loader__trail {
   position: absolute;
+  left: 0;
+  bottom: 0;
   width: clamp(420px, 48vw, 760px);
   height: clamp(90px, 12vw, 160px);
-  left: -760px;
-  top: 55%;
+  margin-left: calc(clamp(420px, 48vw, 760px) * -1);
+  margin-bottom: calc(clamp(90px, 12vw, 160px) / -2);
   border-radius: 9999px;
   background: radial-gradient(
     ellipse at right,
-    rgba(255, 255, 255, 0.95) 0%,
-    rgba(255, 255, 255, 0.65) 22%,
-    rgba(255, 255, 255, 0.30) 50%,
-    rgba(255, 255, 255, 0.08) 78%,
-    rgba(255, 255, 255, 0) 100%
+    rgba(168, 85, 247, 0.95) 0%,
+    rgba(147, 51, 234, 0.70) 22%,
+    rgba(126, 34, 207, 0.40) 50%,
+    rgba(126, 34, 207, 0.12) 78%,
+    rgba(126, 34, 207, 0) 100%
   );
   filter: blur(14px);
   transform-origin: right center;
   animation: customerPortalRocketFly 2.6s cubic-bezier(0.22, 0.9, 0.28, 1) infinite;
-  /* Offset so the trail sits behind the rocket (rocket nose leads,
-   * trail extends back-left). */
-  margin-left: -260px;
   will-change: transform, opacity;
 }
 
-/* Outer diffuse halo — much larger and softer than the main trail
- * for the wider glow effect. */
+/* Outer white halo — wider and softer than the purple trail. Sits
+ * behind the trail in the stacking order (rendered first in the DOM)
+ * so the purple reads as the inner core of the glow. */
 .customer-portal-rocket-loader__halo {
   position: absolute;
+  left: 0;
+  bottom: 0;
   width: clamp(560px, 64vw, 980px);
   height: clamp(180px, 22vw, 320px);
-  left: -980px;
-  top: 55%;
+  margin-left: calc(clamp(560px, 64vw, 980px) * -1);
+  margin-bottom: calc(clamp(180px, 22vw, 320px) / -2);
   border-radius: 9999px;
   background: radial-gradient(
     ellipse at right,
@@ -73,56 +80,62 @@
   filter: blur(28px);
   transform-origin: right center;
   animation: customerPortalRocketFly 2.6s cubic-bezier(0.22, 0.9, 0.28, 1) infinite;
-  margin-left: -360px;
   will-change: transform, opacity;
 }
 
 .customer-portal-rocket-loader__rocket {
   position: absolute;
+  left: 0;
+  bottom: 0;
   width: clamp(110px, 14vw, 220px);
-  left: -260px;
-  top: 55%;
+  margin-left: calc(clamp(110px, 14vw, 220px) / -2);
+  margin-bottom: calc(clamp(110px, 14vw, 220px) / -2);
   transform-origin: center;
   animation: customerPortalRocketFly 2.6s cubic-bezier(0.22, 0.9, 0.28, 1) infinite;
-  /* Stacked drop-shadows produce a tight bright halo at the rocket
-   * (gives the leading-edge glow) plus increasingly diffuse outer
-   * layers that read as additional ambient glow. */
+  /* Stacked drop-shadows: tight purple shadows hug the rocket body
+   * (the inner ignition glow), wider white shadows give the ambient
+   * outer wash. */
   filter:
-    drop-shadow(0 0 18px rgba(255, 255, 255, 0.95))
-    drop-shadow(0 0 42px rgba(255, 255, 255, 0.7))
-    drop-shadow(0 0 80px rgba(255, 255, 255, 0.4))
-    drop-shadow(0 0 8px rgba(126, 58, 242, 0.55));
+    drop-shadow(0 0 10px rgba(168, 85, 247, 0.95))
+    drop-shadow(0 0 22px rgba(126, 34, 207, 0.75))
+    drop-shadow(0 0 48px rgba(255, 255, 255, 0.55))
+    drop-shadow(0 0 90px rgba(255, 255, 255, 0.30));
   will-change: transform, opacity;
   user-select: none;
 }
 
-/* Path: very-bottom-left -> upper-top-middle. Rocket is rotated
- * roughly -45° throughout so the nose points along the direction of
- * travel (up-and-right). End position translates to ~50vw which,
- * combined with the rocket's center origin and intrinsic width, lands
- * the rocket centered horizontally as it exits the top of the
- * viewport. */
+/* Path: very-bottom-left -> upper-top-middle (menu bar area) -> exit
+ * through the top. Anchor is bottom-left, so positive X moves right
+ * and negative Y moves up. The rocket's geometric center traces this
+ * path; at 88% it is centered horizontally (translateX ~= 50vw) and
+ * just below the menu bar (translateY ~= -85vh). */
 @keyframes customerPortalRocketFly {
   0% {
-    transform: translate(-25vw, 125vh) rotate(-50deg) scale(0.75);
+    transform: translate(-25vw, 25vh) rotate(-50deg) scale(0.75);
     opacity: 0;
   }
-  10% {
+  6% {
+    transform: translate(-8vw, 6vh) rotate(-50deg) scale(0.82);
+    opacity: 0.5;
+  }
+  12% {
+    transform: translate(4vw, -4vh) rotate(-50deg) scale(0.9);
     opacity: 1;
   }
-  45% {
-    transform: translate(15vw, 65vh) rotate(-44deg) scale(1.05);
+  35% {
+    transform: translate(18vw, -28vh) rotate(-47deg) scale(0.98);
     opacity: 1;
   }
-  75% {
-    transform: translate(38vw, 22vh) rotate(-40deg) scale(1.15);
+  60% {
+    transform: translate(32vw, -55vh) rotate(-44deg) scale(1.05);
     opacity: 1;
   }
-  92% {
+  88% {
+    transform: translate(50vw, -85vh) rotate(-41deg) scale(1.12);
     opacity: 1;
   }
   100% {
-    transform: translate(50vw, -30vh) rotate(-38deg) scale(1.15);
+    transform: translate(56vw, -118vh) rotate(-39deg) scale(1.12);
     opacity: 0;
   }
 }
@@ -137,6 +150,9 @@
   .customer-portal-rocket-loader__rocket {
     left: 50%;
     top: 35%;
+    bottom: auto;
+    margin-left: 0;
+    margin-bottom: 0;
     transform: translate(-50%, -50%) rotate(-35deg);
     opacity: 1;
   }
