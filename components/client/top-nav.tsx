@@ -17,6 +17,7 @@ type NavItem = {
 const items: NavItem[] = [
   { href: '/overview',     label: 'Overview' },
   { href: '/plan',         label: 'SEO Plan' },
+  { href: '/seo',          label: 'SEO Insights' },
   { href: '/tickets',      label: 'Support & Tickets' },
   { href: '/team',         label: 'Team',         phase: 'soon' },
   { href: '/integrations', label: 'Integrations', phase: 'soon' },
