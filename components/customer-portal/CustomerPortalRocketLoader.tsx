@@ -83,9 +83,12 @@ export default function CustomerPortalRocketLoader({
       }`}
       aria-hidden="true"
     >
-      {/* Trail renders behind the rocket so the rocket appears to lead.
-       *  Same animation timing as the rocket — both elements move along
-       *  the identical keyframe path. */}
+      {/* Halo + trail render behind the rocket so the rocket appears
+       *  to lead. Same animation timing as the rocket — all three
+       *  elements move along the identical keyframe path. Halo is
+       *  the wider/diffuser outer glow; trail is the brighter inner
+       *  streak nearer the rocket. */}
+      <div className="customer-portal-rocket-loader__halo" />
       <div className="customer-portal-rocket-loader__trail" />
       {/* Plain <img> — Next/Image's responsive sizing fights the keyframe
        *  transform; we want raw position control here. */}

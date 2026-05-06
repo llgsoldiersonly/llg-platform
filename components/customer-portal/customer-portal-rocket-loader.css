@@ -27,29 +27,53 @@
   visibility: hidden;
 }
 
-/* White glow streak that trails behind the rocket. Same animation
- * as the rocket so it tracks position, but elongated horizontally
- * and blurred so it reads as a motion trail, not a hard shape. */
+/* White glow streak that trails behind the rocket. Two-layer glow:
+ * a wider/diffuser outer halo + a tighter inner streak. Same animation
+ * as the rocket so they track its position. */
 .customer-portal-rocket-loader__trail {
   position: absolute;
-  width: clamp(180px, 24vw, 360px);
-  height: clamp(40px, 6vw, 80px);
-  left: -360px;
+  width: clamp(420px, 48vw, 760px);
+  height: clamp(90px, 12vw, 160px);
+  left: -760px;
   top: 55%;
   border-radius: 9999px;
   background: radial-gradient(
     ellipse at right,
-    rgba(255, 255, 255, 0.85) 0%,
-    rgba(255, 255, 255, 0.45) 25%,
-    rgba(255, 255, 255, 0.15) 55%,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.65) 22%,
+    rgba(255, 255, 255, 0.30) 50%,
+    rgba(255, 255, 255, 0.08) 78%,
     rgba(255, 255, 255, 0) 100%
   );
-  filter: blur(8px);
+  filter: blur(14px);
   transform-origin: right center;
   animation: customerPortalRocketFly 2.6s cubic-bezier(0.22, 0.9, 0.28, 1) infinite;
-  /* Slight rightward offset on the trail so it sits behind the rocket
-   * (rocket nose leads, trail extends back-left). */
-  margin-left: -120px;
+  /* Offset so the trail sits behind the rocket (rocket nose leads,
+   * trail extends back-left). */
+  margin-left: -260px;
+  will-change: transform, opacity;
+}
+
+/* Outer diffuse halo — much larger and softer than the main trail
+ * for the wider glow effect. */
+.customer-portal-rocket-loader__halo {
+  position: absolute;
+  width: clamp(560px, 64vw, 980px);
+  height: clamp(180px, 22vw, 320px);
+  left: -980px;
+  top: 55%;
+  border-radius: 9999px;
+  background: radial-gradient(
+    ellipse at right,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.22) 35%,
+    rgba(255, 255, 255, 0.05) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  filter: blur(28px);
+  transform-origin: right center;
+  animation: customerPortalRocketFly 2.6s cubic-bezier(0.22, 0.9, 0.28, 1) infinite;
+  margin-left: -360px;
   will-change: transform, opacity;
 }
 
@@ -60,40 +84,52 @@
   top: 55%;
   transform-origin: center;
   animation: customerPortalRocketFly 2.6s cubic-bezier(0.22, 0.9, 0.28, 1) infinite;
+  /* Stacked drop-shadows produce a tight bright halo at the rocket
+   * (gives the leading-edge glow) plus increasingly diffuse outer
+   * layers that read as additional ambient glow. */
   filter:
-    drop-shadow(0 0 14px rgba(255, 255, 255, 0.85))
-    drop-shadow(0 0 28px rgba(255, 255, 255, 0.45))
-    drop-shadow(0 0 6px rgba(126, 58, 242, 0.6));
+    drop-shadow(0 0 18px rgba(255, 255, 255, 0.95))
+    drop-shadow(0 0 42px rgba(255, 255, 255, 0.7))
+    drop-shadow(0 0 80px rgba(255, 255, 255, 0.4))
+    drop-shadow(0 0 8px rgba(126, 58, 242, 0.55));
   will-change: transform, opacity;
   user-select: none;
 }
 
-/* Path: bottom-left -> upper-center. Rocket is rotated -45deg-ish
- * throughout so the nose points along the direction of travel. */
+/* Path: very-bottom-left -> upper-top-middle. Rocket is rotated
+ * roughly -45° throughout so the nose points along the direction of
+ * travel (up-and-right). End position translates to ~50vw which,
+ * combined with the rocket's center origin and intrinsic width, lands
+ * the rocket centered horizontally as it exits the top of the
+ * viewport. */
 @keyframes customerPortalRocketFly {
   0% {
-    transform: translate(-15vw, 110vh) rotate(-50deg) scale(0.8);
+    transform: translate(-25vw, 125vh) rotate(-50deg) scale(0.75);
     opacity: 0;
   }
-  12% {
+  10% {
     opacity: 1;
   }
   45% {
-    transform: translate(20vw, 60vh) rotate(-42deg) scale(1.05);
+    transform: translate(15vw, 65vh) rotate(-44deg) scale(1.05);
     opacity: 1;
   }
-  78% {
-    transform: translate(45vw, 20vh) rotate(-38deg) scale(1.12);
+  75% {
+    transform: translate(38vw, 22vh) rotate(-40deg) scale(1.15);
+    opacity: 1;
+  }
+  92% {
     opacity: 1;
   }
   100% {
-    transform: translate(55vw, -15vh) rotate(-35deg) scale(0.95);
+    transform: translate(50vw, -30vh) rotate(-38deg) scale(0.95);
     opacity: 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .customer-portal-rocket-loader__trail,
+  .customer-portal-rocket-loader__halo,
   .customer-portal-rocket-loader__rocket {
     animation: none;
   }
@@ -105,9 +141,10 @@
     opacity: 1;
   }
 
-  .customer-portal-rocket-loader__trail {
-    /* Hide the trail entirely under reduced-motion — it only reads as
-     * a trail when there's actual motion to trail. */
+  .customer-portal-rocket-loader__trail,
+  .customer-portal-rocket-loader__halo {
+    /* Hide the trail entirely under reduced-motion — they only read as
+     * trails when there's actual motion to trail. */
     display: none;
   }
 }
