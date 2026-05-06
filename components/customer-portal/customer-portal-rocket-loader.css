@@ -54,7 +54,7 @@
   );
   filter: blur(14px);
   transform-origin: right center;
-  animation: customerPortalRocketFly 2.6s cubic-bezier(0.22, 0.9, 0.28, 1) infinite;
+  animation: customerPortalRocketFly 2.6s linear infinite;
   will-change: transform, opacity;
 }
 
@@ -79,7 +79,7 @@
   );
   filter: blur(28px);
   transform-origin: right center;
-  animation: customerPortalRocketFly 2.6s cubic-bezier(0.22, 0.9, 0.28, 1) infinite;
+  animation: customerPortalRocketFly 2.6s linear infinite;
   will-change: transform, opacity;
 }
 
@@ -91,7 +91,7 @@
   margin-left: calc(clamp(110px, 14vw, 220px) / -2);
   margin-bottom: calc(clamp(110px, 14vw, 220px) / -2);
   transform-origin: center;
-  animation: customerPortalRocketFly 2.6s cubic-bezier(0.22, 0.9, 0.28, 1) infinite;
+  animation: customerPortalRocketFly 2.6s linear infinite;
   /* Stacked drop-shadows: tight purple shadows hug the rocket body
    * (the inner ignition glow), wider white shadows give the ambient
    * outer wash. */
@@ -104,43 +104,32 @@
   user-select: none;
 }
 
-/* Path: full-viewport diagonal — rocket traverses the entire screen
- * from the bottom-left corner to the top-right corner. Anchor is
- * bottom-left, so positive X moves right and negative Y moves up.
- * Mid-flight (50%) the rocket sits at viewport center
- * (translate(50vw, -50vh)). Start and end positions sit beyond the
- * viewport edges so the rocket flies fully on AND fully off. */
+/* Path: single uninterrupted diagonal across the entire viewport,
+ * bottom-left corner to top-right corner. No scale change anywhere —
+ * the rocket holds one constant size throughout. Rotation is fixed at
+ * -45deg (nose pointing along the direction of travel). The keyframe
+ * spacing is calibrated so every percent of the timeline covers the
+ * same distance, which combined with linear easing produces uniform
+ * velocity from start to finish — no acceleration, no deceleration,
+ * no perceptible "stop" before the exit. The 0% and 100% frames sit
+ * just beyond the visible band so the fade-in/out happens over the
+ * same per-percent distance as the rest of the flight (no velocity
+ * discontinuity at the moment opacity changes). */
 @keyframes customerPortalRocketFly {
   0% {
-    transform: translate(-25vw, 25vh) rotate(-50deg) scale(0.7);
+    transform: translate(-24vw, 24vh) rotate(-45deg);
     opacity: 0;
   }
   6% {
-    transform: translate(-10vw, 8vh) rotate(-50deg) scale(0.8);
-    opacity: 0.5;
-  }
-  12% {
-    transform: translate(2vw, -2vh) rotate(-49deg) scale(0.88);
+    transform: translate(-15vw, 15vh) rotate(-45deg);
     opacity: 1;
   }
-  30% {
-    transform: translate(22vw, -22vh) rotate(-47deg) scale(0.96);
-    opacity: 1;
-  }
-  50% {
-    transform: translate(50vw, -50vh) rotate(-45deg) scale(1.05);
-    opacity: 1;
-  }
-  70% {
-    transform: translate(75vw, -75vh) rotate(-43deg) scale(1.10);
-    opacity: 1;
-  }
-  88% {
-    transform: translate(96vw, -96vh) rotate(-41deg) scale(1.13);
+  94% {
+    transform: translate(115vw, -115vh) rotate(-45deg);
     opacity: 1;
   }
   100% {
-    transform: translate(120vw, -120vh) rotate(-40deg) scale(1.13);
+    transform: translate(124vw, -124vh) rotate(-45deg);
     opacity: 0;
   }
 }
