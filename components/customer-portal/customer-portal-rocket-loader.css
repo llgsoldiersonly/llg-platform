@@ -57,7 +57,17 @@
   position: absolute;
   left: 0;
   top: 0;
+  display: block;
   width: clamp(110px, 14vw, 220px);
+  height: auto;
+  /* Lock aspect to the source PNG so the laid-out height is known
+   * before the image bytes arrive — without it the box can resolve
+   * to 0 height between paint and load and the rocket disappears
+   * while the explicitly-sized trail and halo keep rendering (the
+   * "only glow streak shows" regression). */
+  aspect-ratio: 631 / 318;
+  /* Sit above the trail + halo regardless of stacking-context order. */
+  z-index: 1;
   transform: translate(-50%, -50%);
   filter:
     drop-shadow(0 0 10px rgba(168, 85, 247, 0.95))

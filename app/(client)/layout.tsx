@@ -27,7 +27,7 @@ export default async function ClientPortalLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-neutral-secondary-soft">
+    <div className="flex min-h-screen flex-col bg-brand-softer">
       <CustomerPortalRocketLoader oncePerSession={false} />
       <ImpersonationBanner />
       <ClientHeader />

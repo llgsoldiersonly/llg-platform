@@ -8,6 +8,8 @@ import { SupportTeamCard, type TeamMember } from '@/components/client/cards/supp
 import { LighthouseScoresCard, type LighthouseScores } from '@/components/client/cards/lighthouse-scores'
 import { RecentUpdatesCard, type RecentUpdate } from '@/components/client/cards/recent-updates'
 import { IntegrationsCard, type IntegrationLink } from '@/components/client/cards/integrations'
+import { ResourcesCard } from '@/components/client/cards/resources'
+import { FeatureVideoCard } from '@/components/client/cards/feature-video'
 
 export const dynamic = 'force-dynamic'
 
@@ -165,6 +167,7 @@ export default async function OverviewPage({
   // (planned for v1.5 — see project memory). Empty state renders cleanly.
   const team: TeamMember[] = []
 
+
   const lighthouseScores: LighthouseScores | null = siteHealthRes.data
     ? {
         performance: siteHealthRes.data.performance,
@@ -188,22 +191,24 @@ export default async function OverviewPage({
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* LEFT — plan + integrations */}
+        {/* LEFT — plan + integrations + recent updates at the bottom */}
         <div className="space-y-6 lg:col-span-3">
           <SeoPlanProgressCard packageHeader={packageHeader} deliverables={deliverables} />
           <IntegrationsCard links={integrationLinks} />
+          <RecentUpdatesCard updates={updates} />
         </div>
 
-        {/* CENTER — tickets + team */}
+        {/* CENTER — tickets + team + walkthrough video */}
         <div className="space-y-6 lg:col-span-5">
           <SupportTicketsCard tickets={ticketsRes.data ?? []} />
           <SupportTeamCard members={team} />
+          <FeatureVideoCard />
         </div>
 
-        {/* RIGHT — lighthouse + updates */}
+        {/* RIGHT — lighthouse + resource hub at the bottom */}
         <div className="space-y-6 lg:col-span-4">
           <LighthouseScoresCard scores={lighthouseScores} />
-          <RecentUpdatesCard updates={updates} />
+          <ResourcesCard />
         </div>
       </div>
     </div>

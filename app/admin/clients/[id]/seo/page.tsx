@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { KeywordForm } from './seo-keyword-form'
 import { CompetitorForm } from './seo-competitor-form'
 import { MapGridForm } from './seo-grid-form'
+import { RefreshDataforseoButton } from './refresh-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -62,17 +63,20 @@ export default async function ClientSeoPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-8 py-8">
-      <header>
-        <h2 className="text-xl font-semibold text-heading">SEO Visibility — DataForSEO</h2>
-        <p className="mt-1 text-sm text-body">
-          Tracked keywords, competitors, and map-grid points feed the customer-facing SEO portal.
-          {client.primary_domain ? null : (
-            <span className="ml-1 text-amber-600">
-              No <code className="rounded bg-neutral-tertiary-soft px-1">primary_domain</code> set on this client — backlink data
-              cannot run until that's filled in on the Summary tab.
-            </span>
-          )}
-        </p>
+      <header className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold text-heading">SEO Visibility — DataForSEO</h2>
+          <p className="mt-1 text-sm text-body">
+            Tracked keywords, competitors, and map-grid points feed the customer-facing SEO portal.
+            {client.primary_domain ? null : (
+              <span className="ml-1 text-amber-600">
+                No <code className="rounded bg-neutral-tertiary-soft px-1">primary_domain</code> set on this client — backlink data
+                cannot run until that's filled in on the Summary tab.
+              </span>
+            )}
+          </p>
+        </div>
+        {client.primary_domain && <RefreshDataforseoButton clientId={id} />}
       </header>
 
       <Card>

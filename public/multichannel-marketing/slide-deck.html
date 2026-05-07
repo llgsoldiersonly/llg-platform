@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multichannel Marketing for Attorneys — Slide Deck | Lucrative Legal</title>
+<link rel="stylesheet" href="./brand.css">
+<style>
+  body { overflow: hidden; }
+  .deck-shell { display: flex; flex-direction: column; height: 100vh; }
+  .stage {
+    flex: 1; min-height: 0;
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding: 32px 48px;
+  }
+  .slide {
+    position: absolute;
+    inset: 32px 48px;
+    display: grid;
+    align-content: center;
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    transition: opacity 360ms ease, transform 360ms ease;
+  }
+  .slide.active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  /* Cover */
+  .slide.cover {
+    text-align: center;
+    align-content: center;
+    place-items: center;
+  }
+  .cover .ll-pill { margin-bottom: 24px; }
+  .cover h1 {
+    font-size: clamp(2.5rem, 6vw, 5.5rem);
+    line-height: 1.02;
+    background: var(--grad-fuel);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-wrap: balance;
+    max-width: 16ch;
+    margin-bottom: 24px;
+  }
+  .cover .sub {
+    color: var(--ll-gray-soft);
+    font-size: clamp(1rem, 1.6vw, 1.3rem);
+    max-width: 56ch;
+    line-height: 1.45;
+  }
+  .cover .imprint {
+    margin-top: 40px;
+    color: var(--ll-pink);
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 13px;
+  }
+
+  /* Hook slide */
+  .slide.hook .kicker {
+    color: var(--ll-gold);
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+  .slide.hook h2 {
+    font-size: clamp(2.2rem, 5vw, 4.2rem);
+    line-height: 1.05;
+    text-wrap: balance;
+    max-width: 22ch;
+    margin-bottom: 24px;
+  }
+  .slide.hook p {
+    color: var(--ll-gray-soft);
+    font-size: clamp(1.05rem, 1.5vw, 1.4rem);
+    max-width: 60ch;
+    line-height: 1.55;
+  }
+
+  /* Pillar overview / map */
+  .map-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+    margin-top: 28px;
+  }
+  .map-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-md);
+    padding: 18px 14px;
+    text-align: center;
+  }
+  .map-card .num {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 28px;
+  }
+  .map-card .name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--ll-light);
+    font-size: 14px;
+    margin-top: 6px;
+    line-height: 1.2;
+  }
+
+  /* Pillar slide layout */
+  .slide.pillar {
+    grid-template-columns: 1fr 1.4fr;
+    gap: 56px;
+    align-content: center;
+    align-items: center;
+  }
+  .pillar .left .meta {
+    color: var(--accent);
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  .pillar .left h2 {
+    font-size: clamp(2.4rem, 4.5vw, 4rem);
+    line-height: 1.04;
+    margin-bottom: 18px;
+    text-wrap: balance;
+  }
+  .pillar .left p {
+    color: var(--ll-gray-soft);
+    font-size: clamp(1rem, 1.4vw, 1.2rem);
+    line-height: 1.5;
+    max-width: 36ch;
+  }
+  .pillar .right ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 14px;
+  }
+  .pillar .right li {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+  }
+  .pillar .right li .heading {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--ll-light);
+    font-size: 1.05rem;
+    margin-bottom: 4px;
+  }
+  .pillar .right li .body {
+    color: var(--ll-gray-soft);
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+
+  /* Section divider slide */
+  .slide.divider {
+    text-align: center;
+    place-items: center;
+  }
+  .divider .num {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(5rem, 12vw, 10rem);
+    line-height: 1;
+    background: var(--grad-rocket);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+  }
+  .divider h2 {
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    margin-bottom: 8px;
+  }
+  .divider .sub {
+    color: var(--ll-gray-soft);
+    font-size: clamp(1rem, 1.4vw, 1.2rem);
+    max-width: 52ch;
+  }
+
+  /* Benefits */
+  .slide.benefits h2 {
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    margin-bottom: 16px;
+  }
+  .slide.benefits .lead {
+    color: var(--ll-gray-soft);
+    font-size: clamp(1rem, 1.5vw, 1.2rem);
+    max-width: 60ch;
+    margin-bottom: 28px;
+  }
+  .ben-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  .ben {
+    background: linear-gradient(135deg, rgba(255, 182, 12, 0.10) 0%, rgba(245, 107, 244, 0.08) 100%);
+    border: 1px solid rgba(255, 182, 12, 0.25);
+    border-radius: var(--radius-md);
+    padding: 22px;
+  }
+  .ben .num {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--ll-gold);
+    font-size: 1.8rem;
+    margin-bottom: 4px;
+  }
+  .ben .name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--ll-light);
+    font-size: 1.1rem;
+    margin-bottom: 6px;
+  }
+  .ben .desc {
+    color: var(--ll-gray-soft);
+    font-size: 0.88rem;
+    line-height: 1.45;
+  }
+
+  /* Outro */
+  .slide.outro {
+    text-align: center;
+    place-items: center;
+  }
+  .outro h2 {
+    font-size: clamp(2.4rem, 5vw, 4.5rem);
+    line-height: 1.05;
+    background: var(--grad-fuel);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-wrap: balance;
+    max-width: 18ch;
+    margin-bottom: 20px;
+  }
+  .outro p {
+    color: var(--ll-gray-soft);
+    font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+    max-width: 52ch;
+    margin-bottom: 28px;
+  }
+  .outro .cta-row { display: flex; gap: 12px; justify-content: center; }
+
+  /* Footer / nav */
+  .deck-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 20px;
+    padding: 14px 28px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    background: rgba(28, 17, 52, 0.55);
+    backdrop-filter: blur(8px);
+  }
+  .progress {
+    flex: 1;
+    height: 2px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 999px;
+    overflow: hidden;
+    max-width: 60vw;
+    margin: 0 24px;
+  }
+  .progress .bar {
+    height: 100%;
+    background: var(--grad-rocket);
+    width: 0%;
+    transition: width 360ms ease;
+  }
+  .nav { display: flex; gap: 8px; align-items: center; }
+  .nav .count {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--ll-pink);
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    min-width: 56px;
+    text-align: center;
+  }
+
+  @media (max-width: 900px) {
+    .stage { padding: 20px; }
+    .slide { inset: 20px; }
+    .slide.pillar { grid-template-columns: 1fr; gap: 24px; }
+    .map-grid { grid-template-columns: repeat(2, 1fr); }
+    .ben-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="ll-page deck-shell">
+  <header class="ll-header">
+    <div class="ll-brand">
+      <div class="mark">LL</div>
+      <div class="label">
+        Multichannel Marketing for Attorneys
+        <small>Slide Deck</small>
+      </div>
+    </div>
+    <div class="ll-actions">
+      <a class="ll-btn" href="./slide-deck.pdf" download>PDF</a>
+      <a class="ll-btn" href="./Lucrative%20Legal%20%E2%80%94%205%20Pillars%20of%20Multichannel%20Marketing%20for%20Attorneys.pptx" download>PPTX</a>
+      <a class="ll-btn" href="./index.html">All Resources</a>
+    </div>
+  </header>
+
+  <div class="stage" id="stage">
+
+    <section class="slide cover active" data-title="Cover">
+      <span class="ll-pill ll-pill-gold">Rocket Fuel for Your Firm</span>
+      <h1>5 Pillars of Multichannel Marketing for Attorneys</h1>
+      <p class="sub">A source-grounded playbook synthesized from the Lucrative Legal series — how modern firms triple their caseload by running every channel as one connected system.</p>
+      <div class="imprint">Lucrative Legal · The Connected Blueprint</div>
+    </section>
+
+    <section class="slide hook" data-title="The case pipeline has changed">
+      <div class="kicker">The Premise</div>
+      <h2>The case pipeline has changed. Single-channel marketing can't keep up.</h2>
+      <p>Prospective clients no longer move in a straight line from search to retainer. They cross AI answers, search results, map packs, ads, reviews, and finally an intake — and silently drop off wherever the experience breaks. The firms that win run all five surfaces as one connected pipeline.</p>
+    </section>
+
+    <section class="slide hook" data-title="The 5 pillars at a glance">
+      <div class="kicker">The Map</div>
+      <h2>Five pillars. One pipeline.</h2>
+      <p>Each pillar plays a distinct role — discovery, intent capture, trust, authority, and conversion. None of them work as well alone as they do together.</p>
+      <div class="map-grid">
+        <div class="map-card" style="--accent: #f56bf4"><div class="num">01</div><div class="name">AI Search Visibility</div></div>
+        <div class="map-card" style="--accent: #9439EE"><div class="num">02</div><div class="name">Google Ads (PPC)</div></div>
+        <div class="map-card" style="--accent: #0BBFFF"><div class="num">03</div><div class="name">Local Service Ads</div></div>
+        <div class="map-card" style="--accent: #FFB60C"><div class="num">04</div><div class="name">Attorney SEO</div></div>
+        <div class="map-card" style="--accent: #C071E0"><div class="num">05</div><div class="name">Intake Systems</div></div>
+      </div>
+    </section>
+
+    <section class="slide divider" data-title="Pillar 01">
+      <div class="num">01</div>
+      <h2>AI Search Visibility</h2>
+      <p class="sub">Where shortlists are now formed before traditional search even loads.</p>
+    </section>
+
+    <section class="slide pillar" data-title="AI Search Visibility" style="--accent: #f56bf4">
+      <div class="left">
+        <div class="meta">Pillar 01 · Discovery</div>
+        <h2>Show up where the answer is given.</h2>
+        <p>AI assistants and LLM-powered search return condensed, opinionated answers. Firms that aren't cited in those responses are filtered out before the client ever opens a results page.</p>
+      </div>
+      <div class="right">
+        <ul>
+          <li><div class="heading">Inclusion in LLM answers</div><div class="body">Be one of the 3–5 firms named when a model summarizes "best [practice area] attorney near me."</div></li>
+          <li><div class="heading">Structured, query-aligned content</div><div class="body">Topic clusters, schema, and clarity that models can extract and repackage cleanly.</div></li>
+          <li><div class="heading">Authority &amp; trust signals</div><div class="body">Citations, mentions, and editorial linkages that make a model confident enough to recommend you.</div></li>
+          <li><div class="heading">Cross-platform reinforcement</div><div class="body">Consistent presence across discovery surfaces compounds AI visibility over time.</div></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="slide divider" data-title="Pillar 02">
+      <div class="num">02</div>
+      <h2>Google Ads (PPC)</h2>
+      <p class="sub">Buying intent at the moment a prospect is ready to call.</p>
+    </section>
+
+    <section class="slide pillar" data-title="Google Ads" style="--accent: #9439EE">
+      <div class="left">
+        <div class="meta">Pillar 02 · Intent Capture</div>
+        <h2>Catch the click that's already ready to retain.</h2>
+        <p>Paid search is the only channel where you can be present, on top, for the exact phrase a prospect types in their moment of need. The discipline is keeping cost-per-signed-case predictable.</p>
+      </div>
+      <div class="right">
+        <ul>
+          <li><div class="heading">High-intent query capture</div><div class="body">Prioritize the phrases that signal urgency over volume.</div></li>
+          <li><div class="heading">Landing page experience</div><div class="body">The ad-to-page promise has to survive the click — message match, speed, and conversion path matter as much as bid.</div></li>
+          <li><div class="heading">Disciplined cost control</div><div class="body">Bid caps, audience filtering, negative keywords. The cost-per-lead floor is a function of the pipeline beneath the ad.</div></li>
+          <li><div class="heading">Performance tracking loop</div><div class="body">Closed-loop attribution from click to signed case, so spend follows what actually works.</div></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="slide divider" data-title="Pillar 03">
+      <div class="num">03</div>
+      <h2>Local Service Ads</h2>
+      <p class="sub">Where verification and reviews beat ranking position.</p>
+    </section>
+
+    <section class="slide pillar" data-title="Local Service Ads" style="--accent: #0BBFFF">
+      <div class="left">
+        <div class="meta">Pillar 03 · Trust</div>
+        <h2>Trust is the bid currency.</h2>
+        <p>LSAs short-circuit the SEO/ad ranking game and put verified, well-reviewed firms in front of high-intent local search. Reputation is the leverage point — firms with weak review velocity lose this surface.</p>
+      </div>
+      <div class="right">
+        <ul>
+          <li><div class="heading">Reputation management</div><div class="body">A live review program, not a one-time push.</div></li>
+          <li><div class="heading">Verified status signals</div><div class="body">Google Screened &amp; license verification — the trust badges that drive click-through.</div></li>
+          <li><div class="heading">Review consistency &amp; recency</div><div class="body">A 4.9 from three years ago beats nothing, but loses to a 4.7 from this month.</div></li>
+          <li><div class="heading">Direct contact options</div><div class="body">Click-to-call from the LSA listing — friction collapses to a phone number.</div></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="slide divider" data-title="Pillar 04">
+      <div class="num">04</div>
+      <h2>Attorney SEO</h2>
+      <p class="sub">The compounding base — branded recognition built from substantive content.</p>
+    </section>
+
+    <section class="slide pillar" data-title="Attorney SEO" style="--accent: #FFB60C">
+      <div class="left">
+        <div class="meta">Pillar 04 · Authority</div>
+        <h2>The asset that compounds.</h2>
+        <p>Paid surfaces stop the moment spend stops. Organic visibility compounds — every piece of content makes the next one rank faster, and branded search becomes the long-term moat.</p>
+      </div>
+      <div class="right">
+        <ul>
+          <li><div class="heading">Traditional search rankings</div><div class="body">Relevance + authority = position. Both have to be earned.</div></li>
+          <li><div class="heading">Content relevance &amp; depth</div><div class="body">Substantive guidance, not thin pages — that's what aligns with how prospects actually research.</div></li>
+          <li><div class="heading">Branded search visibility</div><div class="body">The conversion wins quietly here: prospects who already know the firm convert at a far higher rate.</div></li>
+          <li><div class="heading">User interaction patterns</div><div class="body">Engagement signals (dwell, depth, return) feed back into rankings.</div></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="slide divider" data-title="Pillar 05">
+      <div class="num">05</div>
+      <h2>Intake Systems</h2>
+      <p class="sub">The conversion bridge — silent lead loss happens here.</p>
+    </section>
+
+    <section class="slide pillar" data-title="Intake Systems" style="--accent: #C071E0">
+      <div class="left">
+        <div class="meta">Pillar 05 · Conversion</div>
+        <h2>The bridge — or the leak.</h2>
+        <p>Every dollar spent on the first four pillars hits a single human moment: the intake. A fragmented intake — slow callbacks, inconsistent qualification, dropped channels — silently undoes the rest of the pipeline.</p>
+      </div>
+      <div class="right">
+        <ul>
+          <li><div class="heading">24/7/365 lead support</div><div class="body">After-hours and weekend leads are where competitors miss. Coverage is conversion.</div></li>
+          <li><div class="heading">Response speed standards</div><div class="body">Decision momentum decays in minutes, not days. The first response wins.</div></li>
+          <li><div class="heading">Multi-channel coordination</div><div class="body">Phone, web form, chat, SMS — one record, one experience, no dropped handoffs.</div></li>
+          <li><div class="heading">Case qualification accuracy</div><div class="body">Targeted intake questions, structured framing, and centralized data so attorneys see signal, not noise.</div></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="slide benefits" data-title="What this unlocks">
+      <h2>What this unlocks for the firm.</h2>
+      <p class="lead">When all five pillars run as one system — not five disconnected vendors — caseload, lead quality, pipeline reliability, and ROI all move together.</p>
+      <div class="ben-grid">
+        <div class="ben"><div class="num">↑</div><div class="name">Increased Case Volume</div><div class="desc">Coordinated visibility across discovery surfaces compounds lead flow.</div></div>
+        <div class="ben"><div class="num">★</div><div class="name">Higher Lead Quality</div><div class="desc">Intent-matched targeting and qualified intakes raise the floor on every signed case.</div></div>
+        <div class="ben"><div class="num">∞</div><div class="name">Consistent Pipeline</div><div class="desc">Channel diversification removes single-source dependency and seasonality risk.</div></div>
+        <div class="ben"><div class="num">$</div><div class="name">Improved ROI</div><div class="desc">Tighter feedback loops compress cost-per-signed-case as the system matures.</div></div>
+      </div>
+    </section>
+
+    <section class="slide outro" data-title="Let's build the connected pipeline">
+      <h2>One pipeline. Five surfaces. Built to compound.</h2>
+      <p>Lucrative Legal builds and runs the connected blueprint for law firms — across AI, ads, local search, organic, and intake.</p>
+      <div class="cta-row">
+        <a class="ll-btn ll-btn-gold" href="https://lucrativelegal.com" target="_blank" rel="noopener">Visit Lucrative Legal →</a>
+        <a class="ll-btn" href="./mindmap.html">Open the Mindmap</a>
+        <a class="ll-btn" href="./infographic.html">Open the Infographic</a>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="deck-footer">
+    <div class="nav">
+      <button class="ll-btn" id="prev" aria-label="Previous slide">←</button>
+      <span class="count" id="count">01 / 14</span>
+      <button class="ll-btn" id="next" aria-label="Next slide">→</button>
+    </div>
+    <div class="progress" aria-hidden="true"><div class="bar" id="bar"></div></div>
+    <div class="nav">
+      <button class="ll-btn" id="full" aria-label="Toggle fullscreen">⤢ Full</button>
+    </div>
+  </footer>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll(".slide"));
+  const total = slides.length;
+  let idx = 0;
+  const countEl = document.getElementById("count");
+  const barEl = document.getElementById("bar");
+
+  function go(n) {
+    idx = (n + total) % total;
+    slides.forEach((s, i) => s.classList.toggle("active", i === idx));
+    countEl.textContent = String(idx + 1).padStart(2, "0") + " / " + String(total).padStart(2, "0");
+    barEl.style.width = ((idx + 1) / total * 100) + "%";
+    history.replaceState(null, "", "#" + (idx + 1));
+  }
+
+  document.getElementById("prev").addEventListener("click", () => go(idx - 1));
+  document.getElementById("next").addEventListener("click", () => go(idx + 1));
+  document.getElementById("full").addEventListener("click", () => {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") { e.preventDefault(); go(idx + 1); }
+    else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); go(idx - 1); }
+    else if (e.key === "Home") { go(0); }
+    else if (e.key === "End") { go(total - 1); }
+    else if (e.key === "Escape" && document.fullscreenElement) { document.exitFullscreen?.(); }
+  });
+
+  // Open at hash slide if provided
+  const initial = parseInt((location.hash || "").replace("#", ""), 10);
+  if (initial >= 1 && initial <= total) go(initial - 1);
+  else go(0);
+</script>
+</body>
+</html>

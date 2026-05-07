@@ -51,3 +51,7 @@ next-env.d.ts
 # misc local
 /.DS_Store
 .playwright-cli/
+.env*.local
+
+# Large media hosted on Vercel Blob — see components/client/cards/feature-video.tsx
+public/multichannel-marketing/*.mp4

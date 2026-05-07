@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multichannel Marketing for Attorneys — Mindmap | Lucrative Legal</title>
+<link rel="stylesheet" href="./brand.css">
+<style>
+  html, body { height: 100%; }
+  .ll-page { display: flex; flex-direction: column; height: 100vh; }
+  #mindmap-wrap { flex: 1; min-height: 0; position: relative; }
+  svg#mindmap { width: 100%; height: 100%; display: block; }
+  .controls { position: absolute; bottom: 20px; right: 20px; display: flex; gap: 6px; z-index: 5; }
+  .controls .ll-btn { padding: 7px 11px; font-size: 12px; }
+  .legend {
+    position: absolute; top: 20px; left: 20px; z-index: 5;
+    background: rgba(28, 17, 52, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    max-width: 280px;
+    box-shadow: var(--shadow-card);
+  }
+  .legend h3 {
+    font-family: var(--font-display);
+    font-size: 13px;
+    color: var(--ll-pink);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+  }
+  .legend ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .legend li { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ll-gray-soft); }
+  .legend .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="ll-page">
+  <header class="ll-header">
+    <div class="ll-brand">
+      <div class="mark">LL</div>
+      <div class="label">
+        Multichannel Marketing for Attorneys
+        <small>Mindmap · 5 Pillars</small>
+      </div>
+    </div>
+    <div class="ll-actions">
+      <span class="ll-pill">Source-grounded</span>
+      <a class="ll-btn" href="./index.html">All Resources</a>
+    </div>
+  </header>
+
+  <div id="mindmap-wrap">
+    <div class="legend">
+      <h3>The 5 Pillars</h3>
+      <ul>
+        <li><span class="dot" style="background:#f56bf4"></span> AI Search Visibility</li>
+        <li><span class="dot" style="background:#9439EE"></span> Google Ads (PPC)</li>
+        <li><span class="dot" style="background:#0BBFFF"></span> Local Service Ads</li>
+        <li><span class="dot" style="background:#FFB60C"></span> Attorney SEO</li>
+        <li><span class="dot" style="background:#C071E0"></span> Intake Systems</li>
+        <li><span class="dot" style="background:#146FF8"></span> Law Firm Benefits</li>
+      </ul>
+    </div>
+    <svg id="mindmap"></svg>
+    <div class="controls">
+      <button class="ll-btn" onclick="window.__mm.fit()">Fit</button>
+      <button class="ll-btn" onclick="window.__mm.rescale(1.25)">+</button>
+      <button class="ll-btn" onclick="window.__mm.rescale(0.8)">−</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18.10"></script>
+<script>
+  const TREE = {"name":"Legal Leads Group Multichannel Marketing","children":[{"name":"AI Search Visibility","children":[{"name":"AI-Driven Answers"},{"name":"LLM Response Inclusion"},{"name":"Structured Content Optimization"},{"name":"Authority & Trust Signals"}]},{"name":"Google Ads (PPC)","children":[{"name":"High-Intent Search Capture"},{"name":"Landing Page Experience"},{"name":"Budget & Cost Control"},{"name":"Performance Tracking"}]},{"name":"Google Local Service Ads (GLSA)","children":[{"name":"Reputation Management"},{"name":"Verified Status Signals"},{"name":"Review Consistency"},{"name":"Direct Contact Options"}]},{"name":"Attorney SEO","children":[{"name":"Traditional Search Rankings"},{"name":"Content Relevance & Depth"},{"name":"Branded Search Visibility"},{"name":"User Interaction Patterns"}]},{"name":"Intake Systems","children":[{"name":"24/7/365 Lead Support"},{"name":"Response Speed Standards"},{"name":"Multi-Channel Coordination"},{"name":"Case Qualification Accuracy"}]},{"name":"Law Firm Benefits","children":[{"name":"Increased Case Volume"},{"name":"Higher Lead Quality"},{"name":"Consistent Pipeline Growth"},{"name":"Improved ROI"}]}]};
+
+  const BRANCH_COLORS = ["#f56bf4", "#9439EE", "#0BBFFF", "#FFB60C", "#C071E0", "#146FF8"];
+
+  function toINode(node, depth = 0) {
+    return {
+      content: node.name,
+      children: (node.children || []).map(c => toINode(c, depth + 1)),
+      payload: { lines: `${depth},${depth}` },
+      depth,
+      state: { id: Math.random().toString(36).slice(2) },
+    };
+  }
+  const root = toINode(TREE);
+
+  // Assign branch colors based on top-level child index, propagated to descendants
+  function colorize(node, color) {
+    node._color = color;
+    (node.children || []).forEach(c => colorize(c, color));
+  }
+  (root.children || []).forEach((branch, i) => colorize(branch, BRANCH_COLORS[i % BRANCH_COLORS.length]));
+
+  const { Markmap, deriveOptions } = window.markmap;
+  const opts = deriveOptions({
+    duration: 400,
+    maxWidth: 280,
+    initialExpandLevel: 3,
+    paddingX: 10,
+  });
+  opts.color = (node) => {
+    if (node.depth === 0) return "#ffffff";
+    return node._color || "#f56bf4";
+  };
+  opts.style = (id) => `
+    .${id} { font-family: "IBM Plex Sans", system-ui, sans-serif; }
+    .${id} .markmap-node text { font-size: 14px; font-weight: 500; }
+    .${id} .markmap-node[data-depth="0"] text { fill: #ffffff !important; font-family: "Glacial Indifference", system-ui, sans-serif; font-size: 17px; font-weight: 700; }
+    .${id} .markmap-node[data-depth="1"] text { font-family: "Glacial Indifference", system-ui, sans-serif; font-size: 15px; font-weight: 700; }
+    .${id} .markmap-node text { fill: #efeef4; }
+    .${id} .markmap-link { stroke-opacity: 0.55; stroke-width: 1.5px; }
+    .${id} .markmap-foreign { color: #efeef4; }
+  `;
+
+  const mm = Markmap.create("svg#mindmap", opts, root);
+  window.__mm = mm;
+  setTimeout(() => mm.fit(), 200);
+  window.addEventListener("resize", () => mm.fit());
+</script>
+</body>
+</html>
