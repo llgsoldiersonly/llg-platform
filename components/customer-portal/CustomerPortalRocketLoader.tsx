@@ -15,7 +15,11 @@ type Props = {
   oncePerSession?: boolean
 }
 
-const SESSION_KEY = 'customerPortalRocketLoaderShown'
+// Versioned: existing browsers may have the v1 flag set from when the
+// loader was mounted globally in the (client) layout. Bumping the key
+// invalidates those stale flags so the overview-only flyover is seen
+// fresh by every returning user.
+const SESSION_KEY = 'customerPortalRocketLoaderShown_v2'
 
 // Branded rocket loader for the client portal. Mounted from the (client)
 // layout — never global, never admin. Respects prefers-reduced-motion via
