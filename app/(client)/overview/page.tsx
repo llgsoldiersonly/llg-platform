@@ -114,6 +114,7 @@ export default async function OverviewPage({
         // monthly_fee_cents lives on package_templates; not in the trimmed
         // ClientSubscription type. Surfaced as null until we widen that type.
         monthly_fee_cents: null,
+        color_hex: activeSub.package.color_hex,
       }
     : null
 
