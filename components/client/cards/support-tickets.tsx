@@ -1,8 +1,11 @@
+'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { formatTicketStatus } from '@/lib/tickets'
+import { cn } from '@/lib/utils/cn'
 
 export type TicketSummary = {
   id: string
@@ -12,54 +15,60 @@ export type TicketSummary = {
   created_at: string
 }
 
+type Tab = 'open' | 'closed'
+
+const ROW_LIMIT = 5
+
 export function SupportTicketsCard({ tickets }: { tickets: TicketSummary[] }) {
-  const open = tickets.filter((t) => t.status !== 'resolved' && t.status !== 'closed')
-  const closed = tickets.filter((t) => t.status === 'resolved' || t.status === 'closed')
+  const [tab, setTab] = useState<Tab>('open')
+
+  const openTickets = tickets.filter((t) => t.status !== 'resolved' && t.status !== 'closed')
+  const closedTickets = tickets.filter((t) => t.status === 'resolved' || t.status === 'closed')
+  const visible = tab === 'open' ? openTickets : closedTickets
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle className="text-lg">Support &amp; Tickets</CardTitle>
         <Link href="/tickets/new">
-          <Button size="sm">Create new ticket</Button>
+          <Button size="sm">Create New Ticket</Button>
         </Link>
       </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="grid grid-cols-2 gap-2 border-b border-border-light pb-3 text-center">
-          <div>
-            <div className="text-2xl font-semibold text-heading">{open.length}</div>
-            <div className="text-xs uppercase tracking-wider text-body">Open</div>
-          </div>
-          <div>
-            <div className="text-2xl font-semibold text-heading">{closed.length}</div>
-            <div className="text-xs uppercase tracking-wider text-body">Closed</div>
-          </div>
+      <CardContent className="space-y-4">
+        <div role="tablist" aria-label="Ticket filter" className="grid grid-cols-2 border-b border-border-light">
+          <TabButton active={tab === 'open'} onClick={() => setTab('open')}>
+            Open Tickets
+          </TabButton>
+          <TabButton active={tab === 'closed'} onClick={() => setTab('closed')}>
+            Closed Tickets
+          </TabButton>
         </div>
 
-        {tickets.length === 0 ? (
+        {visible.length === 0 ? (
           <p className="text-sm text-body">
-            No tickets yet. Open one any time something needs the team&apos;s attention.
+            {tab === 'open'
+              ? "No open tickets — open one any time something needs the team's attention."
+              : 'No closed tickets yet.'}
           </p>
         ) : (
-          <ul className="space-y-2">
-            {tickets.slice(0, 5).map((t) => (
+          <ul className="space-y-1">
+            {visible.slice(0, ROW_LIMIT).map((t) => (
               <li key={t.id}>
                 <Link
                   href={`/tickets/${t.id}`}
-                  className="group flex items-center justify-between gap-3 rounded-lg border border-border-light px-3 py-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-border-brand-subtle hover:bg-brand-softer hover:shadow-md"
+                  className="group flex items-center justify-between gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-brand-softer"
                 >
                   <span className="flex-1 truncate text-sm text-heading group-hover:text-fg-brand">
-                    <span className="text-body-subtle">#{t.ticket_number}</span>{' '}
                     {t.subject}
                   </span>
-                  <TicketStatusBadge status={t.status} />
+                  <Badge variant={statusVariant(t.status)}>{statusLabel(t.status)}</Badge>
                 </Link>
               </li>
             ))}
-            {tickets.length > 5 && (
+            {visible.length > ROW_LIMIT && (
               <li className="pt-1 text-right">
                 <Link href="/tickets" className="text-xs text-fg-brand hover:underline">
-                  View all {tickets.length} tickets →
+                  View all {visible.length} tickets →
                 </Link>
               </li>
             )}
@@ -70,13 +79,55 @@ export function SupportTicketsCard({ tickets }: { tickets: TicketSummary[] }) {
   )
 }
 
-function TicketStatusBadge({ status }: { status: TicketSummary['status'] }) {
-  const variantMap: Record<TicketSummary['status'], 'success' | 'warning' | 'info' | 'secondary'> = {
-    open: 'info',
-    in_progress: 'warning',
-    waiting_on_client: 'warning',
-    resolved: 'success',
-    closed: 'secondary',
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={cn(
+        'relative py-3 text-center text-sm font-medium transition-colors',
+        active ? 'text-fg-brand' : 'text-body hover:text-heading'
+      )}
+    >
+      {children}
+      {active && (
+        <span aria-hidden className="absolute inset-x-0 -bottom-px h-0.5 bg-fg-brand" />
+      )}
+    </button>
+  )
+}
+
+function statusVariant(status: TicketSummary['status']): 'secondary' | 'info' | 'warning' | 'success' {
+  switch (status) {
+    case 'resolved':
+      return 'success'
+    case 'closed':
+      return 'secondary'
+    case 'in_progress':
+    case 'waiting_on_client':
+      return 'warning'
+    default:
+      return 'info'
   }
-  return <Badge variant={variantMap[status]}>{formatTicketStatus(status)}</Badge>
+}
+
+function statusLabel(status: TicketSummary['status']): string {
+  switch (status) {
+    case 'in_progress':
+      return 'in progress'
+    case 'waiting_on_client':
+      return 'waiting on you'
+    default:
+      return status
+  }
 }

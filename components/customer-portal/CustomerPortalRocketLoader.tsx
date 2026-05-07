@@ -92,10 +92,15 @@ export default function CustomerPortalRocketLoader({
         <div className="customer-portal-rocket-loader__halo" />
         <div className="customer-portal-rocket-loader__trail" />
         {/* Plain <img> — Next/Image's responsive sizing fights the
-         *  static centering transform; we want raw position control. */}
+         *  static centering transform; we want raw position control.
+         *  Intrinsic width/height attributes pin the aspect ratio so the
+         *  CSS auto-height resolves before the bytes arrive (otherwise
+         *  the box can render at 0 height and only the glow shows). */}
         <img
           src="/customer-portal/rocket.png"
           alt=""
+          width={631}
+          height={318}
           className="customer-portal-rocket-loader__rocket"
           draggable={false}
         />

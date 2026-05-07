@@ -6,29 +6,21 @@ import { cn } from '@/lib/utils/cn'
 
 type Tab = { href: string; label: string; phase?: string }
 
-export function ClientTabNav({ clientId }: { clientId: string }) {
+const tabs: Tab[] = [
+  { href: '/seo',             label: 'Overview' },
+  { href: '/seo/backlinks',   label: 'Backlinks' },
+  { href: '/seo/rankings',    label: 'Rankings' },
+  { href: '/seo/ai',          label: 'AI Visibility', phase: 'soon' },
+  { href: '/seo/competitors', label: 'Competitors',   phase: 'soon' },
+  { href: '/seo/reports',     label: 'Monthly Report', phase: 'soon' },
+]
+
+export function SeoTabNav() {
   const pathname = usePathname()
-  const base = `/admin/clients/${clientId}`
-
-  const tabs: Tab[] = [
-    { href: base,                          label: 'Summary' },
-    { href: `${base}/deliverables`,        label: 'Deliverables' },
-    { href: `${base}/credentials`,         label: 'Credentials' },
-    { href: `${base}/content`,             label: 'Content' },
-    { href: `${base}/calls`,               label: 'Calls' },
-    { href: `${base}/social`,              label: 'Social' },
-    { href: `${base}/ads`,                 label: 'Ads' },
-    { href: `${base}/rankings`,            label: 'Rankings' },
-    { href: `${base}/local`,               label: 'Local' },
-    { href: `${base}/seo`,                 label: 'SEO Visibility' },
-    { href: `${base}/tickets`,             label: 'Tickets',      phase: 'global view exists' },
-    { href: `${base}/tasks`,               label: 'Tasks',        phase: 'global view exists' },
-  ]
-
   return (
     <nav className="-mb-px flex gap-6 overflow-x-auto border-b border-border-default">
       {tabs.map((tab) => {
-        const active = pathname === tab.href
+        const active = tab.href === '/seo' ? pathname === '/seo' : pathname.startsWith(tab.href)
         const upcoming = !!tab.phase
         return (
           <Link
@@ -38,7 +30,7 @@ export function ClientTabNav({ clientId }: { clientId: string }) {
             onClick={(e) => upcoming && e.preventDefault()}
             className={cn(
               'whitespace-nowrap border-b-2 pb-3 pt-1 text-sm transition-colors',
-              active
+              active && !upcoming
                 ? 'border-heading font-medium text-heading'
                 : 'border-transparent text-body hover:border-border-default-strong hover:text-heading',
               upcoming && 'cursor-not-allowed text-body-subtle hover:border-transparent hover:text-body-subtle'

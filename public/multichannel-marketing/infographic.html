@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5 Pillars of Multichannel Marketing for Attorneys | Lucrative Legal</title>
+<link rel="stylesheet" href="./brand.css">
+<style>
+  body { overflow-x: hidden; }
+  main { max-width: 1280px; margin: 0 auto; padding: 32px 24px 80px; }
+
+  .hero {
+    text-align: center;
+    padding: 36px 16px 48px;
+  }
+  .hero .ll-pill { margin-bottom: 16px; }
+  .hero h1 {
+    font-size: clamp(2.4rem, 5vw, 4.5rem);
+    background: var(--grad-fuel);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    line-height: 1.05;
+    margin-bottom: 18px;
+    text-wrap: balance;
+  }
+  .hero p {
+    max-width: 720px;
+    margin: 0 auto;
+    color: var(--ll-gray-soft);
+    font-size: clamp(1rem, 1.4vw, 1.15rem);
+    line-height: 1.55;
+  }
+
+  /* Stats strip */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 32px 0 48px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 24px 0;
+  }
+  .stat { text-align: center; padding: 8px; }
+  .stat .num {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+    background: var(--grad-rocket);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+  }
+  .stat .label { color: var(--ll-gray-soft); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 6px; opacity: 0.8; }
+
+  /* Bento grid */
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 18px;
+  }
+  .card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    backdrop-filter: blur(6px);
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+    transition: transform 200ms, border-color 200ms;
+  }
+  .card:hover { transform: translateY(-3px); border-color: rgba(245, 107, 244, 0.35); }
+  .card::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(60% 80% at 0% 0%, var(--accent, transparent) 0%, transparent 50%);
+    opacity: 0.18;
+  }
+  .card .icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    background: var(--accent);
+    color: var(--ll-dark);
+    margin-bottom: 16px;
+  }
+  .card .icon svg { width: 24px; height: 24px; }
+  .card .meta {
+    display: inline-block;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .card h2 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+    color: var(--ll-light);
+  }
+  .card .role {
+    color: var(--ll-gray-soft);
+    font-size: 0.95rem;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .card ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .card li {
+    display: flex; gap: 10px; align-items: flex-start;
+    color: var(--ll-gray-soft);
+    font-size: 0.85rem;
+    line-height: 1.45;
+  }
+  .card li::before {
+    content: ""; flex-shrink: 0;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    margin-top: 7px;
+  }
+
+  /* Spans for bento variety */
+  .span-3 { grid-column: span 3; }
+  .span-2 { grid-column: span 2; }
+  .span-6 { grid-column: span 6; }
+
+  /* Benefits row — gold accent */
+  .benefits {
+    grid-column: span 6;
+    background: linear-gradient(135deg, rgba(255, 182, 12, 0.12) 0%, rgba(245, 107, 244, 0.10) 100%);
+    border: 1px solid rgba(255, 182, 12, 0.25);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    margin-top: 4px;
+  }
+  .benefits h2 {
+    color: var(--ll-gold);
+    font-size: 1.5rem;
+    margin-bottom: 6px;
+  }
+  .benefits p { color: var(--ll-gray-soft); font-size: 0.95rem; margin-bottom: 20px; }
+  .benefit-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  .benefit {
+    background: rgba(28, 17, 52, 0.4);
+    border: 1px solid rgba(255, 182, 12, 0.2);
+    border-radius: var(--radius-md);
+    padding: 18px;
+  }
+  .benefit .num { font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; color: var(--ll-gold); margin-bottom: 4px; }
+  .benefit .name { font-family: var(--font-display); font-weight: 700; color: var(--ll-light); font-size: 1rem; margin-bottom: 4px; }
+  .benefit .desc { color: var(--ll-gray-soft); font-size: 0.82rem; line-height: 1.4; }
+
+  .footer {
+    text-align: center;
+    color: var(--ll-gray-soft);
+    font-size: 12px;
+    margin-top: 48px;
+    opacity: 0.65;
+  }
+  .footer a { color: var(--ll-pink); }
+
+  @media (max-width: 900px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .span-3, .span-2 { grid-column: span 6; }
+    .benefit-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="ll-page">
+  <header class="ll-header">
+    <div class="ll-brand">
+      <div class="mark">LL</div>
+      <div class="label">
+        Multichannel Marketing for Attorneys
+        <small>Infographic · 5 Pillars</small>
+      </div>
+    </div>
+    <div class="ll-actions">
+      <a class="ll-btn" href="./index.html">All Resources</a>
+      <a class="ll-btn ll-btn-primary" href="https://lucrativelegal.com" target="_blank" rel="noopener">Visit Lucrative Legal</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <span class="ll-pill ll-pill-gold">Rocket Fuel for Your Firm</span>
+      <h1>The 5 Pillars of Multichannel Marketing</h1>
+      <p>How modern law firms compound visibility, capture intent, and convert leads — across every place a prospective client is searching.</p>
+    </section>
+
+    <section class="stats" aria-label="Key outcomes">
+      <div class="stat"><div class="num">300%</div><div class="label">Caseload Lift</div></div>
+      <div class="stat"><div class="num">5</div><div class="label">Channels in Sync</div></div>
+      <div class="stat"><div class="num">24/7</div><div class="label">Intake Coverage</div></div>
+      <div class="stat"><div class="num">1</div><div class="label">Unified System</div></div>
+    </section>
+
+    <section class="bento" aria-label="The 5 pillars">
+
+      <article class="card span-3" style="--accent: #f56bf4">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+        </div>
+        <div class="meta">Pillar 01</div>
+        <h2>AI Search Visibility</h2>
+        <div class="role">Show up in AI-generated answers and LLM-powered search where shortlists are now formed.</div>
+        <ul>
+          <li>Inclusion in LLM responses</li>
+          <li>Structured, query-aligned content</li>
+          <li>Authority and trust signals</li>
+          <li>Cross-platform reinforcement</li>
+        </ul>
+      </article>
+
+      <article class="card span-3" style="--accent: #9439EE">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>
+        </div>
+        <div class="meta">Pillar 02</div>
+        <h2>Google Ads (PPC)</h2>
+        <div class="role">Capture high-intent search the moment a prospect is ready to call — with budget that scales to outcomes.</div>
+        <ul>
+          <li>High-intent query capture</li>
+          <li>Landing page experience</li>
+          <li>Disciplined cost control</li>
+          <li>Performance tracking loop</li>
+        </ul>
+      </article>
+
+      <article class="card span-2" style="--accent: #0BBFFF">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z"/></svg>
+        </div>
+        <div class="meta">Pillar 03</div>
+        <h2>Local Service Ads</h2>
+        <div class="role">Trust-first lead source where reviews and verification beat ranking position.</div>
+        <ul>
+          <li>Reputation management</li>
+          <li>Verified status signals</li>
+          <li>Review recency &amp; consistency</li>
+          <li>Direct contact options</li>
+        </ul>
+      </article>
+
+      <article class="card span-2" style="--accent: #FFB60C">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        </div>
+        <div class="meta">Pillar 04</div>
+        <h2>Attorney SEO</h2>
+        <div class="role">Long-term authority that compounds — branded recognition built from substantive content.</div>
+        <ul>
+          <li>Traditional search rankings</li>
+          <li>Content relevance &amp; depth</li>
+          <li>Branded search visibility</li>
+          <li>User interaction patterns</li>
+        </ul>
+      </article>
+
+      <article class="card span-2" style="--accent: #C071E0">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92V21a1 1 0 0 1-1.1 1A18 18 0 0 1 2 4.1 1 1 0 0 1 3 3h4.09a1 1 0 0 1 1 .75l1.2 4.5a1 1 0 0 1-.27 1L7.21 11a16 16 0 0 0 5.79 5.79l1.75-1.81a1 1 0 0 1 1-.27l4.5 1.2a1 1 0 0 1 .75 1z"/></svg>
+        </div>
+        <div class="meta">Pillar 05</div>
+        <h2>Intake Systems</h2>
+        <div class="role">The conversion bridge — silent lead loss happens when channels and response speed aren't unified.</div>
+        <ul>
+          <li>24/7/365 lead support</li>
+          <li>Response speed standards</li>
+          <li>Multi-channel coordination</li>
+          <li>Case qualification accuracy</li>
+        </ul>
+      </article>
+
+      <section class="benefits">
+        <h2>What this unlocks for the firm</h2>
+        <p>When all five pillars run as one system — not five disconnected vendors — caseload, lead quality, pipeline reliability, and ROI all move together.</p>
+        <div class="benefit-grid">
+          <div class="benefit">
+            <div class="num">↑</div>
+            <div class="name">Increased Case Volume</div>
+            <div class="desc">Coordinated visibility across discovery surfaces drives compounding lead flow.</div>
+          </div>
+          <div class="benefit">
+            <div class="num">★</div>
+            <div class="name">Higher Lead Quality</div>
+            <div class="desc">Intent-matched targeting and qualified intakes raise the floor on every signed case.</div>
+          </div>
+          <div class="benefit">
+            <div class="num">∞</div>
+            <div class="name">Consistent Pipeline</div>
+            <div class="desc">Diversification across channels removes single-source dependency and seasonality.</div>
+          </div>
+          <div class="benefit">
+            <div class="num">$</div>
+            <div class="name">Improved ROI</div>
+            <div class="desc">Tighter feedback loops between channels and intake compress cost-per-signed-case.</div>
+          </div>
+        </div>
+      </section>
+
+    </section>
+
+    <div class="footer">
+      Source-grounded synthesis from the Lucrative Legal multichannel marketing series ·
+      <a href="./mindmap.html">Mindmap</a> ·
+      <a href="./slide-deck.html">Slide Deck</a> ·
+      <a href="https://lucrativelegal.com" target="_blank" rel="noopener">lucrativelegal.com</a>
+    </div>
+  </main>
+</div>
+</body>
+</html>

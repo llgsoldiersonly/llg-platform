@@ -1,0 +1,166 @@
+/* Lucrative Legal brand system — derived from rocketfuel theme tokens. */
+@font-face{font-family:"Glacial Indifference";font-style:normal;font-weight:400;src:local("Glacial Indifference"),url("./fonts/GlacialIndifference-Regular.otf") format("opentype");font-display:swap}
+@font-face{font-family:"Glacial Indifference";font-style:normal;font-weight:700;src:local("Glacial Indifference"),url("./fonts/GlacialIndifference-Bold.otf") format("opentype");font-display:swap}
+@font-face{font-family:"Glacial Indifference";font-style:italic;font-weight:400;src:local("Glacial Indifference"),url("./fonts/GlacialIndifference-Italic.otf") format("opentype");font-display:swap}
+
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap");
+
+:root {
+  --ll-purple: #500BA9;
+  --ll-purple-bright: #9439EE;
+  --ll-pink: #C071E0;
+  --ll-magenta: #f56bf4;
+  --ll-cyan: #0BBFFF;
+  --ll-blue: #146FF8;
+  --ll-gold: #FFB60C;
+  --ll-dark: #1c1134;
+  --ll-dark-2: #2a1d4d;
+  --ll-light: #ffffff;
+  --ll-gray: #c3c0c0;
+  --ll-gray-soft: #efeef4;
+
+  --font-display: "Glacial Indifference", system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+
+  --grad-rocket: linear-gradient(135deg, #500BA9 0%, #9439EE 50%, #f56bf4 100%);
+  --grad-fuel: linear-gradient(135deg, #f56bf4 0%, #FFB60C 100%);
+  --grad-deep: linear-gradient(180deg, #1c1134 0%, #2a1d4d 100%);
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --shadow-glow: 0 8px 40px -12px rgba(148, 57, 238, 0.5);
+  --shadow-card: 0 12px 28px -16px rgba(28, 17, 52, 0.55);
+
+  --content-max: 80rem;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: rgba(0,0,0,0); }
+html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  color: var(--ll-light);
+  background: var(--ll-dark);
+  line-height: 1.5;
+}
+
+.ll-page {
+  min-height: 100vh;
+  background: var(--grad-deep);
+  background-attachment: fixed;
+}
+
+/* Subtle aurora wash for depth — pure CSS, no images */
+.ll-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60vw 50vh at 10% -10%, rgba(245, 107, 244, 0.18), transparent 60%),
+    radial-gradient(50vw 60vh at 110% 110%, rgba(148, 57, 238, 0.22), transparent 60%),
+    radial-gradient(40vw 40vh at 80% 0%, rgba(11, 191, 255, 0.10), transparent 60%);
+  z-index: 0;
+}
+
+.ll-page > * { position: relative; z-index: 1; }
+
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; line-height: 1.1; letter-spacing: -0.01em; margin: 0; }
+
+.ll-display { font-family: var(--font-display); }
+.ll-mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+
+a { color: var(--ll-magenta); text-decoration: none; }
+a:hover { color: var(--ll-gold); }
+
+/* Header chrome shared by all pages */
+.ll-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 28px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(8px);
+  background: rgba(28, 17, 52, 0.55);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.ll-header .ll-brand {
+  display: flex; align-items: center; gap: 12px;
+}
+.ll-header .ll-brand .mark {
+  width: 32px; height: 32px;
+  background: var(--grad-rocket);
+  border-radius: 8px;
+  display: grid; place-items: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  color: white;
+  box-shadow: var(--shadow-glow);
+}
+.ll-header .ll-brand .label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.ll-header .ll-brand .label small {
+  display: block;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--ll-pink);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.ll-header .ll-actions { display: flex; gap: 8px; align-items: center; }
+
+.ll-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.04);
+  color: var(--ll-light);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 150ms, background 150ms, border-color 150ms;
+}
+.ll-btn:hover { transform: translateY(-1px); background: rgba(255,255,255,0.08); border-color: rgba(245, 107, 244, 0.5); color: var(--ll-light); }
+.ll-btn-primary {
+  background: var(--grad-rocket);
+  border-color: transparent;
+  color: white;
+}
+.ll-btn-primary:hover { color: white; box-shadow: var(--shadow-glow); }
+.ll-btn-gold {
+  background: var(--ll-gold);
+  border-color: transparent;
+  color: var(--ll-dark);
+  font-weight: 600;
+}
+.ll-btn-gold:hover { color: var(--ll-dark); background: #ffc943; }
+
+/* Pill / chip */
+.ll-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(245, 107, 244, 0.14);
+  color: var(--ll-pink);
+  border: 1px solid rgba(245, 107, 244, 0.25);
+}
+.ll-pill-gold { background: rgba(255, 182, 12, 0.14); color: var(--ll-gold); border-color: rgba(255, 182, 12, 0.3); }
+.ll-pill-cyan { background: rgba(11, 191, 255, 0.14); color: var(--ll-cyan); border-color: rgba(11, 191, 255, 0.3); }

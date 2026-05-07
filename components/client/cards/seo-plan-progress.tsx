@@ -17,6 +17,9 @@ export type DeliverableProgress = {
 export type PackageHeader = {
   display_name: string
   monthly_fee_cents: number | null
+  /** Per-tier brand color from package_templates.color_hex. Drives the
+   *  colored pill so each tier is recognizable at a glance. */
+  color_hex: string | null
 }
 
 type Props = {
@@ -24,7 +27,12 @@ type Props = {
   deliverables: DeliverableProgress[]
 }
 
+// Fallback when a package somehow has no color_hex configured — keeps
+// the pill on-brand instead of going neutral grey.
+const FALLBACK_TIER_COLOR = '#7e22cf'
+
 export function SeoPlanProgressCard({ packageHeader, deliverables }: Props) {
+  const tierColor = packageHeader?.color_hex ?? FALLBACK_TIER_COLOR
   return (
     <Card>
       <CardHeader>
@@ -32,8 +40,24 @@ export function SeoPlanProgressCard({ packageHeader, deliverables }: Props) {
       </CardHeader>
       <CardContent className="space-y-5">
         {packageHeader && (
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-body">{packageHeader.display_name}</span>
+          <div className="flex items-center justify-between gap-2">
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold"
+              style={{
+                // 8-digit hex appends an alpha channel; widely supported
+                // in evergreen browsers and avoids a hex→rgba helper.
+                backgroundColor: `${tierColor}1A`,
+                color: tierColor,
+                borderColor: `${tierColor}40`,
+              }}
+            >
+              <span
+                aria-hidden
+                className="h-1.5 w-1.5 rounded-full"
+                style={{ backgroundColor: tierColor }}
+              />
+              {packageHeader.display_name}
+            </span>
             {packageHeader.monthly_fee_cents != null && (
               <Badge variant="secondary" className="font-medium">
                 ${(packageHeader.monthly_fee_cents / 100).toLocaleString()}/mo
