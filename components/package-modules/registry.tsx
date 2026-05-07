@@ -1,19 +1,19 @@
-import { ModuleCard } from './module-card'
+import { ModuleSection } from './module-section'
 
 type ModuleProps = {
   config: Record<string, unknown>
-  deliverables: React.ComponentProps<typeof ModuleCard>['deliverables']
+  deliverables: React.ComponentProps<typeof ModuleSection>['deliverables']
+  hideWhenEmpty?: boolean
 }
 
-// Each module is a thin wrapper around ModuleCard. Phase 4 ships these as
-// "deliverables-only" stubs; Phase 6+ will inject charts, post lists, call
-// logs, ranking trends, etc.
+// Each module is a thin wrapper around ModuleSection. Phase 4 ships these
+// as "deliverables-only" stubs; Phase 6+ will inject charts, post lists,
+// call logs, ranking trends, etc.
 export function SeoModule(props: ModuleProps) {
   return (
-    <ModuleCard
+    <ModuleSection
       title="SEO Plan"
       subtitle="On-page optimization, technical SEO, and content backbone"
-      phase="Phase 7"
       {...props}
     />
   )
@@ -21,10 +21,9 @@ export function SeoModule(props: ModuleProps) {
 
 export function LocalModule(props: ModuleProps) {
   return (
-    <ModuleCard
+    <ModuleSection
       title="Local Plan"
       subtitle="Google Business Profile, citations, NAP, and local maps"
-      phase="Phase 8"
       {...props}
     />
   )
@@ -32,10 +31,9 @@ export function LocalModule(props: ModuleProps) {
 
 export function PpcModule(props: ModuleProps) {
   return (
-    <ModuleCard
+    <ModuleSection
       title="Paid Ads"
       subtitle="Google Ads / LSA campaigns, retargeting, lead funnels"
-      phase="Phase 14 (v1.6)"
       {...props}
     />
   )
@@ -43,10 +41,9 @@ export function PpcModule(props: ModuleProps) {
 
 export function ContentModule(props: ModuleProps) {
   return (
-    <ModuleCard
+    <ModuleSection
       title="Content"
       subtitle="Blogs, videos, press releases (English + Spanish)"
-      phase="Phase 6"
       {...props}
     />
   )
@@ -54,10 +51,9 @@ export function ContentModule(props: ModuleProps) {
 
 export function AiVoiceModule(props: ModuleProps) {
   return (
-    <ModuleCard
+    <ModuleSection
       title="AI / Voice Search"
       subtitle="FAQ voice search blogs + AI submissions to ChatGPT, Perplexity, etc."
-      phase="Phase 6"
       {...props}
     />
   )
@@ -65,10 +61,9 @@ export function AiVoiceModule(props: ModuleProps) {
 
 export function IntakesModule(props: ModuleProps) {
   return (
-    <ModuleCard
+    <ModuleSection
       title="Live Intakes"
       subtitle="24/7 bilingual call answering and lead verification"
-      phase="Phase 6"
       {...props}
     />
   )
@@ -76,10 +71,9 @@ export function IntakesModule(props: ModuleProps) {
 
 export function KeywordsReadonlyModule(props: ModuleProps) {
   return (
-    <ModuleCard
+    <ModuleSection
       title="Keywords (read-only)"
       subtitle="Tracked keyword positions across Google + Bing — no editing"
-      phase="Phase 7"
       {...props}
     />
   )
