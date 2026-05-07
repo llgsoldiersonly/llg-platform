@@ -11,27 +11,27 @@ export function CustomerPortalSceneBackground() {
     <div className="cp-scene" aria-hidden="true">
       <div className="cp-scene__stars" />
       <img
-        src="/customer-portal/llgportalsaturn.png"
+        src="/customer-portal/llgportalsaturn.svg"
         alt=""
         className="cp-scene__saturn"
         draggable={false}
       />
       <img
-        src="/customer-portal/llgportalrocket.png"
-        alt=""
-        className="cp-scene__rocket"
-        draggable={false}
-      />
-      <img
-        src="/customer-portal/llgportalground.png"
-        alt=""
-        className="cp-scene__ground"
-        draggable={false}
-      />
-      <img
-        src="/customer-portal/llgportalpics.png"
+        src="/customer-portal/llgportalpics.svg"
         alt=""
         className="cp-scene__astronaut"
+        draggable={false}
+      />
+      <img
+        src="/customer-portal/llgportalrocket.svg"
+        alt=""
+        className="cp-scene__asteroid"
+        draggable={false}
+      />
+      <img
+        src="/customer-portal/llgportalground.svg"
+        alt=""
+        className="cp-scene__ground"
         draggable={false}
       />
     </div>

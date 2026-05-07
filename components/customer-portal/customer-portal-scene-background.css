@@ -1,10 +1,11 @@
 /* Client portal decorative scene — fixed full-viewport stage that paints
- * behind every (client) route. Layered from back to front:
- *   stars  → soft purple twinkles wash across the upper sky
- *   saturn → top-right ringed planet, anchored above the ticket card
- *   rocket → mid-flight diagonal across the sky
- *   ground → moon surface anchored to the viewport bottom
- *   astronaut → stands on the ground, lower-right, gestures toward widgets
+ * behind every (client) route. Composition follows the reference sketch
+ * at public/customer-portal/astronaut background.jpg:
+ *   astronaut → upper-left, the "greeter" near the welcome heading
+ *   saturn    → upper-right, balancing the astronaut
+ *   asteroid  → mid-left margin (the rocket SVG repurposed as floating rock)
+ *   stars     → soft purple twinkle wash, denser at the bottom corners
+ *   ground    → moon surface anchored to the viewport bottom
  *
  * Why fixed (not absolute): the scene reads as a stage that the widgets
  * scroll over. Tall pages (e.g. SEO plan tables) keep the ground visible
@@ -25,99 +26,56 @@
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  /* The brand-softer base is applied on the layout root; the scene itself
-   * stays transparent so that base color shows through wherever decorations
-   * fade out. */
 }
 
-/* Layout content above the scene. Static-positioned elements would paint
- * below a fixed z:0 stacking context, so siblings need explicit z lift. */
 .cp-scene-above {
   position: relative;
   z-index: 10;
 }
 
-/* Star field — tiled wash across the upper ~70% of the viewport. The asset
- * is sparse, so tiling reads as denser starfield without obvious seams.
- * Soft mask on the bottom edge so stars fade into the moon surface rather
- * than clipping at a hard line. */
+/* Star field — tiled wash across the whole viewport. The mask brightens
+ * the bottom-left and bottom-right corners (where the sketch labels two
+ * stars) and softens the middle so widget text stays readable. */
 .cp-scene__stars {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 78%;
-  background-image: url('/customer-portal/llgportalstarmap.png');
+  inset: 0;
+  background-image: url('/customer-portal/llgportalstarmap.svg');
   background-repeat: repeat;
-  background-size: clamp(420px, 40vw, 720px) auto;
+  background-size: clamp(360px, 36vw, 640px) auto;
   background-position: top center;
-  opacity: 0.55;
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 1) 70%,
-    rgba(0, 0, 0, 0) 100%
-  );
-          mask-image: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 1) 70%,
-    rgba(0, 0, 0, 0) 100%
-  );
+  opacity: 0.5;
+  -webkit-mask-image:
+    radial-gradient(ellipse at bottom left, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0) 38%),
+    radial-gradient(ellipse at bottom right, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0) 38%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.25) 55%, rgba(0, 0, 0, 0) 78%);
+          mask-image:
+    radial-gradient(ellipse at bottom left, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0) 38%),
+    radial-gradient(ellipse at bottom right, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0) 38%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.25) 55%, rgba(0, 0, 0, 0) 78%);
+  -webkit-mask-composite: source-over;
+          mask-composite: add;
 }
 
-/* Saturn — anchored top-right. Positioned just above where the rightmost
- * column of widgets begins on desktop, partially clipped off-screen so it
- * reads as "in space" rather than a sticker. */
+/* Saturn — anchored top-right, balancing the astronaut on the left. */
 .cp-scene__saturn {
   position: absolute;
-  top: clamp(3rem, 6vh, 7rem);
-  right: clamp(-2rem, -1vw, 0rem);
-  width: clamp(160px, 20vw, 320px);
+  top: clamp(2rem, 5vh, 6rem);
+  right: clamp(-1.5rem, -0.5vw, 0rem);
+  width: clamp(150px, 18vw, 280px);
   height: auto;
-  opacity: 0.85;
+  opacity: 0.9;
   filter: drop-shadow(0 6px 28px rgba(126, 34, 207, 0.18));
   user-select: none;
 }
 
-/* Rocket — drifting diagonally across the upper-left quadrant. The asset's
- * exhaust trail already points down-left, so a slight rotation makes it
- * read as climbing toward the saturn. Slow idle drift gives the scene
- * life without competing with the rocket-flyover loader. */
-.cp-scene__rocket {
-  position: absolute;
-  top: clamp(7rem, 18vh, 14rem);
-  left: clamp(-1rem, 4vw, 6rem);
-  width: clamp(140px, 16vw, 240px);
-  height: auto;
-  opacity: 0.7;
-  transform: rotate(-12deg);
-  animation: cpSceneRocketDrift 14s ease-in-out infinite;
-  user-select: none;
-}
-
-/* Ground — full-width moon surface anchored to the viewport bottom. Asset
- * aspect ratio is ~1980x620 so 100% width gives a band roughly 31% as
- * tall as the viewport on a typical desktop, matching the reference. */
-.cp-scene__ground {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  height: auto;
-  opacity: 0.95;
-  user-select: none;
-}
-
-/* Astronaut — stands on the right rocky outcrop of the ground asset. Y
- * offset is tuned so his boots land on the surface rather than floating
- * above it. */
+/* Astronaut — anchored top-LEFT (matches the sketch's "astronaut" label
+ * in the upper-left). Slow bob keeps him feeling weightless without
+ * drifting into widget space. */
 .cp-scene__astronaut {
   position: absolute;
-  right: clamp(2rem, 6vw, 8rem);
-  bottom: clamp(6rem, 14vh, 13rem);
-  width: clamp(110px, 11vw, 180px);
+  top: clamp(1rem, 4vh, 5rem);
+  left: clamp(-1rem, 2vw, 4rem);
+  width: clamp(140px, 17vw, 260px);
   height: auto;
   opacity: 0.95;
   filter: drop-shadow(0 10px 18px rgba(76, 29, 149, 0.22));
@@ -125,15 +83,41 @@
   user-select: none;
 }
 
-/* Idle rocket motion — small position + rotation drift around the rest
- * pose. ease-in-out keeps both ends calm so it feels like a sigh rather
- * than a wobble. */
-@keyframes cpSceneRocketDrift {
+/* Asteroid — the rocket SVG repurposed as a floating rock on the mid-left
+ * margin (matches the sketch's "asteroid" label). Smaller and dimmer than
+ * the astronaut; gentle drift gives subtle motion without competing with
+ * the rocket flyover loader. */
+.cp-scene__asteroid {
+  position: absolute;
+  top: 50%;
+  left: clamp(-2rem, -1vw, 0rem);
+  width: clamp(90px, 10vw, 160px);
+  height: auto;
+  opacity: 0.65;
+  transform: translateY(-50%) rotate(-18deg);
+  animation: cpSceneAsteroidDrift 16s ease-in-out infinite;
+  user-select: none;
+}
+
+/* Ground — full-width moon surface anchored to the viewport bottom. */
+.cp-scene__ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: auto;
+  opacity: 0.9;
+  user-select: none;
+}
+
+/* Asteroid drift — tiny float around the rest pose. */
+@keyframes cpSceneAsteroidDrift {
   0%, 100% {
-    transform: translate(0, 0) rotate(-12deg);
+    transform: translateY(-50%) rotate(-18deg);
   }
   50% {
-    transform: translate(2vw, -1vh) rotate(-8deg);
+    transform: translate(1vw, calc(-50% - 0.6vh)) rotate(-14deg);
   }
 }
 
@@ -147,36 +131,33 @@
   }
 }
 
-/* Mobile / narrow viewports: the rocket and astronaut crowd single-column
- * card stacks. Trim them down and tuck them into corners so the scene
- * still reads but never overlaps text. The ground + saturn + stars stay
- * because they hug the viewport edges. */
+/* Mobile / narrow viewports: corners only, scaled down so the scene
+ * still reads but never overlaps card text. */
 @media (max-width: 720px) {
-  .cp-scene__rocket {
-    width: clamp(90px, 28vw, 130px);
-    top: clamp(5rem, 12vh, 9rem);
-    left: -1.5rem;
-    opacity: 0.55;
-  }
-
   .cp-scene__astronaut {
-    width: clamp(80px, 22vw, 120px);
-    right: 0.75rem;
-    bottom: clamp(4rem, 10vh, 8rem);
-    opacity: 0.85;
+    width: clamp(90px, 26vw, 140px);
+    top: 0.75rem;
+    left: -1rem;
+    opacity: 0.9;
   }
 
   .cp-scene__saturn {
-    width: clamp(120px, 32vw, 200px);
-    opacity: 0.75;
+    width: clamp(110px, 28vw, 180px);
+    top: 1rem;
+    right: -1rem;
+    opacity: 0.8;
+  }
+
+  .cp-scene__asteroid {
+    width: clamp(60px, 18vw, 100px);
+    opacity: 0.5;
   }
 }
 
-/* Reduced motion: kill the idle drifts. The scene still renders — it just
- * holds still. */
+/* Reduced motion: hold the scene still — decorations stay, drifts go. */
 @media (prefers-reduced-motion: reduce) {
-  .cp-scene__rocket,
-  .cp-scene__astronaut {
+  .cp-scene__astronaut,
+  .cp-scene__asteroid {
     animation: none;
   }
 }
