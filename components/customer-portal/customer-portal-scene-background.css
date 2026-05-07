@@ -96,12 +96,13 @@
   user-select: none;
 }
 
-/* Asteroid — the rocket SVG repurposed as a floating rock on the mid-left
- * margin (matches the sketch's "asteroid" label). Smaller and dimmer than
- * the astronaut; brief on-load drift settles after ~5s. */
+/* Asteroid — the rocket SVG repurposed as a floating rock on the lower-left
+ * margin (matches the sketch's "asteroid" label, sitting between the
+ * widget stack and the ground). Smaller and dimmer than the astronaut;
+ * brief on-load drift settles after ~5s. */
 .cp-scene__asteroid {
   position: absolute;
-  top: 50%;
+  top: 75%;
   left: clamp(-2rem, -1vw, 0rem);
   width: clamp(90px, 10vw, 160px);
   height: auto;
@@ -111,12 +112,18 @@
   user-select: none;
 }
 
-/* Ground — full-width moon surface anchored to the viewport bottom. */
+/* Ground — full-width moon surface. The SVG's bottom ~25% is transparent
+ * (was the stripped white panel), so anchoring `bottom: 0` would float the
+ * mountains a quarter-canvas above the viewport bottom. We pull the SVG
+ * down via negative `bottom` so the transparent band tucks beneath the
+ * viewport and the mountains hug the bottom edge. The negative value is
+ * expressed in vw because the SVG renders at 100vw wide with a fixed
+ * 2244:701 aspect ratio, so 8vw ≈ the height of that transparent band. */
 .cp-scene__ground {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: -8vw;
   width: 100%;
   height: auto;
   opacity: 0.9;
