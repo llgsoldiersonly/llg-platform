@@ -181,9 +181,10 @@ export default async function OverviewPage({
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
-      {/* Rocket flyover plays only on the overview route, and once per
-       *  browser session via sessionStorage (default oncePerSession). */}
-      <CustomerPortalRocketLoader />
+      {/* TROUBLESHOOTING: oncePerSession={false} so the flyover plays on
+       *  every overview load while we verify the rocket image is visible.
+       *  Revert to the default once-per-session behavior afterward. */}
+      <CustomerPortalRocketLoader oncePerSession={false} />
       <div>
         <h1 className="text-3xl text-heading">
           Welcome back, {ctx.client.firm_name}
