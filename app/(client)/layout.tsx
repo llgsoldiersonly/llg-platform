@@ -5,6 +5,7 @@ import { getClientContext } from '@/lib/client-context'
 import { ClientHeader } from '@/components/client/header'
 import { ImpersonationBanner } from '@/components/client/impersonation-banner'
 import CustomerPortalRocketLoader from '@/components/customer-portal/CustomerPortalRocketLoader'
+import { CustomerPortalSceneBackground } from '@/components/customer-portal/CustomerPortalSceneBackground'
 
 export default async function ClientPortalLayout({
   children,
@@ -29,9 +30,12 @@ export default async function ClientPortalLayout({
   return (
     <div className="flex min-h-screen flex-col bg-brand-softer">
       <CustomerPortalRocketLoader oncePerSession={false} />
-      <ImpersonationBanner />
-      <ClientHeader />
-      <main className="flex-1">{children}</main>
+      <CustomerPortalSceneBackground />
+      <div className="cp-scene-above">
+        <ImpersonationBanner />
+        <ClientHeader />
+      </div>
+      <main className="cp-scene-above flex-1">{children}</main>
     </div>
   )
 }
