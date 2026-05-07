@@ -10,7 +10,6 @@ import { RecentUpdatesCard, type RecentUpdate } from '@/components/client/cards/
 import { IntegrationsCard, type IntegrationLink } from '@/components/client/cards/integrations'
 import { ResourcesCard } from '@/components/client/cards/resources'
 import { FeatureVideoCard } from '@/components/client/cards/feature-video'
-import CustomerPortalRocketLoader from '@/components/customer-portal/CustomerPortalRocketLoader'
 
 export const dynamic = 'force-dynamic'
 
@@ -181,16 +180,6 @@ export default async function OverviewPage({
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
-      {/* TROUBLESHOOTING: oncePerSession={false} so the flyover plays on
-       *  every overview load while we verify the rocket image is visible.
-       *  minimumLoadTime/maxLoadTime extended so the loader stays in the
-       *  DOM long enough to inspect with DevTools open. Revert to the
-       *  default once-per-session behavior afterward. */}
-      <CustomerPortalRocketLoader
-        oncePerSession={false}
-        minimumLoadTime={30000}
-        maxLoadTime={45000}
-      />
       <div>
         <h1 className="text-3xl text-heading">
           Welcome back, {ctx.client.firm_name}
