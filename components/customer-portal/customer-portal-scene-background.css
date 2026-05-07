@@ -22,13 +22,13 @@
 
 .cp-scene {
   position: fixed;
-  /* Top offset clears the ClientHeader so decorations frame the welcome
-   * heading instead of riding up beside the nav bar. The header is a
-   * single fixed-size row (~64px content + py-4 = ~96px worst case);
-   * 5rem matches the typical rendered height with a small breathing
-   * margin and falls back gracefully when the optional location-switcher
-   * sub-row is shown (its own background paints over the scene top). */
-  top: 5rem;
+  /* Top offset puts the scene below the ClientHeader AND below the
+   * "Welcome back" heading so the astronaut and saturn flank the
+   * widget cards instead of crowding the heading. Header (~96px) +
+   * heading + subheading (~88px) ≈ 12rem of clearance. Ground stays
+   * anchored to the viewport bottom (bottom: 0) so the moon surface
+   * remains the lowest element on the page. */
+  top: 12rem;
   right: 0;
   bottom: 0;
   left: 0;
