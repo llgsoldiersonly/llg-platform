@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAuthorizedCron } from '@/lib/cron-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { snapshotMonthFor } from '@/lib/dates'
 
@@ -11,8 +12,7 @@ import { snapshotMonthFor } from '@/lib/dates'
 // fill it; otherwise we leave the column null. As more data sources come
 // online (Google Ads, GBP API), backfill will populate the gaps.
 export async function POST(req: Request) {
-  const secret = req.headers.get('x-cron-secret')
-  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+  if (!isAuthorizedCron(req)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
   }
 

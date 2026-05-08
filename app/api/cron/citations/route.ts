@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAuthorizedCron } from '@/lib/cron-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCitationTrackerResults } from '@/lib/integrations/brightlocal'
 
@@ -10,8 +11,7 @@ import { getCitationTrackerResults } from '@/lib/integrations/brightlocal'
 // scripts/setup-brightlocal.ts in Phase 8) creates one report per location
 // and BL refreshes them on its own cadence.
 export async function POST(req: Request) {
-  const secret = req.headers.get('x-cron-secret')
-  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+  if (!isAuthorizedCron(req)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
   }
   if (!process.env.BRIGHTLOCAL_API_KEY) {

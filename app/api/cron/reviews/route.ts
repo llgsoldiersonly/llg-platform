@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAuthorizedCron } from '@/lib/cron-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getReputationManagerResults } from '@/lib/integrations/brightlocal'
 import { postToGlip } from '@/lib/integrations/ringcentral'
@@ -7,8 +8,7 @@ import { postToGlip } from '@/lib/integrations/ringcentral'
 // for each location's brightlocal_reputation_report_id. Upserts raw_reviews
 // and the deduped reviews table; recomputes review_summary daily snapshot.
 export async function POST(req: Request) {
-  const secret = req.headers.get('x-cron-secret')
-  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+  if (!isAuthorizedCron(req)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
   }
   if (!process.env.BRIGHTLOCAL_API_KEY) {

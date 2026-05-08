@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAuthorizedCron } from '@/lib/cron-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isoYearWeek } from '@/lib/business-hours'
 
@@ -8,8 +9,7 @@ import { isoYearWeek } from '@/lib/business-hours'
 // Vercel Cron schedule (vercel.json): "0 8 * * 1" (Mon 08:00 UTC ≈ Mon 00:00 PT
 // during PST; 01:00 PT during PDT — close enough)
 export async function POST(req: Request) {
-  const secret = req.headers.get('x-cron-secret')
-  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+  if (!isAuthorizedCron(req)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
   }
 

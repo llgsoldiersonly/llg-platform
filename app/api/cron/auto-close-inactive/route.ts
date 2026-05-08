@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
+import { isAuthorizedCron } from '@/lib/cron-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // Cron: daily 03:00 UTC. Auto-closes tickets stuck in 'waiting_on_client'
 // for longer than platform_settings.auto_close_inactive_days (default 7).
 // Sets close_reason='inactivity' so the client can reopen via the UI.
 export async function POST(req: Request) {
-  const secret = req.headers.get('x-cron-secret')
-  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+  if (!isAuthorizedCron(req)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
   }
 

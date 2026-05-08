@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAuthorizedCron } from '@/lib/cron-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getRankTrackerResults } from '@/lib/integrations/brightlocal'
 import { postToGlip } from '@/lib/integrations/ringcentral'
@@ -6,8 +7,7 @@ import { postToGlip } from '@/lib/integrations/ringcentral'
 // Weekly Mon 02:00 UTC. Pulls latest BrightLocal Rank Tracker results
 // per location's brightlocal_rank_tracker_campaign_id.
 export async function POST(req: Request) {
-  const secret = req.headers.get('x-cron-secret')
-  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+  if (!isAuthorizedCron(req)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
   }
   if (!process.env.BRIGHTLOCAL_API_KEY) {

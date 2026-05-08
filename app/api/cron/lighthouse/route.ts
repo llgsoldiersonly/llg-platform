@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAuthorizedCron } from '@/lib/cron-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { fetchPsi } from '@/lib/integrations/psi'
 
@@ -15,8 +16,7 @@ export const maxDuration = 60
 // slow / failed audit doesn't block the rest. Sequential per-client
 // looping in the previous version timed out at 300s on Vercel.
 export async function POST(req: Request) {
-  const secret = req.headers.get('x-cron-secret')
-  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+  if (!isAuthorizedCron(req)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
   }
   if (!process.env.PSI_API_KEY) {

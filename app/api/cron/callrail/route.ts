@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAuthorizedCron } from '@/lib/cron-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { fetchCallRailCalls } from '@/lib/integrations/callrail'
 import { postToGlip } from '@/lib/integrations/ringcentral'
@@ -6,8 +7,7 @@ import { postToGlip } from '@/lib/integrations/ringcentral'
 // Daily 02:20 UTC. Pulls calls from last 2 days per client to catch
 // late-syncing calls. Upserts to raw_callrail + calls.
 export async function POST(req: Request) {
-  const secret = req.headers.get('x-cron-secret')
-  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+  if (!isAuthorizedCron(req)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
   }
   if (!process.env.CALLRAIL_API_TOKEN) {

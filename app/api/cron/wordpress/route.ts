@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAuthorizedCron } from '@/lib/cron-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { fetchWpPosts, extractTerms } from '@/lib/integrations/wordpress'
 import { reconcileDeliverables } from '@/lib/deliverables/reconcile'
@@ -8,8 +9,7 @@ import { postToGlip } from '@/lib/integrations/ringcentral'
 // per client, upserts to raw_wordpress + posts, then reconciles
 // auto-tracked deliverables.
 export async function POST(req: Request) {
-  const secret = req.headers.get('x-cron-secret')
-  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+  if (!isAuthorizedCron(req)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
   }
 
