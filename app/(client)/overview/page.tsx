@@ -8,6 +8,11 @@ import { SupportTeamCard, type TeamMember } from '@/components/client/cards/supp
 import { LighthouseScoresCard, type LighthouseScores } from '@/components/client/cards/lighthouse-scores'
 import { RecentUpdatesCard, type RecentUpdate } from '@/components/client/cards/recent-updates'
 import { IntegrationsCard, type IntegrationLink } from '@/components/client/cards/integrations'
+import {
+  GoogleBusinessProfileCard,
+  type GbpSnapshot,
+  type GbpLatestPost,
+} from '@/components/client/cards/google-business-profile'
 import { ResourcesCard } from '@/components/client/cards/resources'
 import { FeatureVideoCard } from '@/components/client/cards/feature-video'
 import CustomerPortalRocketFlyover from '@/components/customer-portal/CustomerPortalRocketFlyover'
@@ -61,6 +66,8 @@ export default async function OverviewPage({
     postsRes,
     callsRes,
     credsRes,
+    gbpSnapshotRes,
+    gbpLatestPostRes,
   ] = await Promise.all([
     subIds.length > 0
       ? supabase
@@ -105,6 +112,21 @@ export default async function OverviewPage({
       .select('ga4_property_url, gsc_property_url, google_ads_account_url, lsa_account_url')
       .eq('client_id', ctx.client.id)
       .maybeSingle(),
+    admin
+      .from('gmb_snapshots')
+      .select('rating, review_count, posts_30d, captured_on')
+      .eq('client_id', ctx.client.id)
+      .order('captured_on', { ascending: false })
+      .limit(1)
+      .maybeSingle<GbpSnapshot>(),
+    admin
+      .from('posts')
+      .select('title, excerpt, published_at, url')
+      .eq('client_id', ctx.client.id)
+      .eq('source_type', 'gbp_post')
+      .order('published_at', { ascending: false })
+      .limit(1)
+      .maybeSingle<GbpLatestPost>(),
   ])
 
   // Pick the first active subscription for the package header (most clients
@@ -216,9 +238,13 @@ export default async function OverviewPage({
           <FeatureVideoCard />
         </div>
 
-        {/* RIGHT — lighthouse + resource hub at the bottom */}
+        {/* RIGHT — lighthouse + GBP + resource hub at the bottom */}
         <div className="space-y-6 lg:col-span-4">
           <LighthouseScoresCard scores={lighthouseScores} />
+          <GoogleBusinessProfileCard
+            snapshot={gbpSnapshotRes.data ?? null}
+            latestPost={gbpLatestPostRes.data ?? null}
+          />
           <ResourcesCard />
         </div>
       </div>
