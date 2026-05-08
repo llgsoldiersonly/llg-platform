@@ -3,11 +3,13 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getClientContext } from '@/lib/client-context'
 import { getQuotaState } from '@/lib/tickets/quota'
-import { formatTicketType, formatTicketCategory, formatTicketStatus } from '@/lib/tickets'
+import { formatTicketType, formatTicketStatus } from '@/lib/tickets'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Plus, ChevronRight } from 'lucide-react'
+import { SupportTeamCard, type TeamMember } from '@/components/client/cards/support-team'
+import { Plus, Clock, CheckCircle2, ChevronRight } from 'lucide-react'
+import { TicketsStatusFilter } from './_components/tickets-status-filter'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,7 +33,34 @@ type TicketRow = {
   sla_deadline_at: string | null
 }
 
-export default async function ClientTicketsPage() {
+const isClosed = (status: string) => status === 'closed' || status === 'resolved'
+
+// Compact relative-time formatter. The reference shows "5 days ago",
+// "1 day ago" — keep it terse and English-only for now (matches the
+// rest of the portal's copy).
+function relativeTime(iso: string): string {
+  const then = new Date(iso).getTime()
+  const now = Date.now()
+  const diffMs = now - then
+  const min = Math.round(diffMs / 60_000)
+  if (min < 1) return 'just now'
+  if (min < 60) return `${min} min${min === 1 ? '' : 's'} ago`
+  const hr = Math.round(min / 60)
+  if (hr < 24) return `${hr} hour${hr === 1 ? '' : 's'} ago`
+  const day = Math.round(hr / 24)
+  if (day < 30) return `${day} day${day === 1 ? '' : 's'} ago`
+  const mo = Math.round(day / 30)
+  if (mo < 12) return `${mo} month${mo === 1 ? '' : 's'} ago`
+  const yr = Math.round(mo / 12)
+  return `${yr} year${yr === 1 ? '' : 's'} ago`
+}
+
+export default async function ClientTicketsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const params = await searchParams
   const ctx = await getClientContext()
   if (!ctx) redirect('/login')
 
@@ -43,134 +72,169 @@ export default async function ClientTicketsPage() {
     .order('created_at', { ascending: false })
     .returns<TicketRow[]>()
 
-  // Use service role via the server client is not possible from a client
-  // context, but we can use the regular client and let RLS filter — the
-  // quota table has a policy that lets clients see their own row.
   const quota = await getQuotaState(supabase, ctx.client.id)
 
   const list = tickets ?? []
-  const open = list.filter((t) => t.status !== 'closed' && t.status !== 'resolved')
-  const closed = list.filter((t) => t.status === 'closed' || t.status === 'resolved')
+  const openCount = list.filter((t) => !isClosed(t.status)).length
+  const closedCount = list.filter((t) => isClosed(t.status)).length
+  const counts = { all: list.length, open: openCount, closed: closedCount }
+
+  const statusFilter = typeof params.status === 'string' ? params.status : 'all'
+  const visible =
+    statusFilter === 'open'
+      ? list.filter((t) => !isClosed(t.status))
+      : statusFilter === 'closed'
+      ? list.filter((t) => isClosed(t.status))
+      : list
+
+  // Per-client support team is not modeled in the schema yet — the
+  // sidebar card gracefully renders an "appear here as roles are
+  // assigned" empty state. Same source-of-truth gap as the overview
+  // page, so this stays consistent.
+  const team: TeamMember[] = []
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-8">
-      <div className="flex items-start justify-between">
+    <div className="mx-auto max-w-6xl space-y-6 p-8">
+      <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-heading">Tickets</h1>
+          <h1 className="text-2xl font-semibold text-heading">Support &amp; Tickets</h1>
           <p className="mt-1 text-sm text-body">
-            Submit a bug if something's broken, or a request for new work
+            Submit a bug if something&apos;s broken, or a request for new work.
           </p>
         </div>
         <Link href="/tickets/new">
           <Button>
             <Plus className="h-4 w-4" />
-            New ticket
+            Create New Ticket
           </Button>
         </Link>
+      </header>
+
+      {/* Status pills — at-a-glance summary independent of the active
+       *  filter, so the user always sees the full inventory counts. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="success" className="gap-1.5">
+          <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-fg-success-strong" />
+          {openCount} Open
+        </Badge>
+        <Badge variant="secondary" className="gap-1.5">
+          <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-neutral-quaternary" />
+          {closedCount} Closed
+        </Badge>
+        <Badge variant="outline">{list.length} Total</Badge>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">This week</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {quota.tier ? (
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-body">Plan</span>
-                <Badge variant="secondary">{quota.tier}</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-body">Requests used this week</span>
-                <span className="text-heading">
-                  {quota.used_this_week}
-                  {quota.cap !== 'unlimited' && (
-                    <span className="text-body"> / {quota.total_allowance}</span>
-                  )}
-                </span>
-              </div>
-              {quota.cap === 'unlimited' ? (
-                <Badge variant="success">Unlimited</Badge>
-              ) : quota.remaining === 0 ? (
-                <p className="text-xs text-body">
-                  No request slots left this week. Bug reports are always allowed.
-                  Your next request slot opens Monday.
-                </p>
-              ) : (
-                <p className="text-xs text-body">
-                  {quota.remaining as number} request slot{quota.remaining === 1 ? '' : 's'} remaining this week.
-                </p>
-              )}
-            </div>
-          ) : (
-            <p className="text-sm text-body">No active subscription.</p>
-          )}
-        </CardContent>
-      </Card>
+      <TicketsStatusFilter counts={counts} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Open ({open.length})</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {open.length === 0 ? (
-            <p className="p-6 text-sm text-body">No open tickets. Nice.</p>
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Main column — ticket list. */}
+        <div className="space-y-3 lg:col-span-2">
+          {visible.length === 0 ? (
+            <Card>
+              <CardContent className="p-6 text-sm text-body">
+                {statusFilter === 'open'
+                  ? 'No open tickets right now.'
+                  : statusFilter === 'closed'
+                  ? 'No closed tickets yet.'
+                  : 'No tickets yet — create one above to get started.'}
+              </CardContent>
+            </Card>
           ) : (
-            <ul className="divide-y divide-border-light">
-              {open.map((t) => (
-                <TicketLi key={t.id} t={t} />
-              ))}
-            </ul>
+            visible.map((t) => <TicketCardRow key={t.id} t={t} />)
           )}
-        </CardContent>
-      </Card>
+        </div>
 
-      {closed.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Closed ({closed.length})</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ul className="divide-y divide-border-light">
-              {closed.slice(0, 10).map((t) => (
-                <TicketLi key={t.id} t={t} />
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
+        {/* Side column — quota + support team. Quota stays adjacent to
+         *  the ticket list so users see how many request slots are left
+         *  before they hit the "Create New Ticket" button. */}
+        <aside className="space-y-4">
+          {quota.tier && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">This week</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-body">Plan</span>
+                  <Badge variant="secondary">{quota.tier}</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-body">Used</span>
+                  <span className="text-heading">
+                    {quota.used_this_week}
+                    {quota.cap !== 'unlimited' && (
+                      <span className="text-body"> / {quota.total_allowance}</span>
+                    )}
+                  </span>
+                </div>
+                {quota.cap === 'unlimited' ? (
+                  <Badge variant="success">Unlimited</Badge>
+                ) : quota.remaining === 0 ? (
+                  <p className="text-xs text-body">
+                    No request slots left. Bug reports are always allowed; the
+                    next request slot opens Monday.
+                  </p>
+                ) : (
+                  <p className="text-xs text-body">
+                    {quota.remaining as number} slot
+                    {quota.remaining === 1 ? '' : 's'} remaining this week.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          <SupportTeamCard members={team} />
+        </aside>
+      </div>
     </div>
   )
 }
 
-function TicketLi({ t }: { t: TicketRow }) {
+// Single ticket row rendered as a card with a leading status icon —
+// matches the reference's clock/check glyph + title + time-ago layout.
+function TicketCardRow({ t }: { t: TicketRow }) {
+  const closed = isClosed(t.status)
   return (
-    <li>
-      <Link
-        href={`/tickets/${t.id}`}
-        className="flex items-center justify-between gap-4 px-6 py-4 hover:bg-neutral-secondary-soft"
-      >
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-heading">#{t.ticket_number}</span>
-            <span className="text-body">{t.subject}</span>
+    <Link
+      href={`/tickets/${t.id}`}
+      className="block rounded-md border border-border-light bg-neutral-primary-soft p-4 transition-colors hover:bg-neutral-secondary-soft"
+    >
+      <div className="flex items-center gap-3">
+        <span
+          className={
+            closed
+              ? 'flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-tertiary-soft text-fg-disabled'
+              : 'flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-softer text-fg-brand'
+          }
+          aria-hidden
+        >
+          {closed ? (
+            <CheckCircle2 className="h-4 w-4" />
+          ) : (
+            <Clock className="h-4 w-4" />
+          )}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-heading">
+              {t.subject}
+            </span>
+            <span className="text-xs text-body">#{t.ticket_number}</span>
             <Badge variant={t.type === 'bug' ? 'destructive' : 'info'}>
               {formatTicketType(t.type)}
             </Badge>
-            {t.priority === 'urgent' && <Badge variant="destructive">Urgent</Badge>}
-          </div>
-          <p className="mt-1 text-xs text-body">
-            {formatTicketCategory(t.category)} · opened {new Date(t.created_at).toLocaleDateString()}
-            {t.sla_deadline_at && (
-              <> · SLA {new Date(t.sla_deadline_at).toLocaleString()}</>
+            {t.priority === 'urgent' && (
+              <Badge variant="destructive">Urgent</Badge>
             )}
-          </p>
+          </div>
+          <p className="mt-1 text-xs text-body">{relativeTime(t.created_at)}</p>
         </div>
         <Badge variant={statusVariant[t.status] ?? 'secondary'}>
           {formatTicketStatus(t.status)}
         </Badge>
-        <ChevronRight className="h-4 w-4 text-body-subtle" />
-      </Link>
-    </li>
+        <ChevronRight className="h-4 w-4 text-body" aria-hidden />
+      </div>
+    </Link>
   )
 }
