@@ -10,11 +10,14 @@ import {
 } from '@/lib/integrations/dataforseo/backlinks'
 import { getGoogleOrganicRank } from '@/lib/integrations/dataforseo/serp'
 import { getGoogleLocalFinderRank, getGoogleMapsRankAtPoint } from '@/lib/integrations/dataforseo/local'
+import { getGmbInfo, getGmbUpdates, gmbUpdateExternalId } from '@/lib/integrations/dataforseo/gmb'
 import {
   saveBacklinkSummarySnapshot,
   saveBacklinkRows,
   saveKeywordRankSnapshot,
   saveMapGridRankSnapshot,
+  saveGmbInfoSnapshot,
+  saveGmbUpdates,
   monthBounds,
   todayMonthKey,
 } from '@/lib/integrations/dataforseo/snapshots'
@@ -51,6 +54,8 @@ export async function POST(req: Request) {
     organic_ranks: 0,
     local_ranks: 0,
     map_grid_points: 0,
+    gmb_locations: 0,
+    gmb_updates: 0,
   }
 
   // Active, non-demo clients with a primary domain set.
@@ -238,11 +243,53 @@ export async function POST(req: Request) {
         }
       }
 
+      // -------- GBP listing info + recent updates per location --------
+      const { data: locations } = await supa
+        .from('client_locations')
+        .select('id, label, city, state, gbp_place_id')
+        .eq('client_id', client.id)
+
+      for (const loc of locations ?? []) {
+        // Lookup args: place_id wins; otherwise firm_name + "City, State, US"
+        const lookupArgs = loc.gbp_place_id
+          ? { placeId: loc.gbp_place_id }
+          : {
+              keyword: client.firm_name,
+              locationName: `${loc.city}, ${loc.state}, United States`,
+            }
+        try {
+          const [info, updates] = await Promise.all([
+            getGmbInfo(lookupArgs, { client_id: client.id }),
+            getGmbUpdates(lookupArgs, { client_id: client.id }),
+          ])
+          if (info) {
+            await saveGmbInfoSnapshot(supa, {
+              clientId: client.id,
+              locationId: loc.id,
+              info,
+              updatesCount: updates.length,
+            })
+            stats.gmb_locations += 1
+          }
+          if (updates.length > 0) {
+            const { upserted } = await saveGmbUpdates(supa, {
+              clientId: client.id,
+              updates,
+              externalIdFn: gmbUpdateExternalId,
+            })
+            stats.gmb_updates += upserted
+          }
+        } catch (e) {
+          const message = e instanceof Error ? e.message : 'unknown'
+          errors.push({ client: client.firm_name, stage: `gmb:${loc.label}`, message })
+        }
+      }
+
       await supa.from('sync_log').insert({
         source: 'cron:dataforseo-weekly',
         client_id: client.id,
         status: errors.some((e) => e.client === client.firm_name) ? 'partial' : 'ok',
-        row_count: stats.backlink_new_rows + stats.backlink_lost_rows + stats.organic_ranks + stats.local_ranks + stats.map_grid_points,
+        row_count: stats.backlink_new_rows + stats.backlink_lost_rows + stats.organic_ranks + stats.local_ranks + stats.map_grid_points + stats.gmb_locations + stats.gmb_updates,
         duration_ms: Date.now() - clientStart,
       })
     }

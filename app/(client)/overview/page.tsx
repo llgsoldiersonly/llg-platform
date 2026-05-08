@@ -141,7 +141,12 @@ export default async function OverviewPage({
   const updates: RecentUpdate[] = [
     ...(postsRes.data ?? []).map<RecentUpdate>((p) => ({
       id: `post-${p.id}`,
-      kind: p.source_type === 'wp_page' ? 'other' : 'blog',
+      kind:
+        p.source_type === 'gbp_post'
+          ? 'social'
+          : p.source_type === 'wp_page'
+          ? 'other'
+          : 'blog',
       title: p.title ?? 'Untitled post',
       occurred_at: p.published_at ?? new Date().toISOString(),
     })),

@@ -252,3 +252,89 @@ function classifyBacklink(b: Record<string, unknown>): string {
   if (!dofollow) return 'nofollow'
   return 'low_value'
 }
+
+// ---------------------------------------------------------------
+// GMB listing snapshot → existing gmb_snapshots table
+// (rating / review_count / posts_30d are the columns this table already has;
+//  category/hours/photos are extra context we keep on hand by writing
+//  raw_gmb too so future schema additions don't lose data.)
+// ---------------------------------------------------------------
+export async function saveGmbInfoSnapshot(
+  supa: Supa,
+  args: {
+    clientId: string
+    locationId: string | null
+    info: import('./gmb').GmbInfoResult
+    updatesCount: number
+  }
+) {
+  const { info, updatesCount } = args
+  const rating = numberOrNull(info.rating?.value)
+  const reviewCount = numberOrNull(info.rating?.votes_count) ?? 0
+
+  // Mirror to raw_gmb (timestamped audit trail) AND gmb_snapshots (one row
+  // per location per day for trend queries).
+  await supa.from('raw_gmb').insert({
+    client_id: args.clientId,
+    location_id: args.locationId,
+    rating,
+    review_count: reviewCount,
+    posts_30d: updatesCount,
+    category: info.category ?? null,
+    hours: (info.work_hours ?? info.work_time ?? null) as unknown,
+    insights: {
+      total_photos: info.total_photos ?? null,
+      is_claimed: info.is_claimed ?? null,
+      categories: info.categories ?? null,
+      title: info.title ?? null,
+      url: info.url ?? null,
+    },
+  })
+
+  await supa.from('gmb_snapshots').upsert(
+    {
+      client_id: args.clientId,
+      location_id: args.locationId,
+      rating,
+      review_count: reviewCount,
+      posts_30d: updatesCount,
+      captured_on: todayDate(),
+    },
+    { onConflict: 'location_id,captured_on' }
+  )
+}
+
+// ---------------------------------------------------------------
+// GMB updates → existing posts table with source_type='gbp_post'
+// (RecentUpdates widget already reads from posts; gbp posts will appear
+//  alongside WP posts automatically.)
+// ---------------------------------------------------------------
+export async function saveGmbUpdates(
+  supa: Supa,
+  args: {
+    clientId: string
+    updates: import('./gmb').GmbUpdate[]
+    externalIdFn: (u: import('./gmb').GmbUpdate) => string
+  }
+): Promise<{ upserted: number }> {
+  if (args.updates.length === 0) return { upserted: 0 }
+  const rows = args.updates.map((u) => ({
+    client_id: args.clientId,
+    source_type: 'gbp_post',
+    external_id: args.externalIdFn(u),
+    slug: null,
+    title: (u.snippet ?? '').slice(0, 240) || 'Google Business post',
+    excerpt: u.snippet ?? null,
+    categories: [],
+    tags: [],
+    language: null,
+    published_at: u.datetime ? new Date(u.datetime).toISOString() : new Date().toISOString(),
+    modified_at: u.datetime ? new Date(u.datetime).toISOString() : new Date().toISOString(),
+    url: u.uri ?? null,
+  }))
+  const { error } = await supa
+    .from('posts')
+    .upsert(rows, { onConflict: 'client_id,source_type,external_id' })
+  if (error) throw new Error(`saveGmbUpdates: ${error.message}`)
+  return { upserted: rows.length }
+}
