@@ -10,6 +10,7 @@ import { RecentUpdatesCard, type RecentUpdate } from '@/components/client/cards/
 import { IntegrationsCard, type IntegrationLink } from '@/components/client/cards/integrations'
 import { ResourcesCard } from '@/components/client/cards/resources'
 import { FeatureVideoCard } from '@/components/client/cards/feature-video'
+import CustomerPortalRocketFlyover from '@/components/customer-portal/CustomerPortalRocketFlyover'
 
 export const dynamic = 'force-dynamic'
 
@@ -180,6 +181,11 @@ export default async function OverviewPage({
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
+      {/* Rocket flyover plays one diagonal arc from bottom-left to
+       *  top-right on the user's first overview visit per browser
+       *  session, then unmounts itself. Decorative; pointer-events
+       *  none. */}
+      <CustomerPortalRocketFlyover />
       <div>
         <h1 className="text-3xl text-heading">
           Welcome back, {ctx.client.firm_name}

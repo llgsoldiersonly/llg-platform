@@ -1,0 +1,144 @@
+/* Rocket flyover — diagonal flight from bottom-left to top-right with a
+ * purple-core / white-halo trail emanating from the rocket's tail (the
+ * fire end of the bottom of the rocket).
+ *
+ * Geometry: a single "flight" wrapper carries the animation. Inside it
+ * the rocket + trail are laid out horizontally (rocket on the right,
+ * trail extending leftward from the rocket's tail). The wrapper itself
+ * is rotated -45deg so that local-X points along the diagonal flight
+ * path; that automatically makes the trail extend down-and-left from
+ * the rocket's tail in screen space, exactly the "behind, from the
+ * bottom of the rocket" effect requested.
+ *
+ * Stacking: z-index 99999 so the flyover paints over every page chrome
+ * + the (client) layout's scene background. pointer-events: none so it
+ * never intercepts clicks. */
+
+.cp-rocket-flyover {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Flight wrapper — the only element that animates. Translation goes
+ * from the bottom-left start anchor to a point past the top-right
+ * corner. transform-origin is set to the rocket's center (right side
+ * of the group) so the rotation pivots correctly. */
+.cp-rocket-flyover__flight {
+  position: absolute;
+  /* Rocket starts centered on (-10vw, 110vh): just below + left of the
+   * viewport so the entry into view is smooth, not a snap. */
+  left: -10vw;
+  top: 110vh;
+  width: 0;
+  height: 0;
+  transform-origin: center;
+  animation: cpRocketFly 4.8s cubic-bezier(0.45, 0, 0.55, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* Path: -45deg rotation throughout (constant heading), translating
+ * along the diagonal from start anchor (bottom-left) to a point past
+ * the top-right corner. Linear-ish ease so the rocket reads as a
+ * sustained burn rather than a fast snap. Fades in at the very start
+ * and out at the very end so it doesn't pop visibly at the edges. */
+@keyframes cpRocketFly {
+  0% {
+    transform: translate(0, 0) rotate(-45deg);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(135vw, -135vh) rotate(-45deg);
+    opacity: 0;
+  }
+}
+
+/* Rocket — centered on the flight wrapper origin (right edge of the
+ * group). translate(50%, -50%) places its center at the wrapper origin
+ * regardless of its rendered size. */
+.cp-rocket-flyover__rocket {
+  position: absolute;
+  right: 0;
+  top: 0;
+  display: block;
+  width: clamp(120px, 14vw, 220px);
+  height: auto;
+  /* Lock aspect to the source PNG so the laid-out height is known
+   * before the image bytes arrive (otherwise the box can render at 0
+   * height and the trail glows alone). */
+  aspect-ratio: 631 / 318;
+  transform: translate(50%, -50%);
+  z-index: 2;
+  filter:
+    drop-shadow(0 0 8px rgba(168, 85, 247, 0.85))
+    drop-shadow(0 0 18px rgba(126, 34, 207, 0.55))
+    drop-shadow(0 0 36px rgba(255, 255, 255, 0.35));
+  user-select: none;
+}
+
+/* Inner purple trail — right-edge sits at the rocket's tail, extends
+ * leftward (i.e. behind the rocket in the direction of travel). The
+ * radial gradient is hot at the right edge (closest to the fire) and
+ * fades out toward the left. */
+.cp-rocket-flyover__trail {
+  position: absolute;
+  /* Right edge anchored at the rocket's tail. The rocket is centered
+   * on origin and is W wide (W = clamp(120px, 14vw, 220px)), so its
+   * left/tail edge is at -W/2. Use right: 50% of W via the same clamp
+   * to land flush with the rocket's tail. */
+  right: clamp(60px, 7vw, 110px);
+  top: 0;
+  width: clamp(280px, 38vw, 560px);
+  height: clamp(60px, 8vw, 110px);
+  transform: translateY(-50%);
+  z-index: 1;
+  border-radius: 9999px;
+  background: radial-gradient(
+    ellipse at right,
+    rgba(168, 85, 247, 0.95) 0%,
+    rgba(147, 51, 234, 0.70) 28%,
+    rgba(126, 34, 207, 0.35) 58%,
+    rgba(126, 34, 207, 0.10) 82%,
+    rgba(126, 34, 207, 0) 100%
+  );
+  filter: blur(10px);
+}
+
+/* Outer white halo — same anchor as the inner trail, larger + softer.
+ * Renders behind the purple trail (z-index 0) so the purple reads as
+ * the inner core of a layered glow. */
+.cp-rocket-flyover__halo {
+  position: absolute;
+  right: clamp(60px, 7vw, 110px);
+  top: 0;
+  width: clamp(380px, 50vw, 760px);
+  height: clamp(120px, 16vw, 220px);
+  transform: translateY(-50%);
+  z-index: 0;
+  border-radius: 9999px;
+  background: radial-gradient(
+    ellipse at right,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.22) 38%,
+    rgba(255, 255, 255, 0.05) 72%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  filter: blur(22px);
+}
+
+/* Reduced motion: skip the flyover entirely. A static rocket
+ * appearing then fading at the corner doesn't add value and the
+ * animation is purely decorative. */
+@media (prefers-reduced-motion: reduce) {
+  .cp-rocket-flyover {
+    display: none;
+  }
+}
