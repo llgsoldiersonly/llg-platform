@@ -75,23 +75,38 @@ export default async function ClientTicketsPage({
   const quota = await getQuotaState(supabase, ctx.client.id)
 
   const list = tickets ?? []
-  const openCount = list.filter((t) => !isClosed(t.status)).length
-  const closedCount = list.filter((t) => isClosed(t.status)).length
-  const counts = { all: list.length, open: openCount, closed: closedCount }
+  const openList = list.filter((t) => !isClosed(t.status))
+  const closedList = list.filter((t) => isClosed(t.status))
+  const counts = { all: list.length, open: openList.length, closed: closedList.length }
 
   const statusFilter = typeof params.status === 'string' ? params.status : 'all'
-  const visible =
-    statusFilter === 'open'
-      ? list.filter((t) => !isClosed(t.status))
-      : statusFilter === 'closed'
-      ? list.filter((t) => isClosed(t.status))
-      : list
 
-  // Per-client support team is not modeled in the schema yet — the
-  // sidebar card gracefully renders an "appear here as roles are
-  // assigned" empty state. Same source-of-truth gap as the overview
-  // page, so this stays consistent.
-  const team: TeamMember[] = []
+  // Per-client team assignment isn't modeled in the schema yet, so we
+  // render the LLG default roster here. The names mirror the reference
+  // mockup ("Your SEO Lead", "Your Developer", "Your Ads Manager") and
+  // are intentionally generic so they read as roles rather than people
+  // — clients route tickets to the role and the on-call owner picks
+  // them up. Swap to per-client data once the schema lands.
+  const team: TeamMember[] = [
+    {
+      id: 'role-seo',
+      role_label: 'SEO Manager',
+      full_name: 'Your SEO Lead',
+      avatar_color: 'amber',
+    },
+    {
+      id: 'role-dev',
+      role_label: 'Web Dev',
+      full_name: 'Your Developer',
+      avatar_color: 'amber',
+    },
+    {
+      id: 'role-ads',
+      role_label: 'Paid Ads',
+      full_name: 'Your Ads Manager',
+      avatar_color: 'amber',
+    },
+  ]
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-8">
@@ -115,11 +130,11 @@ export default async function ClientTicketsPage({
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="success" className="gap-1.5">
           <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-fg-success-strong" />
-          {openCount} Open
+          {openList.length} Open
         </Badge>
         <Badge variant="secondary" className="gap-1.5">
           <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-neutral-quaternary" />
-          {closedCount} Closed
+          {closedList.length} Closed
         </Badge>
         <Badge variant="outline">{list.length} Total</Badge>
       </div>
@@ -127,20 +142,47 @@ export default async function ClientTicketsPage({
       <TicketsStatusFilter counts={counts} />
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main column — ticket list. */}
-        <div className="space-y-3 lg:col-span-2">
-          {visible.length === 0 ? (
+        {/* Main column — ticket list. On the All view, split into Open +
+         *  Closed sub-sections so closed history stays visible without
+         *  forcing the user to switch tabs. Explicit Open/Closed filters
+         *  render a flat list (the tab itself is the section header). */}
+        <div className="space-y-6 lg:col-span-2">
+          {list.length === 0 ? (
             <Card>
               <CardContent className="p-6 text-sm text-body">
-                {statusFilter === 'open'
-                  ? 'No open tickets right now.'
-                  : statusFilter === 'closed'
-                  ? 'No closed tickets yet.'
-                  : 'No tickets yet — create one above to get started.'}
+                No tickets yet — create one above to get started.
               </CardContent>
             </Card>
+          ) : statusFilter === 'open' ? (
+            <TicketGroup
+              tickets={openList}
+              emptyMessage="No open tickets right now."
+            />
+          ) : statusFilter === 'closed' ? (
+            <TicketGroup
+              tickets={closedList}
+              emptyMessage="No closed tickets yet."
+            />
           ) : (
-            visible.map((t) => <TicketCardRow key={t.id} t={t} />)
+            <>
+              <section className="space-y-3">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-body">
+                  Open ({openList.length})
+                </h2>
+                <TicketGroup
+                  tickets={openList}
+                  emptyMessage="No open tickets right now."
+                />
+              </section>
+              {closedList.length > 0 && (
+                <section className="space-y-3">
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-body">
+                    Closed ({closedList.length})
+                  </h2>
+                  <TicketGroup tickets={closedList} emptyMessage="" />
+                </section>
+              )}
+            </>
           )}
         </div>
 
@@ -187,6 +229,32 @@ export default async function ClientTicketsPage({
           <SupportTeamCard members={team} />
         </aside>
       </div>
+    </div>
+  )
+}
+
+// Renders a list of ticket cards, or a single empty-state card when
+// `tickets` is empty and a non-empty `emptyMessage` is supplied.
+function TicketGroup({
+  tickets,
+  emptyMessage,
+}: {
+  tickets: TicketRow[]
+  emptyMessage: string
+}) {
+  if (tickets.length === 0) {
+    if (!emptyMessage) return null
+    return (
+      <Card>
+        <CardContent className="p-6 text-sm text-body">{emptyMessage}</CardContent>
+      </Card>
+    )
+  }
+  return (
+    <div className="space-y-3">
+      {tickets.map((t) => (
+        <TicketCardRow key={t.id} t={t} />
+      ))}
     </div>
   )
 }
