@@ -204,9 +204,20 @@ export async function POST(req: Request) {
       }
 
       // -------- Map grid: high-priority keywords × every grid point --------
-      const { data: gridPoints } = await supa
-        .from('dfs_map_grid_points')
-        .select('id, client_location_id, lat, lng')
+      // Scope grid points to THIS client's locations (table has no direct
+      // client_id column; FK is via client_location_id).
+      const { data: clientLocsForGrid } = await supa
+        .from('client_locations')
+        .select('id')
+        .eq('client_id', client.id)
+      const locationIds = (clientLocsForGrid ?? []).map((l) => l.id)
+
+      const { data: gridPoints } = locationIds.length > 0
+        ? await supa
+            .from('dfs_map_grid_points')
+            .select('id, client_location_id, lat, lng')
+            .in('client_location_id', locationIds)
+        : { data: [] as Array<{ id: string; client_location_id: string; lat: number | string; lng: number | string }> }
 
       const { data: gridKeywords } = await supa
         .from('dfs_tracked_keywords')
