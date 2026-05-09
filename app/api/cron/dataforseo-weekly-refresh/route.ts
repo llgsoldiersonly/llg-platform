@@ -252,16 +252,28 @@ export async function POST(req: Request) {
       // -------- GBP listing info + recent updates per location --------
       const { data: locations } = await supa
         .from('client_locations')
-        .select('id, label, city, state, gbp_place_id')
+        .select('id, label, city, state, lat, lng, gbp_place_id')
         .eq('client_id', client.id)
 
       for (const loc of locations ?? []) {
-        // Lookup args: place_id wins; otherwise firm_name + "City, State, US"
+        // Lookup args: place_id wins; otherwise lat/lng (5km radius). The
+        // search endpoint requires a keyword either way, so we use the firm
+        // name. Locations missing both gbp_place_id and lat/lng can't be
+        // looked up — we record an error and continue.
+        if (!loc.gbp_place_id && (loc.lat == null || loc.lng == null)) {
+          errors.push({
+            client: client.firm_name,
+            stage: `gmb:${loc.label}`,
+            message: 'No gbp_place_id and no lat/lng on client_locations',
+          })
+          continue
+        }
         const lookupArgs = loc.gbp_place_id
-          ? { placeId: loc.gbp_place_id }
+          ? { placeId: loc.gbp_place_id, keyword: client.firm_name }
           : {
               keyword: client.firm_name,
-              locationName: `${loc.city}, ${loc.state}, United States`,
+              lat: Number(loc.lat),
+              lng: Number(loc.lng),
             }
         try {
           const [info, updates] = await Promise.all([
