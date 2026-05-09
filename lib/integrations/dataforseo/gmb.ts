@@ -1,27 +1,25 @@
 // DataForSEO Google Business Profile (read-only) wrappers.
 //
-// Endpoints:
-//   /business_data/business_listings/search/live   — listing details (LIVE)
-//   /business_data/google/my_business_updates/...  — only exists in task-based
-//                                                     form, deferred for v1
+// Endpoint: /serp/google/local_finder/live/advanced
 //
-// Why /business_listings/search instead of /my_business_info?
-//   The /my_business_info endpoint only exists at /task_post (queue-based);
-//   there's no /live variant — calling /live returns HTTP 404. The
-//   /business_listings/search/live endpoint returns the same fields
-//   synchronously, so it's the right primitive for an in-cron call.
+// We use Local Finder (not /business_listings/search/live) because:
+//   1. It's cheaper (~$0.002/call vs ~$0.01+ for business_listings)
+//   2. It's the same endpoint already used for place_id seeding and local rankings
+//   3. It reliably returns rating, review count, address, phone, url, place_id
 //
-// Lookup args:
-//   - place_id (preferred — most precise; populated from
-//     client_locations.gbp_place_id when set)
-//   - lat/lng coordinate (fallback — uses location_coordinate "lat,lng,radius_m"
-//     which works regardless of how DataForSEO indexes locality names)
+// Lookup: always requires lat/lng (Local Finder is coordinate-scoped).
+// placeId is used for result matching when available; otherwise matches by keyword.
 
 import { dataForSeoPost, getFirstResult, type DataForSeoTask } from './client'
 
-type LookupArgs =
-  | { placeId: string; keyword?: string }
-  | { keyword: string; lat: number; lng: number; radiusMeters?: number }
+// Always requires lat/lng so Local Finder can scope the search geographically.
+// placeId, if provided, is used for precise result matching (not as a filter param).
+type LookupArgs = {
+  keyword: string
+  lat: number
+  lng: number
+  placeId?: string
+}
 
 type Opts = { client_id?: string | null }
 
@@ -44,38 +42,52 @@ export type GmbInfoResult = {
   is_claimed?: boolean
 }
 
-type SearchTaskResult = {
-  items_count: number
-  items: GmbInfoResult[]
-}
-
-// /business_data/business_listings/search/live
-//
-// Search keyword required. When place_id is given we still need a keyword
-// (DataForSEO uses keyword to filter even when narrowing by place_id), so
-// we fall back to the firm name as the keyword. Coordinate or place_id
-// scope the search.
 export async function getGmbInfo(args: LookupArgs, opts: Opts = {}): Promise<GmbInfoResult | null> {
-  const task: Record<string, unknown> = {}
-
-  if ('placeId' in args) {
-    // place_id-based filtering on the search endpoint
-    task.keyword = args.keyword ?? '*'
-    task.filters = [['place_id', '=', args.placeId]]
-    task.limit = 1
-  } else {
-    task.keyword = args.keyword
-    task.location_coordinate = `${args.lat},${args.lng},${args.radiusMeters ?? 5000}`
-    task.limit = 1
+  const task = {
+    keyword: args.keyword,
+    location_coordinate: `${args.lat},${args.lng},5000`,
+    language_code: 'en',
+    device: 'desktop',
+    depth: 20,
   }
 
-  const res = await dataForSeoPost<SearchTaskResult>(
-    '/business_data/business_listings/search/live',
+  const res = await dataForSeoPost<{ items?: Array<Record<string, unknown>> }>(
+    '/serp/google/local_finder/live/advanced',
     task,
     { client_id: opts.client_id, request_tag: 'gmb_info' }
   )
-  const first = getFirstResult(res) as SearchTaskResult | null
-  return first?.items?.[0] ?? null
+  const result = getFirstResult(res) as { items?: Array<Record<string, unknown>> } | null
+  const items = result?.items ?? []
+
+  const localItems = items.filter((i) =>
+    ['local_pack', 'local_finder', 'maps_search'].includes(String(i.type ?? ''))
+  )
+
+  const nameLower = args.keyword.toLowerCase()
+  const match = args.placeId
+    ? (localItems.find((i) => i.place_id === args.placeId) ??
+       localItems.find((i) => String(i.title ?? '').toLowerCase().includes(nameLower)))
+    : localItems.find((i) => String(i.title ?? '').toLowerCase().includes(nameLower))
+
+  if (!match) return null
+
+  const rating = match.rating as { value?: number; votes_count?: number } | undefined
+  return {
+    type: String(match.type ?? 'local_finder'),
+    title: match.title as string | undefined,
+    rating: rating ? { value: rating.value, votes_count: rating.votes_count } : undefined,
+    category: match.category as string | undefined,
+    categories: match.categories as string[] | undefined,
+    phone: match.phone as string | undefined,
+    url: match.url as string | undefined,
+    address: match.address as string | undefined,
+    address_info: match.address_info as Record<string, unknown> | undefined,
+    place_id: match.place_id as string | undefined,
+    cid: match.cid as string | undefined,
+    main_image_url: match.main_image_url as string | undefined,
+    total_photos: match.total_photos as number | undefined,
+    is_claimed: match.is_claimed as boolean | undefined,
+  }
 }
 
 // GBP Posts ("Updates") — DataForSEO only exposes this via the task-queue
