@@ -24,12 +24,23 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
   }
 
+  const apiKey = process.env.DATAFORSEO_API_KEY?.trim()
   const login = process.env.DATAFORSEO_LOGIN
   const password = process.env.DATAFORSEO_PASSWORD
   const baseUrl = process.env.DATAFORSEO_BASE_URL ?? 'https://api.dataforseo.com/v3'
-  if (!login || !password) {
+
+  let authHeader: string
+  if (apiKey) {
+    authHeader = `Basic ${apiKey}`
+  } else if (login && password) {
+    authHeader = `Basic ${Buffer.from(`${login}:${password}`).toString('base64')}`
+  } else {
     return NextResponse.json(
-      { ok: false, error: 'DATAFORSEO_LOGIN / DATAFORSEO_PASSWORD not configured.' },
+      {
+        ok: false,
+        error:
+          'DataForSEO credentials not configured. Set DATAFORSEO_API_KEY (preferred) or DATAFORSEO_LOGIN + DATAFORSEO_PASSWORD.',
+      },
       { status: 503 }
     )
   }
@@ -38,7 +49,7 @@ export async function GET(req: Request) {
     const res = await fetch(`${baseUrl}/appendix/user_data`, {
       method: 'GET',
       headers: {
-        Authorization: `Basic ${Buffer.from(`${login}:${password}`).toString('base64')}`,
+        Authorization: authHeader,
         'User-Agent': 'LLG-Platform/1.0',
       },
       cache: 'no-store',

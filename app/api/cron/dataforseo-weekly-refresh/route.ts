@@ -34,9 +34,15 @@ export async function POST(req: Request) {
   if (!isAuthorizedCron(req)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
   }
-  if (!process.env.DATAFORSEO_LOGIN || !process.env.DATAFORSEO_PASSWORD) {
+  const hasApiKey = !!process.env.DATAFORSEO_API_KEY
+  const hasLoginPair = !!process.env.DATAFORSEO_LOGIN && !!process.env.DATAFORSEO_PASSWORD
+  if (!hasApiKey && !hasLoginPair) {
     return NextResponse.json(
-      { ok: false, error: 'DATAFORSEO_LOGIN / DATAFORSEO_PASSWORD not configured' },
+      {
+        ok: false,
+        error:
+          'DataForSEO credentials not configured. Set DATAFORSEO_API_KEY (preferred) or DATAFORSEO_LOGIN + DATAFORSEO_PASSWORD.',
+      },
       { status: 503 }
     )
   }

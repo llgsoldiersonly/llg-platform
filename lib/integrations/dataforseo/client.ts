@@ -1,6 +1,8 @@
 // DataForSEO REST API client. Single source of truth for outbound calls.
 //
-// Auth: HTTP Basic with DATAFORSEO_LOGIN + DATAFORSEO_PASSWORD (server-only).
+// Auth (preferred): DATAFORSEO_API_KEY — the base64 token shown on the
+// DataForSEO API Access page. Sent verbatim as `Authorization: Basic <key>`.
+// Auth (fallback):  DATAFORSEO_LOGIN + DATAFORSEO_PASSWORD — encoded at runtime.
 // All endpoints in this codebase post a single task object wrapped in an array,
 // per DataForSEO's "live" endpoint shape:
 //   POST /v3/<path>   body: [{ ...task }]
@@ -54,10 +56,18 @@ export class DataForSeoError extends Error {
 }
 
 function getAuthHeader(): string {
+  // Preferred: DATAFORSEO_API_KEY is the ready-to-use base64 token from
+  // DataForSEO's API Access page (it's already base64(login:password)).
+  const apiKey = process.env.DATAFORSEO_API_KEY?.trim()
+  if (apiKey) return `Basic ${apiKey}`
+
+  // Fallback: legacy split form. Encode login:password at runtime.
   const login = process.env.DATAFORSEO_LOGIN
   const password = process.env.DATAFORSEO_PASSWORD
   if (!login || !password) {
-    throw new DataForSeoError('DATAFORSEO_LOGIN / DATAFORSEO_PASSWORD not configured.')
+    throw new DataForSeoError(
+      'DataForSEO credentials not configured. Set DATAFORSEO_API_KEY (preferred) or DATAFORSEO_LOGIN + DATAFORSEO_PASSWORD.'
+    )
   }
   return `Basic ${Buffer.from(`${login}:${password}`).toString('base64')}`
 }
