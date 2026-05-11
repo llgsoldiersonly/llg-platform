@@ -10,17 +10,20 @@ import {
 } from '@/lib/integrations/dataforseo/backlinks'
 import { getGoogleOrganicRank } from '@/lib/integrations/dataforseo/serp'
 import { getGoogleLocalFinderRank, getGoogleMapsRankAtPoint } from '@/lib/integrations/dataforseo/local'
-import { getGmbInfo, getGmbUpdates, gmbUpdateExternalId } from '@/lib/integrations/dataforseo/gmb'
+import { getGmbInfo, submitGmbInfoTask, fetchGmbInfoTask } from '@/lib/integrations/dataforseo/gmb'
 import {
   saveBacklinkSummarySnapshot,
   saveBacklinkRows,
   saveKeywordRankSnapshot,
   saveMapGridRankSnapshot,
   saveGmbInfoSnapshot,
-  saveGmbUpdates,
   monthBounds,
   todayMonthKey,
 } from '@/lib/integrations/dataforseo/snapshots'
+
+// GBP task-based lookups (submit → wait → fetch) add ~12s of in-flight time.
+// Bump maxDuration so the cron has runway for 5 active clients + GBP.
+export const maxDuration = 300
 
 // DataForSEO weekly refresh — Mondays 04:00 UTC (after BrightLocal at 02:00).
 // Pulls backlink summary, MTD new/lost detail rows, organic + local ranks for
@@ -63,6 +66,19 @@ export async function POST(req: Request) {
     gmb_locations: 0,
     gmb_updates: 0,
   }
+
+  // Collected during the per-client loop, batch-processed after.
+  type GbpJob = {
+    clientId: string
+    clientFirmName: string
+    clientPrimaryDomain: string | null
+    locationId: string
+    locationLabel: string
+    placeId: string | null
+    lat: number | null
+    lng: number | null
+  }
+  const gbpJobs: GbpJob[] = []
 
   // Active, non-demo clients with a primary domain set.
   const { data: clients, error: clientsError } = await supa
@@ -260,64 +276,152 @@ export async function POST(req: Request) {
         }
       }
 
-      // -------- GBP listing info + recent updates per location --------
-      // Lookup goes through Local Finder (see lib/integrations/dataforseo/gmb.ts
-      // header for why). Needs lat/lng — gbp_place_id is no longer used here
-      // since Local Finder filters by coordinate + firm-name matcher.
+      // -------- GBP locations: collect for batch processing AFTER client loop --------
+      // We collect (client, location) pairs and process all of them in
+      // parallel after the per-client loop ends. Reason: the task-based
+      // my_business_info endpoint needs a ~12s wait between submit and
+      // fetch; doing that inside the per-client loop would be ~12s * N
+      // locations of mostly sleeping. Batching = single wait for all.
       const { data: locations } = await supa
         .from('client_locations')
-        .select('id, label, city, state, lat, lng')
+        .select('id, label, city, state, lat, lng, gbp_place_id')
         .eq('client_id', client.id)
 
       for (const loc of locations ?? []) {
-        if (loc.lat == null || loc.lng == null) {
-          errors.push({
-            client: client.firm_name,
-            stage: `gmb:${loc.label}`,
-            message: 'No lat/lng on client_locations',
-          })
-          continue
-        }
-        const lookupArgs = {
-          firmName: client.firm_name,
-          primaryDomain: client.primary_domain,
-          lat: Number(loc.lat),
-          lng: Number(loc.lng),
-        }
-        try {
-          const [info, updates] = await Promise.all([
-            getGmbInfo(lookupArgs, { client_id: client.id }),
-            getGmbUpdates(lookupArgs, { client_id: client.id }),
-          ])
-          if (info) {
-            await saveGmbInfoSnapshot(supa, {
-              clientId: client.id,
-              locationId: loc.id,
-              info,
-              updatesCount: updates.length,
-            })
-            stats.gmb_locations += 1
-          }
-          if (updates.length > 0) {
-            const { upserted } = await saveGmbUpdates(supa, {
-              clientId: client.id,
-              updates,
-              externalIdFn: gmbUpdateExternalId,
-            })
-            stats.gmb_updates += upserted
-          }
-        } catch (e) {
-          const message = e instanceof Error ? e.message : 'unknown'
-          errors.push({ client: client.firm_name, stage: `gmb:${loc.label}`, message })
-        }
+        gbpJobs.push({
+          clientId: client.id,
+          clientFirmName: client.firm_name,
+          clientPrimaryDomain: client.primary_domain,
+          locationId: loc.id,
+          locationLabel: loc.label,
+          placeId: loc.gbp_place_id,
+          lat: loc.lat != null ? Number(loc.lat) : null,
+          lng: loc.lng != null ? Number(loc.lng) : null,
+        })
       }
 
       await supa.from('sync_log').insert({
         source: 'cron:dataforseo-weekly',
         client_id: client.id,
         status: errors.some((e) => e.client === client.firm_name) ? 'partial' : 'ok',
-        row_count: stats.backlink_new_rows + stats.backlink_lost_rows + stats.organic_ranks + stats.local_ranks + stats.map_grid_points + stats.gmb_locations + stats.gmb_updates,
+        row_count: stats.backlink_new_rows + stats.backlink_lost_rows + stats.organic_ranks + stats.local_ranks + stats.map_grid_points,
         duration_ms: Date.now() - clientStart,
+      })
+    }
+  }
+
+  // ============================================================
+  // GBP batch — task-based for jobs with place_id, coordinate fallback otherwise
+  // ============================================================
+  const placeIdJobs = gbpJobs.filter((j) => j.placeId)
+  const fallbackJobs = gbpJobs.filter((j) => !j.placeId && j.lat != null && j.lng != null)
+  const skippedJobs = gbpJobs.filter((j) => !j.placeId && (j.lat == null || j.lng == null))
+
+  for (const j of skippedJobs) {
+    errors.push({
+      client: j.clientFirmName,
+      stage: `gmb:${j.locationLabel}`,
+      message: 'No gbp_place_id and no lat/lng — skipped',
+    })
+  }
+
+  // Submit all task_post in parallel — task-based my_business_info path.
+  const taskIds = await Promise.all(
+    placeIdJobs.map((j) =>
+      submitGmbInfoTask({ placeId: j.placeId! }, { client_id: j.clientId })
+    )
+  )
+
+  // Wait for DataForSEO to process — priority=2 normally returns in ~5-10s.
+  if (placeIdJobs.length > 0) {
+    await new Promise((r) => setTimeout(r, 12000))
+  }
+
+  // Fetch all task_get in parallel.
+  const taskResults = await Promise.all(
+    taskIds.map((id, i) =>
+      id ? fetchGmbInfoTask(id, { client_id: placeIdJobs[i].clientId }) : Promise.resolve(null)
+    )
+  )
+
+  for (let i = 0; i < placeIdJobs.length; i++) {
+    const j = placeIdJobs[i]
+    const info = taskResults[i]
+    if (!info) {
+      errors.push({
+        client: j.clientFirmName,
+        stage: `gmb:${j.locationLabel}`,
+        message: !taskIds[i]
+          ? 'task_post failed'
+          : 'task_get returned no items (still processing or place_id invalid)',
+      })
+      continue
+    }
+    try {
+      await saveGmbInfoSnapshot(supa, {
+        clientId: j.clientId,
+        locationId: j.locationId,
+        info,
+        updatesCount: 0,
+      })
+      stats.gmb_locations += 1
+    } catch (e) {
+      errors.push({
+        client: j.clientFirmName,
+        stage: `gmb:${j.locationLabel}`,
+        message: e instanceof Error ? e.message : 'snapshot write failed',
+      })
+    }
+  }
+
+  // Coordinate-fallback for locations without a place_id, in parallel.
+  const fallbackResults = await Promise.all(
+    fallbackJobs.map(async (j) => {
+      try {
+        const info = await getGmbInfo(
+          {
+            firmName: j.clientFirmName,
+            primaryDomain: j.clientPrimaryDomain,
+            lat: j.lat!,
+            lng: j.lng!,
+          },
+          { client_id: j.clientId }
+        )
+        return { ok: true as const, info }
+      } catch (e) {
+        return { ok: false as const, error: e instanceof Error ? e.message : 'unknown' }
+      }
+    })
+  )
+
+  for (let i = 0; i < fallbackJobs.length; i++) {
+    const j = fallbackJobs[i]
+    const r = fallbackResults[i]
+    if (!r.ok) {
+      errors.push({ client: j.clientFirmName, stage: `gmb:${j.locationLabel}`, message: r.error })
+      continue
+    }
+    if (!r.info) {
+      errors.push({
+        client: j.clientFirmName,
+        stage: `gmb:${j.locationLabel}`,
+        message: 'Maps SERP fallback found no match',
+      })
+      continue
+    }
+    try {
+      await saveGmbInfoSnapshot(supa, {
+        clientId: j.clientId,
+        locationId: j.locationId,
+        info: r.info,
+        updatesCount: 0,
+      })
+      stats.gmb_locations += 1
+    } catch (e) {
+      errors.push({
+        client: j.clientFirmName,
+        stage: `gmb:${j.locationLabel}`,
+        message: e instanceof Error ? e.message : 'snapshot write failed',
       })
     }
   }
