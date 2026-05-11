@@ -68,16 +68,23 @@ type SubmitArgs = {
 
 /**
  * POST /v3/business_data/google/my_business_info/task_post
- * Returns DataForSEO task_id (or null if submission failed at the API level).
+ * Returns {taskId, error}. Caller inspects both.
+ *
+ * Surfaces the actual failure reason rather than silently returning null,
+ * so cron error messages stay specific (e.g. "task_post: invalid place_id")
+ * instead of the generic "task_post failed".
  */
-export async function submitGmbInfoTask(args: SubmitArgs, opts: Opts = {}): Promise<string | null> {
+export async function submitGmbInfoTask(
+  args: SubmitArgs,
+  opts: Opts = {}
+): Promise<{ taskId: string | null; error: string | null }> {
   const task: Record<string, unknown> = {
-    priority: 2, // HIGH — DataForSEO processes within seconds
+    priority: 2,
     language_code: args.languageCode ?? 'en',
   }
   if (args.placeId) task.place_id = args.placeId
   else if (args.cid != null) task.cid = String(args.cid)
-  else return null
+  else return { taskId: null, error: 'no place_id or cid provided' }
 
   try {
     const res = await dataForSeoPost(
@@ -85,9 +92,18 @@ export async function submitGmbInfoTask(args: SubmitArgs, opts: Opts = {}): Prom
       task,
       { client_id: opts.client_id, request_tag: 'gmb_info_post' }
     )
-    return res.tasks?.[0]?.id ?? null
-  } catch {
-    return null
+    const firstTask = res.tasks?.[0]
+    const id = firstTask?.id ?? null
+    if (id) return { taskId: id, error: null }
+    return {
+      taskId: null,
+      error: `task_post returned no id (task status ${firstTask?.status_code ?? 'unknown'}: ${firstTask?.status_message ?? 'unknown'})`,
+    }
+  } catch (e) {
+    return {
+      taskId: null,
+      error: e instanceof Error ? e.message : 'unknown error',
+    }
   }
 }
 

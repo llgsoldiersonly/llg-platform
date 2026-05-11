@@ -326,11 +326,12 @@ export async function POST(req: Request) {
   }
 
   // Submit all task_post in parallel — task-based my_business_info path.
-  const taskIds = await Promise.all(
+  const submitResults = await Promise.all(
     placeIdJobs.map((j) =>
       submitGmbInfoTask({ placeId: j.placeId! }, { client_id: j.clientId })
     )
   )
+  const taskIds = submitResults.map((r) => r.taskId)
 
   // Wait for DataForSEO to process — priority=2 typically ready in ~10-20s.
   if (placeIdJobs.length > 0) {
@@ -369,11 +370,12 @@ export async function POST(req: Request) {
     const j = placeIdJobs[i]
     const info = taskResults[i]
     if (!info) {
+      const submitErr = submitResults[i].error
       errors.push({
         client: j.clientFirmName,
         stage: `gmb:${j.locationLabel}`,
         message: !taskIds[i]
-          ? 'task_post failed'
+          ? `task_post: ${submitErr ?? 'no taskId returned'}`
           : 'task_get returned no items (still processing or place_id invalid)',
       })
       continue
