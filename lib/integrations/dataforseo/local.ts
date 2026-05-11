@@ -127,16 +127,25 @@ function matchLocalResult(
   )
 
   const nameLower = businessName?.toLowerCase() ?? ''
-  const domainLower = clientDomain?.toLowerCase() ?? ''
+  const domainLower = clientDomain?.toLowerCase().replace(/^www\./, '') ?? ''
 
-  const match = localItems.find((i) => {
-    const title = String(i.title ?? '').toLowerCase()
-    const url = String(i.url ?? '').toLowerCase()
-    const domain = String(i.domain ?? '').toLowerCase()
-    if (nameLower && title.includes(nameLower)) return true
-    if (domainLower && (url.includes(domainLower) || domain.includes(domainLower))) return true
-    return false
-  })
+  // Prefer domain match (unique, no false positives). Fall back to name
+  // match only if no domain match exists OR no domain was provided.
+  // Firm names collide with unrelated businesses ("Dooley Noted" → "Dooley
+  // Noted Skin Spa Co." was a real false-positive on 2026-05-11).
+  const domainMatch = domainLower
+    ? localItems.find((i) => {
+        const url = String(i.url ?? '').toLowerCase()
+        const domain = String(i.domain ?? '').toLowerCase()
+        return url.includes(domainLower) || domain.includes(domainLower)
+      })
+    : null
+  const nameMatch = !domainMatch && nameLower
+    ? localItems.find((i) =>
+        String(i.title ?? '').toLowerCase().includes(nameLower)
+      )
+    : null
+  const match = domainMatch ?? nameMatch
 
   return {
     raw: result,

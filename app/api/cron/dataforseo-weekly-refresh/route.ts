@@ -280,6 +280,7 @@ export async function POST(req: Request) {
         }
         const lookupArgs = {
           firmName: client.firm_name,
+          primaryDomain: client.primary_domain,
           lat: Number(loc.lat),
           lng: Number(loc.lng),
         }

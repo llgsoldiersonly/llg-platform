@@ -49,6 +49,10 @@ export type GmbInfoResult = {
 
 type LookupArgs = {
   firmName: string
+  /** Required when available — domain is what disambiguates the firm from
+   *  unrelated businesses with similar names (the matcher prefers domain
+   *  over title match). */
+  primaryDomain?: string | null
   lat: number
   lng: number
   /** Google Maps zoom level. 12 ≈ "city neighborhood"; 14 = "few blocks". */
@@ -63,6 +67,7 @@ export async function getGmbInfo(args: LookupArgs, opts: Opts = {}): Promise<Gmb
       lng: args.lng,
       zoom: args.zoom ?? 14,
       businessName: args.firmName,
+      clientDomain: args.primaryDomain ?? undefined,
     },
     { client_id: opts.client_id }
   )
