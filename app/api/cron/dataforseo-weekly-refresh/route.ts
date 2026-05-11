@@ -332,17 +332,38 @@ export async function POST(req: Request) {
     )
   )
 
-  // Wait for DataForSEO to process — priority=2 normally returns in ~5-10s.
+  // Wait for DataForSEO to process — priority=2 typically ready in ~10-20s.
   if (placeIdJobs.length > 0) {
-    await new Promise((r) => setTimeout(r, 12000))
+    await new Promise((r) => setTimeout(r, 25000))
   }
 
-  // Fetch all task_get in parallel.
-  const taskResults = await Promise.all(
+  // First fetch attempt — parallel.
+  const firstResults = await Promise.all(
     taskIds.map((id, i) =>
       id ? fetchGmbInfoTask(id, { client_id: placeIdJobs[i].clientId }) : Promise.resolve(null)
     )
   )
+
+  // Retry once for any task whose first fetch returned null but did get a
+  // taskId (likely still processing). Wait an additional 15s, try again.
+  const pendingIdxs = firstResults
+    .map((r, i) => (r === null && taskIds[i] ? i : -1))
+    .filter((i) => i >= 0)
+
+  if (pendingIdxs.length > 0) {
+    await new Promise((r) => setTimeout(r, 15000))
+  }
+
+  const retryResults = await Promise.all(
+    pendingIdxs.map((i) =>
+      fetchGmbInfoTask(taskIds[i]!, { client_id: placeIdJobs[i].clientId })
+    )
+  )
+
+  const taskResults = firstResults.slice()
+  pendingIdxs.forEach((origIdx, retryIdx) => {
+    taskResults[origIdx] = retryResults[retryIdx]
+  })
 
   for (let i = 0; i < placeIdJobs.length; i++) {
     const j = placeIdJobs[i]

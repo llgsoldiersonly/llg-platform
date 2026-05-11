@@ -142,8 +142,12 @@ export async function dataForSeoPost<T>(
     })
   }
 
+  // Task-level status codes:
+  //   20000 — Ok (data is in result; used by /live endpoints)
+  //   20100 — Task Created (used by /task_post — queued, no data yet)
+  // Anything else is a real error.
   const firstTask = json.tasks?.[0]
-  if (firstTask && firstTask.status_code !== 20000) {
+  if (firstTask && firstTask.status_code !== 20000 && firstTask.status_code !== 20100) {
     throw new DataForSeoError(`DataForSEO task error: ${firstTask.status_message}`, {
       status_code: firstTask.status_code,
       status_message: firstTask.status_message,
