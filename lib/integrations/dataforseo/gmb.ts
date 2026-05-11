@@ -1,19 +1,21 @@
 // DataForSEO Google Business Profile (read-only) wrappers.
 //
 // Implementation note (2026-05-11): we route GBP-info lookups through
-// /serp/google/local_finder/live/advanced rather than any of the
-// /business_data/google/my_business_* endpoints. Two reasons:
-//   1. /business_data/google/my_business_info/live returns HTTP 404 — the
-//      endpoint only exists as task_post / task_get, which would require
-//      polling and a separate cron.
-//   2. /business_data/business_listings/search/live ignores the keyword
-//      filter and returns garbage (verified 2026-05-08: returned "Disco And
-//      Karaoke" for every law-firm query).
+// /serp/google/maps/live/advanced (Google Maps SERP).
 //
-// Local Finder already extracts rating + reviews_count for every result it
-// returns (see matchLocalResult in local.ts:142). We use the firm name as
-// keyword + matcher and location_coordinate to scope to ~5km around the
-// office. Same $0.002/call cost, no polling.
+// What we tried that DIDN'T work:
+//   1. /business_data/google/my_business_info/live → 404 (only exists as
+//      task_post; polling adds cron complexity).
+//   2. /business_data/business_listings/search/live → returns "Disco And
+//      Karaoke" for every keyword (keyword filter is broken or stub).
+//   3. /serp/google/local_finder/live/advanced with location_coordinate →
+//      "No Search Results" for every call (Local Finder only accepts
+//      location_name/code, not coordinates).
+//
+// Why Maps SERP works: takes location_coordinate as "lat,lng,zoom" and
+// returns the maps_search items visible at that map view, including each
+// listing's rating + reviews_count. matchLocalResult (in local.ts) already
+// handles type='maps_search' items. Cost: ~$0.002/call. No polling.
 //
 // What we lose vs the task-based GBP endpoint: photos count, hours, category.
 // The /overview GBP card only renders stars + review count + posts_30d, so
@@ -22,7 +24,7 @@
 // GBP "updates" (recent posts content) are still deferred — DataForSEO only
 // exposes them via task_post pattern, which belongs in a future monthly cron.
 
-import { getGoogleLocalFinderRank } from './local'
+import { getGoogleMapsRankAtPoint } from './local'
 
 type Opts = { client_id?: string | null }
 
@@ -49,15 +51,18 @@ type LookupArgs = {
   firmName: string
   lat: number
   lng: number
-  radiusMeters?: number
+  /** Google Maps zoom level. 12 ≈ "city neighborhood"; 14 = "few blocks". */
+  zoom?: number
 }
 
 export async function getGmbInfo(args: LookupArgs, opts: Opts = {}): Promise<GmbInfoResult | null> {
-  const result = await getGoogleLocalFinderRank(
+  const result = await getGoogleMapsRankAtPoint(
     {
       keyword: args.firmName,
+      lat: args.lat,
+      lng: args.lng,
+      zoom: args.zoom ?? 14,
       businessName: args.firmName,
-      locationCoordinate: `${args.lat},${args.lng},${args.radiusMeters ?? 5000}`,
     },
     { client_id: opts.client_id }
   )
