@@ -109,7 +109,7 @@ export default async function OverviewPage({
       .returns<RawCall[]>(),
     admin
       .from('client_credentials')
-      .select('ga4_property_url, gsc_property_url, google_ads_account_url, lsa_account_url')
+      .select('ga4_property_url, gsc_property_url, google_ads_account_url, google_ads_customer_id, lsa_account_url')
       .eq('client_id', ctx.client.id)
       .maybeSingle(),
     admin
@@ -186,7 +186,12 @@ export default async function OverviewPage({
   const integrationLinks: IntegrationLink[] = []
   if (creds?.ga4_property_url) integrationLinks.push({ key: 'ga4', href: creds.ga4_property_url, external: true })
   if (creds?.gsc_property_url) integrationLinks.push({ key: 'gsc', href: creds.gsc_property_url, external: true })
-  if (creds?.google_ads_account_url) integrationLinks.push({ key: 'google_ads', href: creds.google_ads_account_url, external: true })
+  // Prefer customer-id deep link (works for any user invited to the ad
+  // account in Google Ads); fall back to the manually-pasted account URL.
+  const googleAdsHref = creds?.google_ads_customer_id
+    ? `https://ads.google.com/aw/overview?__c=${creds.google_ads_customer_id}`
+    : creds?.google_ads_account_url ?? null
+  if (googleAdsHref) integrationLinks.push({ key: 'google_ads', href: googleAdsHref, external: true })
   if (creds?.lsa_account_url) integrationLinks.push({ key: 'lsa', href: creds.lsa_account_url, external: true })
   // Always-on internal link to the SEO Plan keyword tracking section.
   integrationLinks.push({ key: 'keyword_tool', href: '/plan', external: false })
@@ -224,16 +229,16 @@ export default async function OverviewPage({
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* LEFT — plan + integrations + recent updates at the bottom */}
+        {/* LEFT — plan + recent updates at the bottom */}
         <div className="space-y-6 lg:col-span-3">
           <SeoPlanProgressCard packageHeader={packageHeader} deliverables={deliverables} />
-          <IntegrationsCard links={integrationLinks} />
           <RecentUpdatesCard updates={updates} />
         </div>
 
-        {/* CENTER — tickets + team + walkthrough video */}
+        {/* CENTER — tickets + integrations + team + walkthrough video */}
         <div className="space-y-6 lg:col-span-5">
           <SupportTicketsCard tickets={ticketsRes.data ?? []} />
+          <IntegrationsCard links={integrationLinks} />
           <SupportTeamCard members={team} />
           <FeatureVideoCard />
         </div>
