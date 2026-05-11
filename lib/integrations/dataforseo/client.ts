@@ -158,6 +158,70 @@ export function getFirstResult<T>(response: DataForSeoResponse<T>): T | null {
   return response.tasks?.[0]?.result?.[0] ?? null
 }
 
+// GET wrapper for endpoints that take a path-encoded id (tasks_ready,
+// task_get/{id}) rather than a posted task body.
+export async function dataForSeoGet<T>(
+  path: string,
+  opts: PostOptions = {}
+): Promise<DataForSeoResponse<T>> {
+  const url = `${BASE_URL}${path}`
+  const startedAt = Date.now()
+
+  let res: Response
+  try {
+    res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: getAuthHeader(),
+        'User-Agent': 'LLG-Platform/1.0',
+      },
+      cache: 'no-store',
+    })
+  } catch (err) {
+    throw new DataForSeoError('DataForSEO network error', { details: err })
+  }
+
+  let json: DataForSeoResponse<T>
+  try {
+    json = (await res.json()) as DataForSeoResponse<T>
+  } catch (err) {
+    throw new DataForSeoError(`DataForSEO non-JSON response (HTTP ${res.status})`, {
+      status_code: res.status,
+      details: err,
+    })
+  }
+
+  void logUsage({
+    endpoint: path,
+    cost: json?.cost ?? 0,
+    tasks_count: json?.tasks_count ?? 0,
+    tasks_error: json?.tasks_error ?? 0,
+    raw_status_code: json?.status_code ?? res.status,
+    raw_status_message: json?.status_message ?? null,
+    request_tag: opts.request_tag ?? null,
+    client_id: opts.client_id ?? null,
+    duration_ms: Date.now() - startedAt,
+  })
+
+  if (!res.ok) {
+    throw new DataForSeoError(`DataForSEO HTTP ${res.status}`, {
+      status_code: res.status,
+      status_message: json?.status_message,
+      details: json,
+    })
+  }
+
+  if (json.status_code !== 20000) {
+    throw new DataForSeoError(`DataForSEO API error: ${json.status_message}`, {
+      status_code: json.status_code,
+      status_message: json.status_message,
+      details: json,
+    })
+  }
+
+  return json
+}
+
 type UsageRow = {
   endpoint: string
   cost: number

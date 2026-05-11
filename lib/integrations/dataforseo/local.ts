@@ -17,8 +17,11 @@ type LocalFinderInput = {
   // Match by GBP listing title (preferred — exact-match) OR by domain (fallback).
   businessName?: string
   clientDomain?: string
+  // Location scoping — one of these three. Coordinate is most precise when
+  // we know the firm's office lat/lng (avoids ambiguity from city-wide pulls).
   locationCode?: number
   locationName?: string
+  locationCoordinate?: string // "lat,lng,radius_meters" e.g. "46.2087,-119.1372,5000"
   languageCode?: string
   device?: 'desktop' | 'mobile'
 }
@@ -54,6 +57,7 @@ export async function getGoogleLocalFinderRank(
   }
   if (input.locationCode) task.location_code = input.locationCode
   else if (input.locationName) task.location_name = input.locationName
+  else if (input.locationCoordinate) task.location_coordinate = input.locationCoordinate
 
   const response = await dataForSeoPost<{ items?: Array<Record<string, unknown>> }>(
     '/serp/google/local_finder/live/advanced',

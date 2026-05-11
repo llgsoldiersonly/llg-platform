@@ -1,27 +1,28 @@
 // DataForSEO Google Business Profile (read-only) wrappers.
 //
-// Endpoints:
-//   /business_data/business_listings/search/live   — listing details (LIVE)
-//   /business_data/google/my_business_updates/...  — only exists in task-based
-//                                                     form, deferred for v1
+// Implementation note (2026-05-11): we route GBP-info lookups through
+// /serp/google/local_finder/live/advanced rather than any of the
+// /business_data/google/my_business_* endpoints. Two reasons:
+//   1. /business_data/google/my_business_info/live returns HTTP 404 — the
+//      endpoint only exists as task_post / task_get, which would require
+//      polling and a separate cron.
+//   2. /business_data/business_listings/search/live ignores the keyword
+//      filter and returns garbage (verified 2026-05-08: returned "Disco And
+//      Karaoke" for every law-firm query).
 //
-// Why /business_listings/search instead of /my_business_info?
-//   The /my_business_info endpoint only exists at /task_post (queue-based);
-//   there's no /live variant — calling /live returns HTTP 404. The
-//   /business_listings/search/live endpoint returns the same fields
-//   synchronously, so it's the right primitive for an in-cron call.
+// Local Finder already extracts rating + reviews_count for every result it
+// returns (see matchLocalResult in local.ts:142). We use the firm name as
+// keyword + matcher and location_coordinate to scope to ~5km around the
+// office. Same $0.002/call cost, no polling.
 //
-// Lookup args:
-//   - place_id (preferred — most precise; populated from
-//     client_locations.gbp_place_id when set)
-//   - lat/lng coordinate (fallback — uses location_coordinate "lat,lng,radius_m"
-//     which works regardless of how DataForSEO indexes locality names)
+// What we lose vs the task-based GBP endpoint: photos count, hours, category.
+// The /overview GBP card only renders stars + review count + posts_30d, so
+// those losses don't affect the user-facing surface.
+//
+// GBP "updates" (recent posts content) are still deferred — DataForSEO only
+// exposes them via task_post pattern, which belongs in a future monthly cron.
 
-import { dataForSeoPost, getFirstResult, type DataForSeoTask } from './client'
-
-type LookupArgs =
-  | { placeId: string; keyword?: string }
-  | { keyword: string; lat: number; lng: number; radiusMeters?: number }
+import { getGoogleLocalFinderRank } from './local'
 
 type Opts = { client_id?: string | null }
 
@@ -44,48 +45,57 @@ export type GmbInfoResult = {
   is_claimed?: boolean
 }
 
-type SearchTaskResult = {
-  items_count: number
-  items: GmbInfoResult[]
+type LookupArgs = {
+  firmName: string
+  lat: number
+  lng: number
+  radiusMeters?: number
 }
 
-// /business_data/business_listings/search/live
-//
-// Search keyword required. When place_id is given we still need a keyword
-// (DataForSEO uses keyword to filter even when narrowing by place_id), so
-// we fall back to the firm name as the keyword. Coordinate or place_id
-// scope the search.
 export async function getGmbInfo(args: LookupArgs, opts: Opts = {}): Promise<GmbInfoResult | null> {
-  const task: Record<string, unknown> = {}
-
-  if ('placeId' in args) {
-    // place_id-based filtering on the search endpoint
-    task.keyword = args.keyword ?? '*'
-    task.filters = [['place_id', '=', args.placeId]]
-    task.limit = 1
-  } else {
-    task.keyword = args.keyword
-    task.location_coordinate = `${args.lat},${args.lng},${args.radiusMeters ?? 5000}`
-    task.limit = 1
-  }
-
-  const res = await dataForSeoPost<SearchTaskResult>(
-    '/business_data/business_listings/search/live',
-    task,
-    { client_id: opts.client_id, request_tag: 'gmb_info' }
+  const result = await getGoogleLocalFinderRank(
+    {
+      keyword: args.firmName,
+      businessName: args.firmName,
+      locationCoordinate: `${args.lat},${args.lng},${args.radiusMeters ?? 5000}`,
+    },
+    { client_id: opts.client_id }
   )
-  const first = getFirstResult(res) as SearchTaskResult | null
-  return first?.items?.[0] ?? null
+
+  // matchLocalResult sets client_rank_group when it finds a match.
+  // Prefer that result; fall back to the top result whose title contains
+  // the firm name (case-insensitive).
+  const byRank = result.client_rank_group
+    ? result.top_results.find((r) => r.rank_group === result.client_rank_group)
+    : null
+  const byName = result.top_results.find((r) =>
+    (r.title ?? '').toLowerCase().includes(args.firmName.toLowerCase())
+  )
+  const match = byRank ?? byName ?? null
+
+  if (!match) return null
+
+  return {
+    type: 'business_data',
+    title: match.title ?? undefined,
+    rating:
+      match.rating != null || match.reviews_count != null
+        ? {
+            value: match.rating ?? undefined,
+            votes_count: match.reviews_count ?? undefined,
+          }
+        : undefined,
+    url: match.url ?? undefined,
+    address: match.address ?? undefined,
+    phone: match.phone ?? undefined,
+    cid: match.cid ?? undefined,
+  }
 }
 
-// GBP Posts ("Updates") — DataForSEO only exposes this via the task-queue
-// pattern (no /live). For v1 we skip post fetching and return an empty array.
-// The GBP card on /overview gracefully handles empty (no "Latest post" block
-// renders); rating + review count + photos still populate from getGmbInfo.
-//
-// Future work: implement task_post -> tasks_ready -> task_get pattern in a
-// separate "monthly finalize" cron so we don't have to poll inside the
-// weekly serverless time budget.
+// GBP Posts ("Updates") — only available via DataForSEO's task-based
+// my_business_updates endpoint. Returning empty for v1 keeps the cron
+// synchronous; the /overview GBP card renders gracefully without the
+// "latest post" block when posts_30d is 0.
 export type GmbUpdate = {
   type: string
   snippet?: string
@@ -107,5 +117,3 @@ export function gmbUpdateExternalId(u: GmbUpdate): string {
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0
   return `gbp_${Math.abs(h)}`
 }
-
-export type _GmbTaskBag = DataForSeoTask<unknown>
