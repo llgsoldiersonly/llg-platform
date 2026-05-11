@@ -42,6 +42,7 @@ export type LocalRankResult = {
     phone: string | null
     url: string | null
     cid: string | null
+    place_id: string | null
   }>
 }
 
@@ -79,6 +80,8 @@ type MapsPointInput = {
   zoom?: number // Google Maps zoom level (1=world, 21=street). Defaults to 12.
   businessName?: string
   clientDomain?: string
+  /** Preferred matcher — exact place_id match avoids name/domain false positives. */
+  clientPlaceId?: string
   languageCode?: string
   device?: 'desktop' | 'mobile'
 }
@@ -105,17 +108,20 @@ export async function getGoogleMapsRankAtPoint(
   )
 
   const result = getFirstResult(response)
-  return matchLocalResult(result, input.businessName, input.clientDomain)
+  return matchLocalResult(result, input.businessName, input.clientDomain, input.clientPlaceId)
 }
 
 // ---------------------------------------------------------------
-// Shared shape for Local Finder + Maps. The match logic checks
-// business name (preferred) OR domain (fallback).
+// Shared shape for Local Finder + Maps. Match priority (highest to lowest):
+//   1. place_id — globally unique, no false positives
+//   2. domain   — pretty unique
+//   3. name     — last-resort substring match (can match unrelated businesses)
 // ---------------------------------------------------------------
 function matchLocalResult(
   result: unknown,
   businessName?: string,
-  clientDomain?: string
+  clientDomain?: string,
+  clientPlaceId?: string
 ): LocalRankResult {
   const items = ((result as { items?: Array<Record<string, unknown>> })?.items ?? []) as Array<
     Record<string, unknown>
@@ -128,24 +134,27 @@ function matchLocalResult(
 
   const nameLower = businessName?.toLowerCase() ?? ''
   const domainLower = clientDomain?.toLowerCase().replace(/^www\./, '') ?? ''
+  const placeIdExact = clientPlaceId ?? ''
 
-  // Prefer domain match (unique, no false positives). Fall back to name
-  // match only if no domain match exists OR no domain was provided.
-  // Firm names collide with unrelated businesses ("Dooley Noted" → "Dooley
-  // Noted Skin Spa Co." was a real false-positive on 2026-05-11).
-  const domainMatch = domainLower
+  // Priority 1: place_id (exact, globally unique — no false positives)
+  const placeIdMatch = placeIdExact
+    ? localItems.find((i) => String(i.place_id ?? '') === placeIdExact)
+    : null
+  // Priority 2: domain
+  const domainMatch = !placeIdMatch && domainLower
     ? localItems.find((i) => {
         const url = String(i.url ?? '').toLowerCase()
         const domain = String(i.domain ?? '').toLowerCase()
         return url.includes(domainLower) || domain.includes(domainLower)
       })
     : null
-  const nameMatch = !domainMatch && nameLower
+  // Priority 3: name (substring — can collide; only used when nothing else hits)
+  const nameMatch = !placeIdMatch && !domainMatch && nameLower
     ? localItems.find((i) =>
         String(i.title ?? '').toLowerCase().includes(nameLower)
       )
     : null
-  const match = domainMatch ?? nameMatch
+  const match = placeIdMatch ?? domainMatch ?? nameMatch
 
   return {
     raw: result,
@@ -164,6 +173,7 @@ function matchLocalResult(
       phone: (i.phone as string | undefined) ?? null,
       url: (i.url as string | undefined) ?? null,
       cid: (i.cid as string | undefined) ?? null,
+      place_id: (i.place_id as string | undefined) ?? null,
     })),
   }
 }

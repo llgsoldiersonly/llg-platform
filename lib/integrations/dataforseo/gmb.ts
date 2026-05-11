@@ -1,34 +1,29 @@
 // DataForSEO Google Business Profile (read-only) wrappers.
 //
-// Two lookup paths, chosen per-location based on what data we have:
+// Implementation note (2026-05-11, third try):
 //
-// 1. PRIMARY: by place_id (or CID) via the task-based my_business_info
-//    endpoint. Used when client_locations.gbp_place_id is set. 1-to-1
-//    match, returns full listing detail (rating, reviews, photos,
-//    hours, category, etc.). Requires task_post → wait → task_get
-//    pattern; ~10–20s round trip with priority=2.
+// We route lookups through /serp/google/maps/live/advanced with the firm's
+// office lat/lng as `location_coordinate` and (when available) the firm's
+// Google Place ID as the matcher key. Maps SERP returns up to 100 nearby
+// businesses including their place_id, rating, and review count per item.
+// matchLocalResult in local.ts now prefers place_id match (exact, unique)
+// over domain or name.
 //
-// 2. FALLBACK: by firm_name + lat/lng via the live Maps SERP endpoint.
-//    Used when no place_id is set. Subject to false-positive matches
-//    when the firm name collides with unrelated businesses (e.g.,
-//    "Dooley Noted" → "Dooley Noted Skin Spa Co." in Austin), so we
-//    also pass primary_domain to disambiguate.
-//
-// What we tried that DIDN'T work (see commit history for details):
+// What we tried that DIDN'T work:
 //   - /business_data/google/my_business_info/live → 404 (no /live variant)
-//   - /business_data/business_listings/search/live → returns junk regardless
-//     of keyword filter ("Disco And Karaoke" for every law-firm query)
+//   - /business_data/google/my_business_info/task_post → requires `keyword`,
+//     does NOT accept place_id alone. Confirmed 2026-05-11 with
+//     "Invalid Field: 'keyword'" error response.
+//   - /business_data/business_listings/search/live → returns "Disco And
+//     Karaoke" for every keyword (broken keyword filter).
 //   - /serp/google/local_finder/live/advanced with location_coordinate →
-//     "No Search Results" (Local Finder only accepts location_name/code)
+//     "No Search Results" (Local Finder only accepts location_name/code).
 //
-// GBP "updates" (recent posts content) are still deferred — DataForSEO only
-// exposes them via task_post pattern; queued for a future monthly cron.
+// Why Maps SERP + place_id is correct: synchronous (no task polling), one
+// API call per location ($0.002), Maps result items include place_id so
+// matching is exact-1-to-1. The firm just needs to be in the top-100
+// listings for its area (broader zoom helps).
 
-import {
-  dataForSeoPost,
-  dataForSeoGet,
-  getFirstResult,
-} from './client'
 import { getGoogleMapsRankAtPoint } from './local'
 
 type Opts = { client_id?: string | null }
@@ -52,92 +47,16 @@ export type GmbInfoResult = {
   is_claimed?: boolean
 }
 
-// ---------------------------------------------------------------
-// PRIMARY PATH — by place_id via task-based my_business_info.
-//
-// Use submit + fetch in batch from the caller: submit all tasks in
-// parallel, sleep ~12s, fetch all results in parallel. With priority=2
-// DataForSEO usually returns within 5–10s; the 12s buffer is safe.
-// ---------------------------------------------------------------
-
-type SubmitArgs = {
-  placeId?: string
-  cid?: string | number
-  languageCode?: string
-}
-
-/**
- * POST /v3/business_data/google/my_business_info/task_post
- * Returns {taskId, error}. Caller inspects both.
- *
- * Surfaces the actual failure reason rather than silently returning null,
- * so cron error messages stay specific (e.g. "task_post: invalid place_id")
- * instead of the generic "task_post failed".
- */
-export async function submitGmbInfoTask(
-  args: SubmitArgs,
-  opts: Opts = {}
-): Promise<{ taskId: string | null; error: string | null }> {
-  const task: Record<string, unknown> = {
-    priority: 2,
-    language_code: args.languageCode ?? 'en',
-  }
-  if (args.placeId) task.place_id = args.placeId
-  else if (args.cid != null) task.cid = String(args.cid)
-  else return { taskId: null, error: 'no place_id or cid provided' }
-
-  try {
-    const res = await dataForSeoPost(
-      '/business_data/google/my_business_info/task_post',
-      task,
-      { client_id: opts.client_id, request_tag: 'gmb_info_post' }
-    )
-    const firstTask = res.tasks?.[0]
-    const id = firstTask?.id ?? null
-    if (id) return { taskId: id, error: null }
-    return {
-      taskId: null,
-      error: `task_post returned no id (task status ${firstTask?.status_code ?? 'unknown'}: ${firstTask?.status_message ?? 'unknown'})`,
-    }
-  } catch (e) {
-    return {
-      taskId: null,
-      error: e instanceof Error ? e.message : 'unknown error',
-    }
-  }
-}
-
-/**
- * GET /v3/business_data/google/my_business_info/task_get/{task_id}
- * Returns the listing info if ready; null if not ready / not found / errored.
- */
-export async function fetchGmbInfoTask(
-  taskId: string,
-  opts: Opts = {}
-): Promise<GmbInfoResult | null> {
-  try {
-    const res = await dataForSeoGet<{ items?: GmbInfoResult[] }>(
-      `/business_data/google/my_business_info/task_get/${taskId}`,
-      { client_id: opts.client_id, request_tag: 'gmb_info_get' }
-    )
-    const result = getFirstResult(res) as { items?: GmbInfoResult[] } | null
-    return result?.items?.[0] ?? null
-  } catch {
-    return null
-  }
-}
-
-// ---------------------------------------------------------------
-// FALLBACK PATH — by firm_name + lat/lng via Maps SERP.
-// Used when no place_id is set on client_locations.
-// ---------------------------------------------------------------
-
 type LookupArgs = {
   firmName: string
+  /** Preferred matcher when available — globally unique, exact match. */
+  placeId?: string | null
+  /** Secondary matcher — pretty unique, no name collisions. */
   primaryDomain?: string | null
   lat: number
   lng: number
-  /** Google Maps zoom level. 12 ≈ "city neighborhood"; 14 = "few blocks". */
+  /** Google Maps zoom level. Lower = broader area. 12 ≈ city; 14 = few blocks.
+   *  Defaults to 12 so the firm's GBP is more likely to be in the top 100. */
   zoom?: number
 }
 
@@ -147,20 +66,20 @@ export async function getGmbInfo(args: LookupArgs, opts: Opts = {}): Promise<Gmb
       keyword: args.firmName,
       lat: args.lat,
       lng: args.lng,
-      zoom: args.zoom ?? 14,
+      zoom: args.zoom ?? 12,
       businessName: args.firmName,
       clientDomain: args.primaryDomain ?? undefined,
+      clientPlaceId: args.placeId ?? undefined,
     },
     { client_id: opts.client_id }
   )
 
-  const byRank = result.client_rank_group
+  // Find the matched item. matchLocalResult's match priority is place_id >
+  // domain > name. The matched result's rank_group is exposed as
+  // client_rank_group; look it up in top_results to get rating/reviews.
+  const match = result.client_rank_group
     ? result.top_results.find((r) => r.rank_group === result.client_rank_group)
     : null
-  const byName = result.top_results.find((r) =>
-    (r.title ?? '').toLowerCase().includes(args.firmName.toLowerCase())
-  )
-  const match = byRank ?? byName ?? null
 
   if (!match) return null
 
@@ -178,13 +97,13 @@ export async function getGmbInfo(args: LookupArgs, opts: Opts = {}): Promise<Gmb
     address: match.address ?? undefined,
     phone: match.phone ?? undefined,
     cid: match.cid ?? undefined,
+    place_id: match.place_id ?? undefined,
   }
 }
 
-// ---------------------------------------------------------------
-// GBP Posts / "Updates" — deferred to future monthly cron.
-// ---------------------------------------------------------------
-
+// GBP Posts ("Updates") — only available via DataForSEO's task-based
+// my_business_updates endpoint. Deferred to a future monthly cron so we
+// don't have to manage polling inside this weekly cron's time budget.
 export type GmbUpdate = {
   type: string
   snippet?: string

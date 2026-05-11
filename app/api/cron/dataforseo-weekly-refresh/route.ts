@@ -10,7 +10,7 @@ import {
 } from '@/lib/integrations/dataforseo/backlinks'
 import { getGoogleOrganicRank } from '@/lib/integrations/dataforseo/serp'
 import { getGoogleLocalFinderRank, getGoogleMapsRankAtPoint } from '@/lib/integrations/dataforseo/local'
-import { getGmbInfo, submitGmbInfoTask, fetchGmbInfoTask } from '@/lib/integrations/dataforseo/gmb'
+import { getGmbInfo } from '@/lib/integrations/dataforseo/gmb'
 import {
   saveBacklinkSummarySnapshot,
   saveBacklinkRows,
@@ -311,99 +311,27 @@ export async function POST(req: Request) {
   }
 
   // ============================================================
-  // GBP batch — task-based for jobs with place_id, coordinate fallback otherwise
+  // GBP batch — Maps SERP per location, matched by place_id (preferred),
+  // domain, or firm name in that order. Processed in parallel.
   // ============================================================
-  const placeIdJobs = gbpJobs.filter((j) => j.placeId)
-  const fallbackJobs = gbpJobs.filter((j) => !j.placeId && j.lat != null && j.lng != null)
-  const skippedJobs = gbpJobs.filter((j) => !j.placeId && (j.lat == null || j.lng == null))
+  const ready = gbpJobs.filter((j) => j.lat != null && j.lng != null)
+  const skipped = gbpJobs.filter((j) => j.lat == null || j.lng == null)
 
-  for (const j of skippedJobs) {
+  for (const j of skipped) {
     errors.push({
       client: j.clientFirmName,
       stage: `gmb:${j.locationLabel}`,
-      message: 'No gbp_place_id and no lat/lng — skipped',
+      message: 'No lat/lng on client_locations — skipped',
     })
   }
 
-  // Submit all task_post in parallel — task-based my_business_info path.
-  const submitResults = await Promise.all(
-    placeIdJobs.map((j) =>
-      submitGmbInfoTask({ placeId: j.placeId! }, { client_id: j.clientId })
-    )
-  )
-  const taskIds = submitResults.map((r) => r.taskId)
-
-  // Wait for DataForSEO to process — priority=2 typically ready in ~10-20s.
-  if (placeIdJobs.length > 0) {
-    await new Promise((r) => setTimeout(r, 25000))
-  }
-
-  // First fetch attempt — parallel.
-  const firstResults = await Promise.all(
-    taskIds.map((id, i) =>
-      id ? fetchGmbInfoTask(id, { client_id: placeIdJobs[i].clientId }) : Promise.resolve(null)
-    )
-  )
-
-  // Retry once for any task whose first fetch returned null but did get a
-  // taskId (likely still processing). Wait an additional 15s, try again.
-  const pendingIdxs = firstResults
-    .map((r, i) => (r === null && taskIds[i] ? i : -1))
-    .filter((i) => i >= 0)
-
-  if (pendingIdxs.length > 0) {
-    await new Promise((r) => setTimeout(r, 15000))
-  }
-
-  const retryResults = await Promise.all(
-    pendingIdxs.map((i) =>
-      fetchGmbInfoTask(taskIds[i]!, { client_id: placeIdJobs[i].clientId })
-    )
-  )
-
-  const taskResults = firstResults.slice()
-  pendingIdxs.forEach((origIdx, retryIdx) => {
-    taskResults[origIdx] = retryResults[retryIdx]
-  })
-
-  for (let i = 0; i < placeIdJobs.length; i++) {
-    const j = placeIdJobs[i]
-    const info = taskResults[i]
-    if (!info) {
-      const submitErr = submitResults[i].error
-      errors.push({
-        client: j.clientFirmName,
-        stage: `gmb:${j.locationLabel}`,
-        message: !taskIds[i]
-          ? `task_post: ${submitErr ?? 'no taskId returned'}`
-          : 'task_get returned no items (still processing or place_id invalid)',
-      })
-      continue
-    }
-    try {
-      await saveGmbInfoSnapshot(supa, {
-        clientId: j.clientId,
-        locationId: j.locationId,
-        info,
-        updatesCount: 0,
-      })
-      stats.gmb_locations += 1
-    } catch (e) {
-      errors.push({
-        client: j.clientFirmName,
-        stage: `gmb:${j.locationLabel}`,
-        message: e instanceof Error ? e.message : 'snapshot write failed',
-      })
-    }
-  }
-
-  // Coordinate-fallback for locations without a place_id, in parallel.
-  const fallbackResults = await Promise.all(
-    fallbackJobs.map(async (j) => {
+  const gbpResults = await Promise.all(
+    ready.map(async (j) => {
       try {
         const info = await getGmbInfo(
           {
             firmName: j.clientFirmName,
+            placeId: j.placeId,
             primaryDomain: j.clientPrimaryDomain,
             lat: j.lat!,
             lng: j.lng!,
@@ -417,9 +345,9 @@ export async function POST(req: Request) {
     })
   )
 
-  for (let i = 0; i < fallbackJobs.length; i++) {
-    const j = fallbackJobs[i]
-    const r = fallbackResults[i]
+  for (let i = 0; i < ready.length; i++) {
+    const j = ready[i]
+    const r = gbpResults[i]
     if (!r.ok) {
       errors.push({ client: j.clientFirmName, stage: `gmb:${j.locationLabel}`, message: r.error })
       continue
@@ -428,7 +356,9 @@ export async function POST(req: Request) {
       errors.push({
         client: j.clientFirmName,
         stage: `gmb:${j.locationLabel}`,
-        message: 'Maps SERP fallback found no match',
+        message: j.placeId
+          ? `place_id ${j.placeId.slice(0, 20)}... not in top Maps SERP results — try broader zoom`
+          : 'Maps SERP found no match by name or domain',
       })
       continue
     }
