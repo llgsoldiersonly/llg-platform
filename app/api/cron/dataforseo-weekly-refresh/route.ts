@@ -80,13 +80,18 @@ export async function POST(req: Request) {
   }
   const gbpJobs: GbpJob[] = []
 
-  // Active, non-demo clients with a primary domain set.
+  // Active, non-demo clients with a primary domain set. Stable created_at
+  // ordering so multi-run mop-ups deterministically process the same first
+  // client each time; combined with the per-client today-skip below, this
+  // means re-triggers naturally advance to clients that haven't been
+  // synced today yet.
   const { data: clients, error: clientsError } = await supa
     .from('clients')
     .select('id, firm_name, primary_domain, is_demo_only, status')
     .eq('status', 'active')
     .eq('is_demo_only', false)
     .not('primary_domain', 'is', null)
+    .order('created_at', { ascending: true })
 
   if (clientsError) {
     return NextResponse.json({ ok: false, error: clientsError.message }, { status: 500 })
@@ -139,7 +144,18 @@ export async function POST(req: Request) {
     }
 
     // -------- SERP: organic + local ranks for high-priority keywords --------
-    if (!clientErrored) {
+    // Skip if this client already has a keyword snapshot from today —
+    // re-triggers should advance to the next un-synced client rather than
+    // re-pulling already-current data and burning DataForSEO credits.
+    const today = new Date().toISOString().slice(0, 10)
+    const { count: todaysSnapshotCount } = await supa
+      .from('dfs_keyword_rank_snapshots')
+      .select('id', { count: 'exact', head: true })
+      .eq('client_id', client.id)
+      .eq('snapshot_date', today)
+    const serpAlreadyCurrent = (todaysSnapshotCount ?? 0) > 0
+
+    if (!clientErrored && !serpAlreadyCurrent) {
       const { data: tracked } = await supa
         .from('dfs_tracked_keywords')
         .select('id, client_id, client_location_id, keyword, search_type, device, location_name, location_code, language_code, priority')
