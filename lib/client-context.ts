@@ -35,6 +35,11 @@ export type ClientContext = {
     firm_name: string
     primary_domain: string | null
     is_demo_only: boolean
+    status: 'prospect' | 'onboarding' | 'active' | 'paused' | 'churned'
+    onboarded_at: string | null
+    agreed_launch_date: string | null
+    ad_date: string | null
+    next_billing_at: string | null
   }
   locations: ClientLocation[]
   selectedLocation: ClientLocation | null
@@ -80,7 +85,9 @@ export async function getClientContext(searchParams?: URLSearchParams): Promise<
   const impersonation = isSuperAdmin(user) ? await getActiveImpersonation() : null
 
   const baseQuery = () =>
-    supabase.from('clients').select('id, firm_name, primary_domain, is_demo_only')
+    supabase
+      .from('clients')
+      .select('id, firm_name, primary_domain, is_demo_only, status, onboarded_at, agreed_launch_date, ad_date, next_billing_at')
 
   let clients = impersonation
     ? (await baseQuery().eq('id', impersonation.clientId).limit(1)).data
