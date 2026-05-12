@@ -4,7 +4,6 @@ import { getClientContext } from '@/lib/client-context'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { RingChart } from '@/components/ui/ring-chart'
-import { NumberTicker } from '@/components/ui/number-ticker'
 import { EmptyState } from '@/components/ui/empty-state'
 import {
   calculateVisibilityScore,
@@ -15,12 +14,6 @@ import {
   competitorGapScoreFromBeats,
   scoreLabel,
 } from '@/lib/seo/scoring'
-import {
-  backlinkInsightCopy,
-  rankingInsightCopy,
-  aiVisibilityInsightCopy,
-  mapsInsightCopy,
-} from '@/lib/seo/insights'
 
 export const dynamic = 'force-dynamic'
 
@@ -92,11 +85,6 @@ export default async function SeoOverviewPage({
     competitorGapScore,
   })
 
-  const top3 = (latestRanks ?? []).filter((r) => (r.rank_absolute ?? 99) <= 3).length
-  const top10 = (latestRanks ?? []).filter((r) => (r.rank_absolute ?? 99) <= 10).length
-  const gridTop3 = (latestGrid ?? []).filter((p) => p.client_found && (p.client_map_rank ?? 99) <= 3).length
-  const gridNotFound = (latestGrid ?? []).filter((p) => !p.client_found).length
-
   const hasAnyData =
     latestBacklinks || (latestRanks?.length ?? 0) > 0 || (latestGrid?.length ?? 0) > 0 || (aiSnapshots?.length ?? 0) > 0
 
@@ -150,59 +138,9 @@ export default async function SeoOverviewPage({
         </Card>
       </div>
 
-      {/* KPI cards */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Kpi
-          label="Total backlinks"
-          value={latestBacklinks?.total_backlinks ?? null}
-        />
-        <Kpi
-          label="Referring domains"
-          value={latestBacklinks?.referring_domains ?? null}
-        />
-        <Kpi label="Keywords in top 3" value={top3} />
-        <Kpi label="Keywords in top 10" value={top10} />
-      </div>
-
-      {/* Plain-English insight blocks */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <InsightCard
-          title="Backlinks"
-          body={backlinkInsightCopy({
-            newBacklinks: latestBacklinks?.new_backlinks ?? 0,
-            lostBacklinks: latestBacklinks?.lost_backlinks ?? 0,
-            newReferringDomains: latestBacklinks?.new_referring_domains ?? 0,
-            lostReferringDomains: latestBacklinks?.lost_referring_domains ?? 0,
-            spamScore: latestBacklinks?.backlink_spam_score ?? null,
-          })}
-        />
-        <InsightCard
-          title="Rankings"
-          body={rankingInsightCopy({
-            improved: 0, // refined when we add prev-month diff
-            dropped: 0,
-            top3,
-            top10,
-            total: latestRanks?.length ?? 0,
-          })}
-        />
-        <InsightCard
-          title="Maps coverage"
-          body={mapsInsightCopy({
-            totalGridPoints: latestGrid?.length ?? 0,
-            top3Count: gridTop3,
-            notFoundCount: gridNotFound,
-          })}
-        />
-        <InsightCard
-          title="AI visibility"
-          body={aiVisibilityInsightCopy({
-            mentions: (aiSnapshots ?? []).filter((a) => a.client_cited).length,
-            citations: (aiSnapshots ?? []).filter((a) => a.client_cited).length,
-            competitorMentions: 0,
-          })}
-        />
-      </div>
+      <p className="text-center text-xs text-body-subtle">
+        Drill into each area using the tabs above — Backlinks, Rankings, AI Visibility, Competitors, and your Monthly Report.
+      </p>
     </div>
   )
 }
@@ -224,28 +162,3 @@ function SubScoreRow({ label, weight, score }: { label: string; weight: number; 
   )
 }
 
-function Kpi({ label, value }: { label: string; value: number | null }) {
-  return (
-    <Card>
-      <CardContent className="py-4">
-        <div className="text-xs uppercase tracking-wide text-body">{label}</div>
-        <div className="mt-1 text-2xl font-semibold tabular-nums text-heading">
-          {value === null || value === undefined ? '—' : <NumberTicker value={value} />}
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function InsightCard({ title, body }: { title: string; body: string }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm leading-relaxed text-body">{body}</p>
-      </CardContent>
-    </Card>
-  )
-}

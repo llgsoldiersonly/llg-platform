@@ -10,9 +10,9 @@ const tabs: Tab[] = [
   { href: '/seo',             label: 'Overview' },
   { href: '/seo/backlinks',   label: 'Backlinks' },
   { href: '/seo/rankings',    label: 'Rankings' },
-  { href: '/seo/ai',          label: 'AI Visibility', phase: 'soon' },
-  { href: '/seo/competitors', label: 'Competitors',   phase: 'soon' },
-  { href: '/seo/reports',     label: 'Monthly Report', phase: 'soon' },
+  { href: '/seo/ai',          label: 'AI Visibility' },
+  { href: '/seo/competitors', label: 'Competitors' },
+  { href: '/seo/reports',     label: 'Monthly Report' },
 ]
 
 export function SeoTabNav() {
