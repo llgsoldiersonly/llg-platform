@@ -193,6 +193,8 @@ export default async function OverviewPage({
     : creds?.google_ads_account_url ?? null
   if (googleAdsHref) integrationLinks.push({ key: 'google_ads', href: googleAdsHref, external: true })
   if (creds?.lsa_account_url) integrationLinks.push({ key: 'lsa', href: creds.lsa_account_url, external: true })
+  // Always-on internal link to the SEO Plan keyword tracking section.
+  integrationLinks.push({ key: 'keyword_tool', href: '/plan', external: false })
 
   // Support team is empty until we model per-client team assignments
   // (planned for v1.5 — see project memory). Empty state renders cleanly.
@@ -236,7 +238,7 @@ export default async function OverviewPage({
         <div className="space-y-6 lg:col-span-5">
           <SupportTicketsCard tickets={ticketsRes.data ?? []} />
           <RecentUpdatesCard updates={updates} />
-          {integrationLinks.length > 0 && <IntegrationsCard links={integrationLinks} />}
+          <IntegrationsCard links={integrationLinks} />
           <SupportTeamCard members={team} />
           <FeatureVideoCard />
         </div>
