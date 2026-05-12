@@ -1,10 +1,9 @@
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { LineChart, KeyRound, Megaphone, Search, ExternalLink } from 'lucide-react'
+import { LineChart, KeyRound, Megaphone, ExternalLink } from 'lucide-react'
 
 export type IntegrationLink = {
-  key: 'ga4' | 'gsc' | 'google_ads' | 'lsa' | 'keyword_tool'
-  /** External URL (for ga4/gsc/google_ads/lsa) or internal route (keyword_tool). */
+  key: 'ga4' | 'gsc' | 'google_ads' | 'lsa'
   href: string
   /** External links open in new tab; internal links navigate within the app. */
   external: boolean
@@ -15,7 +14,6 @@ const META = {
   gsc:           { label: 'Google Search Console',  cta: 'Open Console',   Icon: KeyRound,  color: 'bg-neutral-tertiary-soft text-body' },
   google_ads:    { label: 'Google Ads',             cta: 'View account',   Icon: Megaphone, color: 'bg-blue-100 text-blue-700' },
   lsa:           { label: 'LSA',                    cta: 'View account',   Icon: Megaphone, color: 'bg-emerald-100 text-fg-success-strong' },
-  keyword_tool:  { label: 'Keyword Tool',           cta: 'Open SEO Plan',  Icon: Search,    color: 'bg-brand-soft text-fg-brand' },
 } as const
 
 export function IntegrationsCard({ links }: { links: IntegrationLink[] }) {
