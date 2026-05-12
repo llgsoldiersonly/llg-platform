@@ -20,7 +20,6 @@ const items: NavItem[] = [
   { href: '/seo',          label: 'SEO Insights' },
   { href: '/tickets',      label: 'Support & Tickets' },
   { href: '/team',         label: 'Team',         phase: 'soon' },
-  { href: '/integrations', label: 'Integrations', phase: 'soon' },
 ]
 
 export function ClientTopNav() {
