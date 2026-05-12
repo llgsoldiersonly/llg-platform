@@ -257,19 +257,17 @@ ${input.recommended_actions.length > 0 ? input.recommended_actions.map((a) => `-
 
 Write the 4-sentence executive summary now.`
 
+  // Sonnet 4.6 — text generation only, no reasoning needed for a 4-sentence
+  // summary from structured inputs. Thinking disabled + effort: low keeps this
+  // fast (~200ms p50) and cheap. Note: prompt caching won't activate here
+  // because Sonnet 4.6's minimum cacheable prefix is 2048 tokens and our
+  // system prompt is ~200; the SDK will silently skip the cache write.
   const response = await client.messages.create({
-    model: 'claude-opus-4-7',
-    max_tokens: 1024,
-    system: [
-      {
-        type: 'text',
-        text: SYSTEM_PROMPT,
-        // Cache the system prompt — every firm in the same cron run reuses it.
-        // 5-min TTL is plenty since the cron processes all firms within a few
-        // minutes of the first.
-        cache_control: { type: 'ephemeral' },
-      },
-    ],
+    model: 'claude-sonnet-4-6',
+    max_tokens: 512,
+    thinking: { type: 'disabled' },
+    output_config: { effort: 'low' },
+    system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content: userPrompt }],
   })
 
