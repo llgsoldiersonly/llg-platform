@@ -36,7 +36,7 @@ export function SeoPlanProgressCard({ packageHeader, deliverables }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">SEO Plan Progress</CardTitle>
+        <CardTitle className="text-lg">Package</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
         {packageHeader && (

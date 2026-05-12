@@ -229,15 +229,15 @@ export default async function OverviewPage({
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* LEFT — plan + recent updates at the bottom */}
+        {/* LEFT — plan */}
         <div className="space-y-6 lg:col-span-3">
           <SeoPlanProgressCard packageHeader={packageHeader} deliverables={deliverables} />
-          <RecentUpdatesCard updates={updates} />
         </div>
 
-        {/* CENTER — tickets + integrations + team + walkthrough video */}
+        {/* CENTER — tickets + recent updates + integrations + team + walkthrough video */}
         <div className="space-y-6 lg:col-span-5">
           <SupportTicketsCard tickets={ticketsRes.data ?? []} />
+          <RecentUpdatesCard updates={updates} />
           <IntegrationsCard links={integrationLinks} />
           <SupportTeamCard members={team} />
           <FeatureVideoCard />
