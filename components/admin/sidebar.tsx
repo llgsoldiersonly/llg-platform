@@ -11,6 +11,7 @@ import {
   Megaphone,
   Activity,
   Settings,
+  Upload,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { LlgMark } from '@/components/brand/logo'
@@ -26,6 +27,7 @@ const items: NavItem[] = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/clients', label: 'Clients', icon: Users },
   { href: '/admin/tickets', label: 'Tickets', icon: Briefcase },
+  { href: '/admin/submissions', label: 'Submissions', icon: Upload },
   { href: '/admin/tasks', label: 'Tasks', icon: ClipboardList },
   { href: '/admin/workload', label: 'Workload', icon: TrendingUp },
   { href: '/admin/ads', label: 'Ads', icon: Megaphone },

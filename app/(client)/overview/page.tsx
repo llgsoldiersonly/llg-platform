@@ -38,6 +38,20 @@ type RawSiteHealth = {
 
 type RawPost = { id: string; title: string | null; published_at: string | null; source_type: string }
 type RawCall = { id: string; caller_name: string | null; started_at: string | null }
+type RawSubmission = {
+  id: string
+  kind: string
+  title: string | null
+  link_url: string
+  reviewed_at: string | null
+  submitted_at: string
+}
+
+function submissionKindToRecentKind(kind: string): RecentUpdate['kind'] {
+  if (kind === 'blog' || kind === 'faq' || kind === 'ai_page') return 'blog'
+  if (kind === 'gmb_post' || kind === 'social_post') return 'social'
+  return 'other'
+}
 
 export default async function OverviewPage({
   searchParams,
@@ -68,6 +82,7 @@ export default async function OverviewPage({
     credsRes,
     gbpSnapshotRes,
     gbpLatestPostRes,
+    submissionsRes,
   ] = await Promise.all([
     subIds.length > 0
       ? supabase
@@ -127,6 +142,14 @@ export default async function OverviewPage({
       .order('published_at', { ascending: false })
       .limit(1)
       .maybeSingle<GbpLatestPost>(),
+    admin
+      .from('deliverable_submissions')
+      .select('id, kind, title, link_url, reviewed_at, submitted_at')
+      .eq('client_id', ctx.client.id)
+      .eq('status', 'approved')
+      .order('reviewed_at', { ascending: false })
+      .limit(8)
+      .returns<RawSubmission[]>(),
   ])
 
   // Pick the first active subscription for the package header (most clients
@@ -177,6 +200,12 @@ export default async function OverviewPage({
       kind: 'call',
       title: `Call from ${c.caller_name ?? 'unknown caller'}`,
       occurred_at: c.started_at ?? new Date().toISOString(),
+    })),
+    ...(submissionsRes.data ?? []).map<RecentUpdate>((s) => ({
+      id: `submission-${s.id}`,
+      kind: submissionKindToRecentKind(s.kind),
+      title: s.title ?? s.kind.replace(/_/g, ' '),
+      occurred_at: s.reviewed_at ?? s.submitted_at,
     })),
   ]
     .sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime())

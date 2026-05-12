@@ -20,3 +20,7 @@ export function isClientUser(user: User | null): boolean {
 export function isSuperAdmin(user: User | null): boolean {
   return getRole(user) === 'super_admin'
 }
+
+export function canApproveSubmissions(user: User | null): boolean {
+  return isSuperAdmin(user)
+}
