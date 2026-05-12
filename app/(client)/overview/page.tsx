@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation'
+import { format } from 'date-fns'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getClientContext } from '@/lib/client-context'
-import { SeoPlanProgressCard, type DeliverableProgress, type PackageHeader } from '@/components/client/cards/seo-plan-progress'
 import { SupportTicketsCard, type TicketSummary } from '@/components/client/cards/support-tickets'
 import { SupportTeamCard, type TeamMember } from '@/components/client/cards/support-team'
 import { LighthouseScoresCard, type LighthouseScores } from '@/components/client/cards/lighthouse-scores'
@@ -22,18 +22,13 @@ import {
   PRE_LAUNCH_STEPS,
   type PreLaunchStepRow,
 } from '@/components/client/cards/pre-launch-checklist'
+import { MonthlyProductionCard } from '@/components/client/cards/monthly-production'
+import { LlgUpdatesCard } from '@/components/client/cards/llg-updates'
+import { aggregateProduction, type RawProductionRow } from '@/lib/post-launch-production'
+import { fetchLlgBlogPosts, type LlgBlogPost } from '@/lib/llg-blog-feed'
 import CustomerPortalRocketFlyover from '@/components/customer-portal/CustomerPortalRocketFlyover'
 
 export const dynamic = 'force-dynamic'
-
-type RawDeliverable = {
-  id: string
-  title: string
-  status: 'done' | 'in_progress' | 'pending' | 'blocked'
-  target_count: number | null
-  actual_count: number | null
-  client_visible: boolean
-}
 
 type RawSiteHealth = {
   performance: number | null
@@ -52,6 +47,14 @@ type RawSubmission = {
   link_url: string
   reviewed_at: string | null
   submitted_at: string
+}
+
+// Shape returned by the deliverables→package_deliverables join used to drive
+// the post-launch production card. We only consider package-backed rows
+// (template_id is not null) because the 6 buckets all key off code patterns.
+type RawProductionJoinedRow = {
+  actual_count: number | null
+  template: { code: string; target_count: number | null } | null
 }
 
 function submissionKindToRecentKind(kind: string): RecentUpdate['kind'] {
@@ -82,7 +85,7 @@ export default async function OverviewPage({
   const today = new Date().toISOString().slice(0, 10)
 
   const [
-    deliverablesRes,
+    productionRes,
     ticketsRes,
     siteHealthRes,
     postsRes,
@@ -91,17 +94,17 @@ export default async function OverviewPage({
     gbpSnapshotRes,
     gbpLatestPostRes,
     submissionsRes,
+    llgPosts,
   ] = await Promise.all([
     subIds.length > 0
-      ? supabase
-          .from('deliverables_display')
-          .select('id, title, status, target_count, actual_count, client_visible')
+      ? admin
+          .from('deliverables')
+          .select('actual_count, template:package_deliverables!inner(code, target_count)')
           .in('subscription_id', subIds)
           .lte('period_start', today)
           .gte('period_end', today)
-          .eq('client_visible', true)
-          .returns<RawDeliverable[]>()
-      : Promise.resolve({ data: [] }),
+          .returns<RawProductionJoinedRow[]>()
+      : Promise.resolve({ data: [] as RawProductionJoinedRow[] }),
     supabase
       .from('tickets')
       .select('id, ticket_number, subject, status, created_at')
@@ -158,17 +161,22 @@ export default async function OverviewPage({
       .order('reviewed_at', { ascending: false })
       .limit(20)
       .returns<RawSubmission[]>(),
+    // Hourly-revalidated fetch — wraps its own try/catch so a fetch failure
+    // never breaks the page.
+    fetchLlgBlogPosts(),
   ])
 
-  const activeSub = ctx.selectedSubscriptions.find((s) => s.status === 'active')
-    ?? ctx.selectedSubscriptions[0] ?? null
-  const packageHeader: PackageHeader | null = activeSub?.package
-    ? {
-        display_name: activeSub.package.display_name,
-        monthly_fee_cents: null,
-        color_hex: activeSub.package.color_hex,
-      }
-    : null
+  const activeSub =
+    ctx.selectedSubscriptions.find((s) => s.status === 'active') ??
+    ctx.selectedSubscriptions[0] ??
+    null
+
+  const productionRows: RawProductionRow[] = (productionRes.data ?? []).map((r) => ({
+    code: r.template?.code ?? null,
+    target_count: r.template?.target_count ?? null,
+    actual_count: r.actual_count,
+  }))
+  const productionCategories = aggregateProduction(productionRows)
 
   const updates: RecentUpdate[] = [
     ...(postsRes.data ?? []).map<RecentUpdate>((p) => ({
@@ -198,12 +206,11 @@ export default async function OverviewPage({
     .sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime())
     .slice(0, 6)
 
+  // Period label for the production card — "May 2026" style.
+  const periodLabel = format(new Date(), 'MMMM yyyy')
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
-      {/* Rocket flyover plays one diagonal arc from bottom-left to
-       *  top-right on the user's first overview visit per browser
-       *  session, then unmounts itself. Decorative; pointer-events
-       *  none. */}
       <CustomerPortalRocketFlyover />
       <div>
         <h1 className="text-3xl text-heading">
@@ -221,7 +228,9 @@ export default async function OverviewPage({
       {preLaunch ? (
         <PreLaunchLayout
           firmName={ctx.client.firm_name}
-          packageHeader={packageHeader}
+          packageName={activeSub?.package?.display_name ?? null}
+          packageColorHex={activeSub?.package?.color_hex ?? null}
+          monthlyFeeCents={activeSub?.package?.monthly_fee_cents ?? null}
           adDate={ctx.client.ad_date}
           agreedLaunchDate={ctx.client.agreed_launch_date}
           tickets={ticketsRes.data ?? []}
@@ -231,42 +240,31 @@ export default async function OverviewPage({
       ) : (
         <PostLaunchLayout
           firmName={ctx.client.firm_name}
-          packageHeader={packageHeader}
+          packageName={activeSub?.package?.display_name ?? null}
+          packageColorHex={activeSub?.package?.color_hex ?? null}
+          monthlyFeeCents={activeSub?.package?.monthly_fee_cents ?? null}
           launchDate={ctx.client.onboarded_at}
           nextBillingAt={ctx.client.next_billing_at}
-          deliverables={(deliverablesRes.data ?? []).map(toProgress)}
+          productionCategories={productionCategories}
+          periodLabel={periodLabel}
           tickets={ticketsRes.data ?? []}
           updates={updates}
           creds={credsRes.data ?? null}
           siteHealth={siteHealthRes.data ?? null}
           gbpSnapshot={gbpSnapshotRes.data ?? null}
           gbpLatestPost={gbpLatestPostRes.data ?? null}
+          llgPosts={llgPosts}
         />
       )}
     </div>
   )
 }
 
-function toProgress(d: RawDeliverable): DeliverableProgress {
-  return {
-    id: d.id,
-    title: d.title,
-    status: d.status,
-    target_count: d.target_count,
-    actual_count:
-      d.actual_count != null
-        ? d.actual_count
-        : d.status === 'done'
-        ? d.target_count
-        : d.status === 'in_progress'
-        ? Math.floor((d.target_count ?? 0) / 2)
-        : 0,
-  }
-}
-
 function PreLaunchLayout({
   firmName,
-  packageHeader,
+  packageName,
+  packageColorHex,
+  monthlyFeeCents,
   adDate,
   agreedLaunchDate,
   tickets,
@@ -274,15 +272,15 @@ function PreLaunchLayout({
   submissions,
 }: {
   firmName: string
-  packageHeader: PackageHeader | null
+  packageName: string | null
+  packageColorHex: string | null
+  monthlyFeeCents: number | null
   adDate: string | null
   agreedLaunchDate: string | null
   tickets: TicketSummary[]
   updates: RecentUpdate[]
   submissions: RawSubmission[]
 }) {
-  // Collapse submissions into a per-kind summary so the checklist can
-  // show "done" once any approved submission of that kind exists.
   const rows: PreLaunchStepRow[] = PRE_LAUNCH_STEPS.map((step) => {
     const matches = submissions.filter((s) => s.kind === step.kind)
     const latest = matches[0] ?? null
@@ -300,8 +298,9 @@ function PreLaunchLayout({
       <div className="space-y-6 lg:col-span-3">
         <FirmHeaderCard
           firmName={firmName}
-          packageName={packageHeader?.display_name ?? null}
-          packageColorHex={packageHeader?.color_hex ?? null}
+          packageName={packageName}
+          packageColorHex={packageColorHex}
+          monthlyFeeCents={monthlyFeeCents}
           preLaunch
           adDate={adDate}
           agreedLaunchDate={agreedLaunchDate}
@@ -328,22 +327,29 @@ function PreLaunchLayout({
 
 function PostLaunchLayout({
   firmName,
-  packageHeader,
+  packageName,
+  packageColorHex,
+  monthlyFeeCents,
   launchDate,
   nextBillingAt,
-  deliverables,
+  productionCategories,
+  periodLabel,
   tickets,
   updates,
   creds,
   siteHealth,
   gbpSnapshot,
   gbpLatestPost,
+  llgPosts,
 }: {
   firmName: string
-  packageHeader: PackageHeader | null
+  packageName: string | null
+  packageColorHex: string | null
+  monthlyFeeCents: number | null
   launchDate: string | null
   nextBillingAt: string | null
-  deliverables: DeliverableProgress[]
+  productionCategories: ReturnType<typeof aggregateProduction>
+  periodLabel: string
   tickets: TicketSummary[]
   updates: RecentUpdate[]
   creds: {
@@ -356,6 +362,7 @@ function PostLaunchLayout({
   siteHealth: RawSiteHealth | null
   gbpSnapshot: GbpSnapshot | null
   gbpLatestPost: GbpLatestPost | null
+  llgPosts: LlgBlogPost[]
 }) {
   const integrationLinks: IntegrationLink[] = []
   if (creds?.ga4_property_url) integrationLinks.push({ key: 'ga4', href: creds.ga4_property_url, external: true })
@@ -381,31 +388,32 @@ function PostLaunchLayout({
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-      {/* LEFT — firm header + plan */}
+      {/* LEFT — firm header + recent updates */}
       <div className="space-y-6 lg:col-span-3">
         <FirmHeaderCard
           firmName={firmName}
-          packageName={packageHeader?.display_name ?? null}
-          packageColorHex={packageHeader?.color_hex ?? null}
+          packageName={packageName}
+          packageColorHex={packageColorHex}
+          monthlyFeeCents={monthlyFeeCents}
           preLaunch={false}
           adDate={null}
           agreedLaunchDate={null}
           launchDate={launchDate}
           nextBillingAt={nextBillingAt}
         />
-        <SeoPlanProgressCard packageHeader={packageHeader} deliverables={deliverables} />
+        <RecentUpdatesCard updates={updates} />
       </div>
 
-      {/* CENTER — why-this-matters + tickets + recent updates + walkthrough video */}
+      {/* CENTER — why-this-matters + the condensed monthly production + tickets + team + walkthrough */}
       <div className="space-y-6 lg:col-span-5">
         <WhyThisMattersCard preLaunch={false} />
+        <MonthlyProductionCard categories={productionCategories} periodLabel={periodLabel} />
         <SupportTicketsCard tickets={tickets} />
-        <RecentUpdatesCard updates={updates} />
         <SupportTeamCard members={team} />
         <FeatureVideoCard />
       </div>
 
-      {/* RIGHT — site health + GBP + integrations + resources */}
+      {/* RIGHT — site health + GBP + integrations + LLG updates + resources */}
       <div className="space-y-6 lg:col-span-4">
         <LighthouseScoresCard scores={lighthouseScores} />
         <GoogleBusinessProfileCard
@@ -413,6 +421,7 @@ function PostLaunchLayout({
           latestPost={gbpLatestPost}
         />
         <IntegrationsCard links={integrationLinks} />
+        <LlgUpdatesCard posts={llgPosts} />
         <ResourcesCard />
       </div>
     </div>

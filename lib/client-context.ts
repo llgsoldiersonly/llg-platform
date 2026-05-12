@@ -25,6 +25,7 @@ export type ClientSubscription = {
     display_name: string
     tier_order: number
     color_hex: string | null
+    monthly_fee_cents: number | null
   } | null
   modules: SubscriptionModule[]
 }
@@ -57,6 +58,7 @@ type RawSubscription = {
     display_name: string
     tier_order: number
     color_hex: string | null
+    monthly_fee_cents: number | null
   } | null
 }
 
@@ -115,7 +117,7 @@ export async function getClientContext(searchParams?: URLSearchParams): Promise<
       .from('subscriptions')
       .select(`
         id, status, started_at, location_id,
-        package:package_templates(code, display_name, tier_order, color_hex)
+        package:package_templates(code, display_name, tier_order, color_hex, monthly_fee_cents)
       `)
       .eq('client_id', client.id)
       .returns<RawSubscription[]>(),
