@@ -145,14 +145,18 @@ export default async function OverviewPage({
       .order('captured_on', { ascending: false })
       .limit(1)
       .maybeSingle<GbpSnapshot>(),
+    // GBP posts come from staff submissions (kind='gmb_post', approved) —
+    // not from `posts` table. DFS's my_business_updates is on a gated tier
+    // and the official GBP API needs per-firm OAuth we don't have. Source
+    // of truth is the agency staff who actually publish the posts.
     admin
-      .from('posts')
-      .select('title, excerpt, published_at, url')
+      .from('deliverable_submissions')
+      .select('title, link_url, reviewed_at, submitted_at, notes')
       .eq('client_id', ctx.client.id)
-      .eq('source_type', 'gbp_post')
-      .order('published_at', { ascending: false })
-      .limit(1)
-      .maybeSingle<GbpLatestPost>(),
+      .eq('kind', 'gmb_post')
+      .eq('status', 'approved')
+      .order('reviewed_at', { ascending: false })
+      .limit(20),
     admin
       .from('deliverable_submissions')
       .select('id, kind, title, link_url, reviewed_at, submitted_at')
@@ -177,6 +181,45 @@ export default async function OverviewPage({
     actual_count: r.actual_count,
   }))
   const productionCategories = aggregateProduction(productionRows)
+
+  // GBP posts — sourced from staff submissions (kind='gmb_post', approved)
+  // rather than DataForSEO (gated tier) or an OAuth-based GBP API.
+  // gbpLatestPostRes holds the 20 most-recent approved submissions; shape
+  // them into the widget's expected types.
+  const gbpSubmissions = (gbpLatestPostRes.data ?? []) as Array<{
+    title: string | null
+    link_url: string
+    reviewed_at: string | null
+    submitted_at: string
+    notes: string | null
+  }>
+  const latestGbpSubmission = gbpSubmissions[0] ?? null
+  const latestGbpPost: GbpLatestPost | null = latestGbpSubmission
+    ? {
+        title: latestGbpSubmission.title,
+        excerpt: latestGbpSubmission.notes ?? latestGbpSubmission.title,
+        published_at: latestGbpSubmission.reviewed_at ?? latestGbpSubmission.submitted_at,
+        url: latestGbpSubmission.link_url,
+      }
+    : null
+
+  const thirtyDaysAgoMs = Date.now() - 30 * 24 * 60 * 60 * 1000
+  const gbpPostsLast30d = gbpSubmissions.filter((s) => {
+    const ts = s.reviewed_at ?? s.submitted_at
+    return ts ? new Date(ts).getTime() >= thirtyDaysAgoMs : false
+  }).length
+
+  // Splice the staff-derived count into the GBP snapshot so the widget's
+  // "N posts in last 30 days" line reflects reality. Rating + review count
+  // still come from gmb_snapshots (DFS my_business_info, which works).
+  const gbpSnapshotShaped: GbpSnapshot | null = gbpSnapshotRes.data
+    ? {
+        rating: gbpSnapshotRes.data.rating,
+        review_count: gbpSnapshotRes.data.review_count,
+        posts_30d: gbpPostsLast30d,
+        captured_on: gbpSnapshotRes.data.captured_on,
+      }
+    : null
 
   const updates: RecentUpdate[] = [
     ...(postsRes.data ?? []).map<RecentUpdate>((p) => ({
@@ -251,8 +294,8 @@ export default async function OverviewPage({
           updates={updates}
           creds={credsRes.data ?? null}
           siteHealth={siteHealthRes.data ?? null}
-          gbpSnapshot={gbpSnapshotRes.data ?? null}
-          gbpLatestPost={gbpLatestPostRes.data ?? null}
+          gbpSnapshot={gbpSnapshotShaped}
+          gbpLatestPost={latestGbpPost}
           llgPosts={llgPosts}
         />
       )}
