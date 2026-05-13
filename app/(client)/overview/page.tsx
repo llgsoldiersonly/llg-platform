@@ -373,7 +373,7 @@ function PreLaunchLayout({
 
       {/* RIGHT — tickets + resources */}
       <div className="space-y-6 lg:col-span-3">
-        <SupportTicketsCard tickets={tickets} />
+        <SupportTicketsCard tickets={tickets} isStaff={isStaff} />
         <ResourcesCard />
       </div>
     </div>
@@ -473,7 +473,7 @@ function PostLaunchLayout({
           clientId={clientId}
           isStaff={isStaff}
         />
-        <SupportTicketsCard tickets={tickets} />
+        <SupportTicketsCard tickets={tickets} isStaff={isStaff} />
         <FeatureVideoCard />
       </div>
 
