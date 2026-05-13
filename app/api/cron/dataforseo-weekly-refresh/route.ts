@@ -10,14 +10,13 @@ import {
 } from '@/lib/integrations/dataforseo/backlinks'
 import { getGoogleOrganicRank } from '@/lib/integrations/dataforseo/serp'
 import { getGoogleLocalFinderRank, getGoogleMapsRankAtPoint } from '@/lib/integrations/dataforseo/local'
-import { getGmbInfo, getGmbUpdates, gmbUpdateExternalId } from '@/lib/integrations/dataforseo/gmb'
+import { getGmbInfo } from '@/lib/integrations/dataforseo/gmb'
 import {
   saveBacklinkSummarySnapshot,
   saveBacklinkRows,
   saveKeywordRankSnapshot,
   saveMapGridRankSnapshot,
   saveGmbInfoSnapshot,
-  saveGmbUpdates,
   monthBounds,
   todayMonthKey,
 } from '@/lib/integrations/dataforseo/snapshots'
@@ -342,13 +341,13 @@ export async function POST(req: Request) {
     })
   }
 
+  // GBP info only here. GBP "Updates" / posts fetching lives in the
+  // dedicated /api/cron/gbp-refresh because the task-based polling adds
+  // ~30s per location and was pushing this cron past Vercel's 300s cap.
   const gbpResults = await Promise.all(
     ready.map(async (j) => {
-      // Run info + updates in parallel — info is fast (Maps SERP), updates
-      // is slow (task-based, ~20-30s). Running them in parallel keeps the
-      // total per-location time bounded by the slow call, not the sum.
-      const [infoResult, updatesResult] = await Promise.allSettled([
-        getGmbInfo(
+      try {
+        const info = await getGmbInfo(
           {
             firmName: j.clientFirmName,
             placeId: j.placeId,
@@ -357,27 +356,11 @@ export async function POST(req: Request) {
             lng: j.lng!,
           },
           { client_id: j.clientId }
-        ),
-        getGmbUpdates(
-          {
-            firmName: j.clientFirmName,
-            placeId: j.placeId,
-            primaryDomain: j.clientPrimaryDomain,
-            lat: j.lat!,
-            lng: j.lng!,
-          },
-          { client_id: j.clientId }
-        ),
-      ])
-
-      if (infoResult.status === 'rejected') {
-        return {
-          ok: false as const,
-          error: infoResult.reason instanceof Error ? infoResult.reason.message : 'unknown',
-        }
+        )
+        return { ok: true as const, info }
+      } catch (e) {
+        return { ok: false as const, error: e instanceof Error ? e.message : 'unknown' }
       }
-      const updates = updatesResult.status === 'fulfilled' ? updatesResult.value : []
-      return { ok: true as const, info: infoResult.value, updates }
     })
   )
 
@@ -399,21 +382,23 @@ export async function POST(req: Request) {
       continue
     }
     try {
-      const updates = r.updates ?? []
+      // Preserve any updates_30d count from a recent prior snapshot so the
+      // value doesn't reset to 0 between gbp-refresh runs. If no prior, 0.
+      const { data: priorSnap } = await supa
+        .from('gmb_snapshots')
+        .select('posts_30d')
+        .eq('client_id', j.clientId)
+        .eq('location_id', j.locationId)
+        .order('captured_on', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      const updatesCount = priorSnap?.posts_30d ?? 0
       await saveGmbInfoSnapshot(supa, {
         clientId: j.clientId,
         locationId: j.locationId,
         info: r.info,
-        updatesCount: updates.length,
+        updatesCount,
       })
-      if (updates.length > 0) {
-        await saveGmbUpdates(supa, {
-          clientId: j.clientId,
-          updates,
-          externalIdFn: gmbUpdateExternalId,
-        })
-        stats.gmb_updates += updates.length
-      }
       stats.gmb_locations += 1
     } catch (e) {
       errors.push({

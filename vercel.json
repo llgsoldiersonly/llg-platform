@@ -13,6 +13,7 @@
     { "path": "/api/cron/competitors-refresh","schedule": "30 0 1 * *" },
     { "path": "/api/cron/ai-visibility",      "schedule": "0 1 1 * *" },
     { "path": "/api/cron/monthly-report",     "schedule": "0 2 1 * *" },
-    { "path": "/api/cron/dataforseo-weekly-refresh", "schedule": "0 4 * * 1" }
+    { "path": "/api/cron/dataforseo-weekly-refresh", "schedule": "0 4 * * 1" },
+    { "path": "/api/cron/gbp-refresh",        "schedule": "0 5 * * 1" }
   ]
 }
