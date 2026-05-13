@@ -4,7 +4,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { RankCheckResult } from './serp'
 import type { LocalRankResult } from './local'
-import type { LlmMentionsResult } from './ai'
+import type { LlmResponseResult } from './ai'
 
 type Supa = SupabaseClient
 
@@ -195,10 +195,10 @@ export async function saveAiVisibilitySnapshot(
     trackedKeywordId: string | null
     platform: string
     prompt: string
-    result: LlmMentionsResult | { client_cited: boolean; client_citation_urls: string[]; raw: unknown }
+    result: LlmResponseResult | { client_cited: boolean; client_citation_urls: string[]; raw: unknown }
   }
 ) {
-  const r = args.result as LlmMentionsResult
+  const r = args.result as LlmResponseResult
   const row = {
     client_id: args.clientId,
     tracked_keyword_id: args.trackedKeywordId,

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { isAuthorizedCron } from '@/lib/cron-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { postToGlip } from '@/lib/integrations/ringcentral'
-import { getLlmMentions } from '@/lib/integrations/dataforseo/ai'
+import { getLlmResponse, type LlmPlatform } from '@/lib/integrations/dataforseo/ai'
 import { saveAiVisibilitySnapshot } from '@/lib/integrations/dataforseo/snapshots'
 import { generatePromptsForFirm, type TrackedKeywordForPrompt } from '@/lib/seo/ai-visibility-prompts'
 
@@ -11,7 +11,17 @@ import { generatePromptsForFirm, type TrackedKeywordForPrompt } from '@/lib/seo/
 // Cap maxDuration to keep us under Vercel's 5-minute hobby/pro hard limit.
 export const maxDuration = 300
 
-const PLATFORMS: Array<'google' | 'chat_gpt'> = ['google', 'chat_gpt']
+// Platforms to query each prompt against. 'gemini' is our closest proxy for
+// Google AI Mode (which is Gemini-powered under the hood).
+const PLATFORMS: LlmPlatform[] = ['gemini', 'chat_gpt']
+
+// Maps the DFS platform code to the label we store in dfs_ai_visibility_snapshots.
+// The /seo/ai page UI keys off these labels.
+const PLATFORM_LABEL: Record<LlmPlatform, string> = {
+  gemini: 'google_ai_mode',
+  chat_gpt: 'chat_gpt',
+  perplexity: 'perplexity',
+}
 
 // Monthly AI visibility sweep — runs 1st @ 01:00 UTC.
 //
@@ -78,18 +88,20 @@ export async function POST(req: Request) {
     for (const p of prompts) {
       for (const platform of PLATFORMS) {
         try {
-          const result = await getLlmMentions(
+          const result = await getLlmResponse(
             {
+              prompt: p.prompt,
               targetDomain: client.primary_domain,
-              keyword: p.prompt,
+              firmName: client.firm_name,
               platform,
+              webSearchCountryIsoCode: 'US',
             },
             { client_id: client.id }
           )
           await saveAiVisibilitySnapshot(supa, {
             clientId: client.id,
             trackedKeywordId: p.tracked_keyword_id,
-            platform: platform === 'google' ? 'google_ai_mode' : 'chat_gpt',
+            platform: PLATFORM_LABEL[platform],
             prompt: p.prompt,
             result,
           })
