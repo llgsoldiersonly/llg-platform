@@ -4,17 +4,15 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { postToGlip } from '@/lib/integrations/ringcentral'
 import { getLlmResponse, type LlmPlatform } from '@/lib/integrations/dataforseo/ai'
 import { saveAiVisibilitySnapshot } from '@/lib/integrations/dataforseo/snapshots'
-import { generatePromptsForFirm, type TrackedKeywordForPrompt } from '@/lib/seo/ai-visibility-prompts'
+import { generatePromptsForFirm } from '@/lib/seo/ai-visibility-prompts'
+import { gatherKeywordsForAiVisibility } from '@/lib/seo/ai-visibility-keyword-sources'
 
-// LLM Mentions API: ~$0.008/call. Budget = 16 calls/firm/month:
-//   4 keywords × 2 prompts × 2 platforms (google AI Mode + chat_gpt).
-// Cap maxDuration to keep us under Vercel's 5-minute hobby/pro hard limit.
 export const maxDuration = 300
 
 // Platforms to query each prompt against. Scoped to chat_gpt for v1 — gemini
 // failed on the first live run (likely needs a different default model_name)
-// and isolating ChatGPT keeps the cron under Vercel's 300s maxDuration.
-// Re-add 'gemini' once we confirm a working DFS model name.
+// and adding it doubles total call count. Re-add once a working DFS model
+// name is confirmed and we've validated parallelization budget headroom.
 const PLATFORMS: LlmPlatform[] = ['chat_gpt']
 
 // Maps the DFS platform code to the label we store in dfs_ai_visibility_snapshots.
@@ -27,16 +25,22 @@ const PLATFORM_LABEL: Record<LlmPlatform, string> = {
 
 // Monthly AI visibility sweep — runs 1st @ 01:00 UTC.
 //
-// For each active firm: pull top tracked_keywords (priority=high then medium,
-// up to MAX_KEYWORDS_PER_FIRM=4), generate 2 prompts per keyword, then
-// run each prompt against Google AI Mode + ChatGPT via DataForSEO's LLM
-// Mentions API. Save one row per (prompt × platform) into
-// dfs_ai_visibility_snapshots.
+// For each active firm:
+//   1. Source up to 6 keywords (top-10-ranking first, then high/medium priority)
+//   2. Expand each into 3 natural-language framings = up to 18 prompts/firm
+//   3. Fire all prompts × platforms in parallel for that firm (Promise.allSettled)
+//   4. Save one row per (prompt × platform) into dfs_ai_visibility_snapshots
 //
-// Idempotency: the snapshot table is keyed on (client_id, snapshot_date,
-// platform, prompt) functionally — re-running the same day just appends
-// new rows. The /seo/ai page filters by month_key so a same-day re-run
-// shows the most recent across all duplicates.
+// Why parallel within firm: a single DFS LLM Responses call takes ~6-10s.
+// Serial = 18 × 8s = 144s per firm × 6 firms = 14 min. Cap is 300s.
+// Parallel within firm = ~10s per firm × 6 firms = 60s total. Comfortable
+// headroom for growth + the occasional slow call.
+//
+// Idempotency: the snapshot table has no unique constraint on
+// (client_id, month_key, platform, prompt) so multiple same-day runs append
+// rather than replace. The /seo/ai page handles this naturally by filtering
+// to month_key and treating duplicates as the most-recent value. If this
+// becomes a problem we'll add a unique constraint + on-conflict-do-update.
 export async function POST(req: Request) {
   if (!isAuthorizedCron(req)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
@@ -73,50 +77,84 @@ export async function POST(req: Request) {
     if (!client.primary_domain) continue
     stats.clients_processed += 1
 
-    const { data: keywords } = await supa
-      .from('dfs_tracked_keywords')
-      .select('id, keyword, city, state, practice_area, priority')
-      .eq('client_id', client.id)
-      .eq('is_active', true)
-      .in('priority', ['high', 'medium'])
-      .order('priority', { ascending: true }) // 'high' < 'medium' alphabetically
-      .limit(4)
-      .returns<Array<TrackedKeywordForPrompt & { priority: string }>>()
+    const sourcedKeywords = await gatherKeywordsForAiVisibility(supa, client.id, 6)
+    if (sourcedKeywords.length === 0) continue
 
-    if (!keywords || keywords.length === 0) continue
+    const prompts = generatePromptsForFirm(sourcedKeywords)
+    if (prompts.length === 0) continue
 
-    const prompts = generatePromptsForFirm(keywords)
+    // Fan out: all (prompt × platform) combos for this firm in parallel.
+    const jobs: Array<Promise<{
+      ok: boolean
+      prompt: string
+      tracked_keyword_id: string
+      platform: LlmPlatform
+      error?: string
+      result?: Awaited<ReturnType<typeof getLlmResponse>>
+    }>> = []
 
     for (const p of prompts) {
       for (const platform of PLATFORMS) {
-        try {
-          const result = await getLlmResponse(
+        jobs.push(
+          getLlmResponse(
             {
               prompt: p.prompt,
-              targetDomain: client.primary_domain,
+              targetDomain: client.primary_domain!,
               firmName: client.firm_name,
               platform,
               webSearchCountryIsoCode: 'US',
             },
             { client_id: client.id }
           )
-          await saveAiVisibilitySnapshot(supa, {
-            clientId: client.id,
-            trackedKeywordId: p.tracked_keyword_id,
-            platform: PLATFORM_LABEL[platform],
-            prompt: p.prompt,
-            result,
-          })
-          stats.prompts_run += 1
-          if (result.client_mentioned) stats.mentioned += 1
-          if (result.client_cited) stats.cited += 1
-        } catch (e) {
-          errors.push({
-            client: client.firm_name,
-            stage: `${platform}:${p.prompt.slice(0, 40)}`,
-            message: e instanceof Error ? e.message : 'unknown',
-          })
-        }
+            .then((result) => ({
+              ok: true as const,
+              prompt: p.prompt,
+              tracked_keyword_id: p.tracked_keyword_id,
+              platform,
+              result,
+            }))
+            .catch((e) => ({
+              ok: false as const,
+              prompt: p.prompt,
+              tracked_keyword_id: p.tracked_keyword_id,
+              platform,
+              error: e instanceof Error ? e.message : 'unknown',
+            }))
+        )
+      }
+    }
+
+    const results = await Promise.all(jobs)
+
+    // Write results sequentially — Supabase can handle the parallelism but
+    // there's no upside to it for 18 small inserts, and serial keeps stats
+    // counting accurate.
+    for (const r of results) {
+      if (!r.ok) {
+        errors.push({
+          client: client.firm_name,
+          stage: `${r.platform}:${r.prompt.slice(0, 40)}`,
+          message: r.error ?? 'unknown',
+        })
+        continue
+      }
+      try {
+        await saveAiVisibilitySnapshot(supa, {
+          clientId: client.id,
+          trackedKeywordId: r.tracked_keyword_id,
+          platform: PLATFORM_LABEL[r.platform],
+          prompt: r.prompt,
+          result: r.result!,
+        })
+        stats.prompts_run += 1
+        if (r.result!.client_mentioned) stats.mentioned += 1
+        if (r.result!.client_cited) stats.cited += 1
+      } catch (e) {
+        errors.push({
+          client: client.firm_name,
+          stage: `save:${r.prompt.slice(0, 40)}`,
+          message: e instanceof Error ? e.message : 'unknown',
+        })
       }
     }
 
@@ -124,7 +162,7 @@ export async function POST(req: Request) {
       source: 'cron:ai-visibility',
       client_id: client.id,
       status: errors.some((e) => e.client === client.firm_name) ? 'partial' : 'ok',
-      row_count: prompts.length * PLATFORMS.length,
+      row_count: results.filter((r) => r.ok).length,
     })
   }
 

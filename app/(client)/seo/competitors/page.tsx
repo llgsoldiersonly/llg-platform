@@ -4,20 +4,14 @@ import { getClientContext } from '@/lib/client-context'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Users, ExternalLink, MapPin } from 'lucide-react'
+import { Users, ExternalLink, TrendingUp } from 'lucide-react'
+import {
+  buildCompetitorStats,
+  actionLineForCompetitor,
+  type CompetitorStats,
+} from '@/lib/seo/competitor-stats'
 
 export const dynamic = 'force-dynamic'
-
-type CompetitorRow = {
-  id: string
-  competitor_name: string
-  competitor_domain: string | null
-  google_business_profile_name: string | null
-  city: string | null
-  state: string | null
-  notes: string | null
-  is_active: boolean
-}
 
 export default async function SeoCompetitorsPage({
   searchParams,
@@ -32,49 +26,61 @@ export default async function SeoCompetitorsPage({
   if (!ctx) redirect('/login')
 
   const admin = createAdminClient()
-  const { data: competitors } = await admin
-    .from('dfs_competitor_sites')
-    .select('id, competitor_name, competitor_domain, google_business_profile_name, city, state, notes, is_active')
-    .eq('client_id', ctx.client.id)
-    .order('is_active', { ascending: false })
-    .order('competitor_name', { ascending: true })
-    .returns<CompetitorRow[]>()
+  const stats = await buildCompetitorStats(admin, ctx.client.id)
+  const active = stats.filter((c) => c.is_active)
+  const inactive = stats.filter((c) => !c.is_active)
 
-  const active = (competitors ?? []).filter((c) => c.is_active)
-  const inactive = (competitors ?? []).filter((c) => !c.is_active)
+  // Roll-up so the client sees overall pressure at a glance.
+  const totalOutranks = active.reduce((sum, c) => sum + c.times_outranking, 0)
+  const totalOverlaps = active.reduce((sum, c) => sum + c.keywords_overlapped, 0)
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-8 py-8">
       <div>
         <h1 className="text-2xl font-semibold text-heading">Competitors</h1>
         <p className="mt-1 text-sm text-body">
-          The local firms we benchmark you against. Their rank progress, citation counts,
-          and review trajectories shape the &ldquo;Competitor gap&rdquo; sub-score on your overview.
+          Local firms ranking against you on the keywords we track. Stats below come from
+          this month&apos;s SERP snapshots — no manual configuration needed.
         </p>
       </div>
 
-      {(competitors?.length ?? 0) === 0 ? (
+      {stats.length === 0 ? (
         <EmptyState
           icon={Users}
           title="No competitors set yet"
-          description="Your account manager picks 3–5 local firms whose Google visibility we track alongside yours. Once they're added, this page will show how you stack up — overlap on keywords, citation gaps, review-velocity differences. Reply to your account manager or open a ticket if you want to nominate a competitor to track."
+          description="Competitors are auto-discovered each month from your SERP rankings. As soon as the first cycle runs, the firms repeatedly appearing alongside you will populate here."
         />
       ) : (
         <>
           {active.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Tracking ({active.length})</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ul className="divide-y divide-border-light">
-                  {active.map((c) => (
-                    <CompetitorRow key={c.id} c={c} />
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+            <>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <Kpi label="Active competitors" value={active.length} />
+                <Kpi label="Overlapping keywords" value={totalOverlaps} suffix=" total" />
+                <Kpi
+                  label="Times outranked"
+                  value={totalOutranks}
+                  suffix={totalOverlaps > 0 ? ` / ${totalOverlaps}` : ''}
+                />
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Tracking ({active.length})</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ul className="divide-y divide-border-light">
+                    {active
+                      .sort((a, b) => b.times_outranking - a.times_outranking)
+                      .map((c) => (
+                        <CompetitorRowView key={c.competitor_id} s={c} />
+                      ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </>
           )}
+
           {inactive.length > 0 && (
             <Card>
               <CardHeader>
@@ -83,7 +89,7 @@ export default async function SeoCompetitorsPage({
               <CardContent className="p-0">
                 <ul className="divide-y divide-border-light opacity-60">
                   {inactive.map((c) => (
-                    <CompetitorRow key={c.id} c={c} />
+                    <CompetitorRowView key={c.competitor_id} s={c} />
                   ))}
                 </ul>
               </CardContent>
@@ -95,40 +101,80 @@ export default async function SeoCompetitorsPage({
   )
 }
 
-function CompetitorRow({ c }: { c: CompetitorRow }) {
-  const location = [c.city, c.state].filter(Boolean).join(', ')
+function Kpi({ label, value, suffix }: { label: string; value: number; suffix?: string }) {
   return (
-    <li className="grid grid-cols-12 items-center gap-3 px-6 py-4">
-      <div className="col-span-7">
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-heading">{c.competitor_name}</span>
-          {!c.is_active && <Badge variant="secondary">paused</Badge>}
+    <Card>
+      <CardContent className="py-4">
+        <div className="text-xs uppercase tracking-wide text-body">{label}</div>
+        <div className="mt-1 text-2xl font-semibold tabular-nums text-heading">
+          {value}
+          {suffix && <span className="text-base font-normal text-body">{suffix}</span>}
         </div>
-        <p className="mt-0.5 text-xs text-body">
-          {c.google_business_profile_name && c.google_business_profile_name !== c.competitor_name && (
-            <>GBP: {c.google_business_profile_name} · </>
+      </CardContent>
+    </Card>
+  )
+}
+
+function CompetitorRowView({ s }: { s: CompetitorStats }) {
+  return (
+    <li className="px-6 py-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium text-heading">{s.competitor_name}</span>
+            {!s.is_active && <Badge variant="secondary">paused</Badge>}
+            {s.competitor_domain && (
+              <a
+                href={
+                  s.competitor_domain.startsWith('http')
+                    ? s.competitor_domain
+                    : `https://${s.competitor_domain}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-fg-brand hover:underline"
+              >
+                {s.competitor_domain.replace(/^https?:\/\//, '')}
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            )}
+          </div>
+          <p className="mt-2 text-sm leading-snug text-body">{actionLineForCompetitor(s)}</p>
+
+          {s.top_close_gap_keywords.length > 0 && (
+            <div className="mt-3">
+              <div className="text-[10px] uppercase tracking-wider text-body-subtle">
+                Closest gaps to close
+              </div>
+              <ul className="mt-1 space-y-1">
+                {s.top_close_gap_keywords.map((k, i) => (
+                  <li key={i} className="flex items-center gap-2 text-xs text-body">
+                    <TrendingUp className="h-3 w-3 text-amber-600" />
+                    <span className="text-heading">{k.keyword}</span>
+                    <span className="text-body-subtle">
+                      — they&apos;re at #{k.competitor_rank}
+                      {k.client_rank !== null ? `, you're at #${k.client_rank}` : ", you're not in top 100"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
-          {location && (
-            <span className="inline-flex items-center gap-1">
-              <MapPin className="h-3 w-3" /> {location}
-            </span>
+        </div>
+
+        <div className="shrink-0 text-right">
+          <div className="text-[10px] uppercase tracking-wider text-body-subtle">Outranking</div>
+          <div className="text-2xl font-semibold tabular-nums text-heading">
+            {s.times_outranking}
+            <span className="text-sm font-normal text-body"> / {s.keywords_overlapped}</span>
+          </div>
+          {s.avg_rank_gap !== null && (
+            <div className="mt-1 text-xs text-body">
+              avg {s.avg_rank_gap > 0 ? '+' : ''}
+              {s.avg_rank_gap} pos gap
+            </div>
           )}
-        </p>
-        {c.notes && <p className="mt-1 text-xs text-body-subtle">{c.notes}</p>}
-      </div>
-      <div className="col-span-5 text-right">
-        {c.competitor_domain ? (
-          <a
-            href={c.competitor_domain.startsWith('http') ? c.competitor_domain : `https://${c.competitor_domain}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-fg-brand hover:underline"
-          >
-            {c.competitor_domain.replace(/^https?:\/\//, '')} <ExternalLink className="h-3 w-3" />
-          </a>
-        ) : (
-          <span className="text-xs text-body-subtle">No domain</span>
-        )}
+        </div>
       </div>
     </li>
   )
