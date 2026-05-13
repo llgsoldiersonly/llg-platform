@@ -115,16 +115,22 @@ export async function getLlmResponse(
     new Set(annotations.map((a) => a.url).filter((u): u is string => typeof u === 'string'))
   )
 
-  // Mention detection — case-insensitive firm-name substring in response text.
-  // We intentionally don't try fuzzy / partial matching; if a model writes
-  // "Movahedi" without "Law", that's a partial brand drop and shouldn't count
-  // as a clean mention for client reporting.
-  const haystack = responseText.toLowerCase()
-  const needle = input.firmName.trim().toLowerCase()
-  const mentionRegex = new RegExp(escapeRegExp(needle), 'g')
-  const mentionMatches = haystack.match(mentionRegex) ?? []
-  const clientMentioned = mentionMatches.length > 0
-  const clientMentionCount = mentionMatches.length
+  // Mention detection — strip all non-alphanumerics from both sides before
+  // matching so "Daniels Law PA" in the DB matches "Daniels Law, P.A." in the
+  // response. False-positive risk is low for firm names (collisions like
+  // "danielslawpa" appearing as a substring of an unrelated string are rare).
+  const compact = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '')
+  const haystackCompact = compact(responseText)
+  const needleCompact = compact(input.firmName)
+  let clientMentionCount = 0
+  if (needleCompact.length > 0 && haystackCompact.length > 0) {
+    let idx = 0
+    while ((idx = haystackCompact.indexOf(needleCompact, idx)) !== -1) {
+      clientMentionCount += 1
+      idx += needleCompact.length
+    }
+  }
+  const clientMentioned = clientMentionCount > 0
 
   // Citation detection — does any annotation URL resolve to the client's
   // primary domain (or a subdomain)?
@@ -159,6 +165,3 @@ export async function getLlmResponse(
   }
 }
 
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}

@@ -11,9 +11,11 @@ import { generatePromptsForFirm, type TrackedKeywordForPrompt } from '@/lib/seo/
 // Cap maxDuration to keep us under Vercel's 5-minute hobby/pro hard limit.
 export const maxDuration = 300
 
-// Platforms to query each prompt against. 'gemini' is our closest proxy for
-// Google AI Mode (which is Gemini-powered under the hood).
-const PLATFORMS: LlmPlatform[] = ['gemini', 'chat_gpt']
+// Platforms to query each prompt against. Scoped to chat_gpt for v1 — gemini
+// failed on the first live run (likely needs a different default model_name)
+// and isolating ChatGPT keeps the cron under Vercel's 300s maxDuration.
+// Re-add 'gemini' once we confirm a working DFS model name.
+const PLATFORMS: LlmPlatform[] = ['chat_gpt']
 
 // Maps the DFS platform code to the label we store in dfs_ai_visibility_snapshots.
 // The /seo/ai page UI keys off these labels.
