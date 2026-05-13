@@ -21,15 +21,28 @@ export type GeneratedPrompt = {
   prompt: string
 }
 
-// Three natural framings per keyword. Different verbs and structures mean
-// more SERP-style + chat-style + recommendation-style coverage, which
-// increases the chance the AI surfaces a real firm name vs a generic
-// "I can't recommend specific lawyers" response.
+// Three natural framings per keyword, each modeling a distinct speech
+// pattern a real prospect might use:
+//   1. Direct superlative question — "Who's the best X in Y?"
+//   2. Search-query style (no verb) — "Top-rated X in Y"
+//   3. Polite request — "Can you recommend an X in Y?"
+//
+// Article (a/an) is chosen by first-vowel rule. Simple but accurate for
+// our domain (lawyer / attorney / firm / advocate variants); doesn't
+// handle silent-h cases but those don't appear in legal practice areas.
 const FRAMINGS: Array<(subject: string, loc: string | null) => string> = [
   (s, l) => (l ? `Who's the best ${s} in ${l}?` : `Who's the best ${s}?`),
-  (s, l) => (l ? `Recommend a ${s} near me in ${l}.` : `Recommend a ${s} near me.`),
-  (s, l) => (l ? `I need a ${s} in ${l}. Who's good?` : `I need a ${s}. Who's good?`),
+  (s, l) => (l ? `Top-rated ${s} in ${l}` : `Top-rated ${s}`),
+  (s, l) =>
+    l
+      ? `Can you recommend ${indefiniteArticle(s)} ${s} in ${l}?`
+      : `Can you recommend ${indefiniteArticle(s)} ${s}?`,
 ]
+
+function indefiniteArticle(noun: string): 'a' | 'an' {
+  const firstChar = noun.trim().charAt(0).toLowerCase()
+  return ['a', 'e', 'i', 'o', 'u'].includes(firstChar) ? 'an' : 'a'
+}
 
 export function generatePromptsForFirm(
   keywords: SourcedKeywordForPrompt[]
