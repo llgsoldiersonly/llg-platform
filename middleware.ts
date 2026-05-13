@@ -46,29 +46,40 @@ export async function middleware(req: NextRequest) {
 
   if (user) {
     const role = (user.app_metadata?.role as string | undefined) ?? null
-    const isStaff = role === 'agency_staff' || role === 'super_admin'
+    const isAdmin = role === 'super_admin'
+    const isStaff = role === 'agency_staff' || isAdmin
 
-    // /admin/* requires staff
-    if (isAdminPath && !isStaff) {
+    // /admin/* is super_admin only. agency_staff lives in the client portal
+    // with role-gated edit affordances; they shouldn't see admin tooling.
+    if (isAdminPath && !isAdmin) {
       const url = req.nextUrl.clone()
-      url.pathname = '/login'
-      url.searchParams.set('error', 'forbidden')
+      if (isStaff) {
+        // agency_staff trying to navigate to /admin — bounce them home to the
+        // client portal instead of throwing a forbidden error.
+        url.pathname = '/overview'
+        url.search = ''
+      } else {
+        url.pathname = '/login'
+        url.searchParams.set('error', 'forbidden')
+      }
       return NextResponse.redirect(url)
     }
 
-    // Admin-host requires staff (defense in depth — covers cases where someone
-    // hits ops.* with a non-/admin path).
-    if (isAdminHost && !isStaff) {
+    // Admin-host requires super_admin (defense in depth — covers cases
+    // where someone hits ops.* with a non-/admin path).
+    if (isAdminHost && !isAdmin) {
       const url = req.nextUrl.clone()
-      url.pathname = '/login'
-      url.searchParams.set('error', 'forbidden')
+      url.pathname = isStaff ? '/overview' : '/login'
+      if (!isStaff) url.searchParams.set('error', 'forbidden')
+      else url.search = ''
       return NextResponse.redirect(url)
     }
 
-    // Root redirect: staff → admin dashboard, clients → overview
+    // Root redirect: super_admin → admin dashboard, everyone else → overview
+    // (agency_staff lives in client portal; client_users go to their overview)
     if (pathname === '/' && !isPublic) {
       const url = req.nextUrl.clone()
-      url.pathname = isStaff ? '/admin/dashboard' : '/overview'
+      url.pathname = isAdmin ? '/admin/dashboard' : '/overview'
       return NextResponse.redirect(url)
     }
   }
