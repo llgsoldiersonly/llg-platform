@@ -10,13 +10,14 @@ import {
 } from '@/lib/integrations/dataforseo/backlinks'
 import { getGoogleOrganicRank } from '@/lib/integrations/dataforseo/serp'
 import { getGoogleLocalFinderRank, getGoogleMapsRankAtPoint } from '@/lib/integrations/dataforseo/local'
-import { getGmbInfo } from '@/lib/integrations/dataforseo/gmb'
+import { getGmbInfo, getGmbUpdates, gmbUpdateExternalId } from '@/lib/integrations/dataforseo/gmb'
 import {
   saveBacklinkSummarySnapshot,
   saveBacklinkRows,
   saveKeywordRankSnapshot,
   saveMapGridRankSnapshot,
   saveGmbInfoSnapshot,
+  saveGmbUpdates,
   monthBounds,
   todayMonthKey,
 } from '@/lib/integrations/dataforseo/snapshots'
@@ -343,8 +344,11 @@ export async function POST(req: Request) {
 
   const gbpResults = await Promise.all(
     ready.map(async (j) => {
-      try {
-        const info = await getGmbInfo(
+      // Run info + updates in parallel — info is fast (Maps SERP), updates
+      // is slow (task-based, ~20-30s). Running them in parallel keeps the
+      // total per-location time bounded by the slow call, not the sum.
+      const [infoResult, updatesResult] = await Promise.allSettled([
+        getGmbInfo(
           {
             firmName: j.clientFirmName,
             placeId: j.placeId,
@@ -353,11 +357,27 @@ export async function POST(req: Request) {
             lng: j.lng!,
           },
           { client_id: j.clientId }
-        )
-        return { ok: true as const, info }
-      } catch (e) {
-        return { ok: false as const, error: e instanceof Error ? e.message : 'unknown' }
+        ),
+        getGmbUpdates(
+          {
+            firmName: j.clientFirmName,
+            placeId: j.placeId,
+            primaryDomain: j.clientPrimaryDomain,
+            lat: j.lat!,
+            lng: j.lng!,
+          },
+          { client_id: j.clientId }
+        ),
+      ])
+
+      if (infoResult.status === 'rejected') {
+        return {
+          ok: false as const,
+          error: infoResult.reason instanceof Error ? infoResult.reason.message : 'unknown',
+        }
       }
+      const updates = updatesResult.status === 'fulfilled' ? updatesResult.value : []
+      return { ok: true as const, info: infoResult.value, updates }
     })
   )
 
@@ -379,12 +399,21 @@ export async function POST(req: Request) {
       continue
     }
     try {
+      const updates = r.updates ?? []
       await saveGmbInfoSnapshot(supa, {
         clientId: j.clientId,
         locationId: j.locationId,
         info: r.info,
-        updatesCount: 0,
+        updatesCount: updates.length,
       })
+      if (updates.length > 0) {
+        await saveGmbUpdates(supa, {
+          clientId: j.clientId,
+          updates,
+          externalIdFn: gmbUpdateExternalId,
+        })
+        stats.gmb_updates += updates.length
+      }
       stats.gmb_locations += 1
     } catch (e) {
       errors.push({

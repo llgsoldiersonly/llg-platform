@@ -24,6 +24,7 @@
 // matching is exact-1-to-1. The firm just needs to be in the top-100
 // listings for its area (broader zoom helps).
 
+import { dataForSeoPost, dataForSeoGet } from './client'
 import { getGoogleMapsRankAtPoint } from './local'
 
 type Opts = { client_id?: string | null }
@@ -101,9 +102,10 @@ export async function getGmbInfo(args: LookupArgs, opts: Opts = {}): Promise<Gmb
   }
 }
 
-// GBP Posts ("Updates") — only available via DataForSEO's task-based
-// my_business_updates endpoint. Deferred to a future monthly cron so we
-// don't have to manage polling inside this weekly cron's time budget.
+// GBP Posts ("Updates") — DataForSEO exposes these via the task-based
+// /business_data/google/my_business_updates endpoint. No `/live` variant
+// exists. We submit a task, poll for ~30s, then collect — single-pass,
+// runs inline in the weekly cron's GBP batch.
 export type GmbUpdate = {
   type: string
   snippet?: string
@@ -112,8 +114,84 @@ export type GmbUpdate = {
   uri?: string
 }
 
-export async function getGmbUpdates(_args: LookupArgs, _opts: Opts = {}): Promise<GmbUpdate[]> {
+type TaskGetResult = {
+  items?: Array<Record<string, unknown>>
+  items_count?: number
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+export async function getGmbUpdates(args: LookupArgs, opts: Opts = {}): Promise<GmbUpdate[]> {
+  const tag = `gbp-updates:${args.placeId || args.firmName.slice(0, 40)}`
+
+  // Build the task. place_id (when present) is the cleanest matcher;
+  // otherwise fall back to keyword + United States location.
+  const task: Record<string, unknown> = {
+    location_name: 'United States',
+    language_name: 'English',
+    tag,
+  }
+  if (args.placeId) {
+    task.place_id = args.placeId
+  } else {
+    task.keyword = args.firmName
+  }
+
+  // 1) Submit task
+  const postRes = await dataForSeoPost<{ tasks?: Array<{ id?: string; status_code?: number }> }>(
+    '/business_data/google/my_business_updates/task_post',
+    task,
+    { client_id: opts.client_id, request_tag: tag }
+  )
+  const taskId = postRes.tasks?.[0]?.id
+  if (!taskId) return []
+
+  // 2) Poll task_get until ready or we hit ~30s total wait. DFS GBP tasks
+  //    typically complete in 10-20s.
+  const maxAttempts = 4
+  const waitPerAttempt = 8000 // 8s × 4 = 32s max
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    await sleep(waitPerAttempt)
+
+    let getRes
+    try {
+      getRes = await dataForSeoGet<TaskGetResult>(
+        `/business_data/google/my_business_updates/task_get/${encodeURIComponent(taskId)}`,
+        { client_id: opts.client_id, request_tag: tag }
+      )
+    } catch {
+      // Network / 5xx — try again
+      continue
+    }
+
+    const firstTask = getRes.tasks?.[0]
+    const statusCode = firstTask?.status_code ?? 0
+    if (statusCode === 20100) continue // 20100 = still processing
+    if (statusCode >= 40000) return [] // permanent failure (e.g. no GBP found)
+
+    const result = firstTask?.result?.[0]
+    const items = (result?.items ?? []) as Array<Record<string, unknown>>
+    return items.map(parseUpdate)
+  }
+  // Gave up waiting — caller treats this as no posts. Same-day cron retry
+  // can pick it up next run.
   return []
+}
+
+function parseUpdate(raw: Record<string, unknown>): GmbUpdate {
+  const postText = typeof raw.post_text === 'string' ? raw.post_text : undefined
+  const snippet = typeof raw.snippet === 'string' ? raw.snippet : undefined
+  const imageUrl = typeof raw.images_url === 'string' ? raw.images_url : undefined
+  const url = typeof raw.url === 'string' ? raw.url : undefined
+  // DFS returns timestamp in mm/dd/yyyy hh:mm:ss; also exposes `timestamp` in UTC.
+  const timestamp = typeof raw.timestamp === 'string' ? raw.timestamp : undefined
+  return {
+    type: 'google_business_post',
+    snippet: postText || snippet,
+    image_url: imageUrl,
+    datetime: timestamp,
+    uri: url,
+  }
 }
 
 export function gmbUpdateExternalId(u: GmbUpdate): string {
