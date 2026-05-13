@@ -40,8 +40,6 @@ export function SubmissionForm({
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
-  const kindMeta = getSubmissionKind(kind)
-
   const matchingDeliverables = useMemo(
     () => deliverables.filter((d) => d.client_id === clientId),
     [deliverables, clientId]
@@ -60,11 +58,7 @@ export function SubmissionForm({
         deliverable_id: deliverableId || null,
       })
       if (result.ok) {
-        if (result.data.auto_approved) {
-          setNotice('Social post logged. Counted immediately — no approval needed.')
-        } else {
-          setNotice('Submitted. A super admin will review shortly.')
-        }
+        setNotice('Logged. Client sees this immediately.')
         const form = document.getElementById('submission-form') as HTMLFormElement | null
         form?.reset()
         setDeliverableId('')
@@ -110,7 +104,6 @@ export function SubmissionForm({
             {SUBMISSION_KINDS.map((k) => (
               <option key={k.value} value={k.value}>
                 {k.label}
-                {k.requiresApproval ? '' : ' (auto-approves)'}
               </option>
             ))}
           </Select>
@@ -163,16 +156,9 @@ export function SubmissionForm({
           id="notes"
           name="notes"
           rows={3}
-          placeholder="Anything the reviewer should know."
+          placeholder="Anything worth noting (becomes the excerpt on widget previews)."
         />
       </div>
-
-      {kindMeta && !kindMeta.requiresApproval && (
-        <div className="rounded-md bg-info-soft p-3 text-xs text-fg-info">
-          {kindMeta.label} submissions skip the approval queue — they're reporting only,
-          since the post is already live on the social platform.
-        </div>
-      )}
 
       {error && (
         <p className="rounded-md bg-danger-soft p-3 text-sm text-fg-danger-strong">{error}</p>

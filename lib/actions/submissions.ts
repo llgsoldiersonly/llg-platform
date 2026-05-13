@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { isAgencyStaff, canApproveSubmissions } from '@/lib/auth/rbac'
+import { isAgencyStaff } from '@/lib/auth/rbac'
 import { ok, err, type Result } from '@/lib/errors'
 import { isValidSubmissionKind, type SubmissionKind } from '@/lib/submissions/kinds'
 
@@ -25,9 +25,13 @@ function isValidUrl(value: string): boolean {
   }
 }
 
+// Submits a deliverable. As of migration 0021, the DB trigger auto-approves
+// every submission on insert — there's no longer a pending state to clear.
+// If we ever reintroduce manager review for select kinds, gate it in the
+// trigger by `new.kind in (...)` rather than rebuilding the approval UI.
 export async function submitDeliverable(
   input: SubmitDeliverableInput
-): Promise<Result<{ id: string; auto_approved: boolean }>> {
+): Promise<Result<{ id: string }>> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -56,16 +60,16 @@ export async function submitDeliverable(
       deliverable_id: input.deliverable_id || null,
       submitted_by: user.id,
     })
-    .select('id, status')
+    .select('id')
     .single()
 
   if (error || !data) {
     return err('INTERNAL', `Failed to submit: ${error?.message ?? 'unknown error'}`, error)
   }
 
-  // social_post auto-approves via trigger — if so, bump the counter immediately.
-  const auto_approved = data.status === 'approved'
-  if (auto_approved && input.deliverable_id) {
+  // Auto-approved by trigger → bump the counter immediately if linked to a
+  // recurring deliverable.
+  if (input.deliverable_id) {
     await incrementDeliverableCount(admin, input.deliverable_id)
   }
 
@@ -73,123 +77,15 @@ export async function submitDeliverable(
     actor_id: user.id,
     entity_type: 'deliverable_submission',
     entity_id: data.id,
-    action: auto_approved ? 'auto_approved' : 'submitted',
-    after: { kind: input.kind, client_id: input.client_id, link_url: input.link_url, auto_approved },
+    action: 'submitted',
+    after: { kind: input.kind, client_id: input.client_id, link_url: input.link_url },
   })
 
   revalidatePath('/admin/submissions')
-  revalidatePath('/admin/submissions/approvals')
   revalidatePath(`/admin/clients/${input.client_id}`)
-
-  return ok({ id: data.id, auto_approved })
-}
-
-export async function approveSubmission(
-  id: string
-): Promise<Result<{ id: string }>> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) return err('UNAUTHORIZED')
-  if (!canApproveSubmissions(user)) {
-    return err('FORBIDDEN', 'Only super admins can approve submissions.')
-  }
-
-  const admin = createAdminClient()
-  const { data: existing } = await admin
-    .from('deliverable_submissions')
-    .select('id, status, client_id, deliverable_id, kind')
-    .eq('id', id)
-    .maybeSingle()
-
-  if (!existing) return err('NOT_FOUND')
-  if (existing.status !== 'pending_approval') {
-    return err('VALIDATION_FAILED', 'Submission is not pending approval.')
-  }
-
-  const { error } = await admin
-    .from('deliverable_submissions')
-    .update({
-      status: 'approved',
-      reviewed_by: user.id,
-      reviewed_at: new Date().toISOString(),
-      rejection_reason: null,
-    })
-    .eq('id', id)
-
-  if (error) return err('INTERNAL', `Failed to approve: ${error.message}`, error)
-
-  if (existing.deliverable_id) {
-    await incrementDeliverableCount(admin, existing.deliverable_id)
-  }
-
-  await admin.from('activity_log').insert({
-    actor_id: user.id,
-    entity_type: 'deliverable_submission',
-    entity_id: id,
-    action: 'approved',
-    after: { kind: existing.kind, client_id: existing.client_id },
-  })
-
-  revalidatePath('/admin/submissions')
-  revalidatePath('/admin/submissions/approvals')
-  revalidatePath(`/admin/clients/${existing.client_id}`)
   revalidatePath('/overview')
 
-  return ok({ id })
-}
-
-export async function rejectSubmission(
-  id: string,
-  reason: string
-): Promise<Result<{ id: string }>> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) return err('UNAUTHORIZED')
-  if (!canApproveSubmissions(user)) {
-    return err('FORBIDDEN', 'Only super admins can reject submissions.')
-  }
-  if (!reason?.trim()) {
-    return err('VALIDATION_FAILED', 'A reason is required when rejecting.')
-  }
-
-  const admin = createAdminClient()
-  const { data: existing } = await admin
-    .from('deliverable_submissions')
-    .select('id, status, client_id, kind')
-    .eq('id', id)
-    .maybeSingle()
-
-  if (!existing) return err('NOT_FOUND')
-  if (existing.status !== 'pending_approval') {
-    return err('VALIDATION_FAILED', 'Submission is not pending approval.')
-  }
-
-  const { error } = await admin
-    .from('deliverable_submissions')
-    .update({
-      status: 'rejected',
-      reviewed_by: user.id,
-      reviewed_at: new Date().toISOString(),
-      rejection_reason: reason.trim(),
-    })
-    .eq('id', id)
-
-  if (error) return err('INTERNAL', `Failed to reject: ${error.message}`, error)
-
-  await admin.from('activity_log').insert({
-    actor_id: user.id,
-    entity_type: 'deliverable_submission',
-    entity_id: id,
-    action: 'rejected',
-    after: { kind: existing.kind, client_id: existing.client_id, reason: reason.trim() },
-  })
-
-  revalidatePath('/admin/submissions')
-  revalidatePath('/admin/submissions/approvals')
-
-  return ok({ id })
+  return ok({ id: data.id })
 }
 
 // Atomically bumps actual_count on the linked deliverable. Uses an RPC-style

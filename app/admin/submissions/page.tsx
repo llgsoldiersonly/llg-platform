@@ -22,14 +22,6 @@ type Row = {
   status: 'pending_approval' | 'approved' | 'rejected'
   submitted_at: string
   submitted_by_name: string | null
-  reviewed_by_name: string | null
-  rejection_reason: string | null
-}
-
-function statusBadge(status: Row['status']) {
-  if (status === 'pending_approval') return <Badge variant="warning">Pending</Badge>
-  if (status === 'approved') return <Badge variant="success">Approved</Badge>
-  return <Badge variant="destructive">Rejected</Badge>
 }
 
 export default async function SubmissionsPage() {
@@ -41,13 +33,12 @@ export default async function SubmissionsPage() {
   const admin = createAdminClient()
   const { data } = await admin
     .from('deliverable_submissions_with_actors')
-    .select('*')
+    .select('id, client_id, firm_name, kind, title, link_url, notes, status, submitted_at, submitted_by_name')
     .order('submitted_at', { ascending: false })
     .limit(100)
     .returns<Row[]>()
 
   const rows = data ?? []
-  const pendingCount = rows.filter((r) => r.status === 'pending_approval').length
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-8">
@@ -55,10 +46,7 @@ export default async function SubmissionsPage() {
         <div>
           <h1 className="text-2xl font-semibold text-heading">Submissions</h1>
           <p className="mt-1 text-sm text-body">
-            Staff-logged work. {pendingCount > 0
-              ? `${pendingCount} pending approval — `
-              : 'Nothing pending — '}
-            <Link href="/admin/submissions/approvals" className="underline">view approval queue</Link>.
+            Staff-logged work. Auto-approved on submit — clients see it immediately.
           </p>
         </div>
         <Link href="/admin/submissions/new">
@@ -82,7 +70,7 @@ export default async function SubmissionsPage() {
                 const meta = getSubmissionKind(r.kind)
                 return (
                   <li key={r.id} className="grid grid-cols-12 items-center gap-3 px-6 py-4">
-                    <div className="col-span-6">
+                    <div className="col-span-9">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-heading">
                           {r.title || meta?.label || r.kind}
@@ -99,19 +87,10 @@ export default async function SubmissionsPage() {
                       </div>
                       <p className="mt-1 text-xs text-body">
                         {r.firm_name ?? '—'} · by {r.submitted_by_name ?? '—'}
-                        {r.reviewed_by_name && <> · reviewed by {r.reviewed_by_name}</>}
                       </p>
-                      {r.rejection_reason && (
-                        <p className="mt-1 text-xs text-fg-danger-strong">
-                          Rejected: {r.rejection_reason}
-                        </p>
-                      )}
                     </div>
-                    <div className="col-span-3 text-xs text-body">
+                    <div className="col-span-3 text-xs text-body text-right">
                       {new Date(r.submitted_at).toLocaleString()}
-                    </div>
-                    <div className="col-span-3 flex justify-end">
-                      {statusBadge(r.status)}
                     </div>
                   </li>
                 )
