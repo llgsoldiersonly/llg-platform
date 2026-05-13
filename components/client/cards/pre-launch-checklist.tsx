@@ -1,6 +1,12 @@
+'use client'
+
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { CheckCircle2, Circle, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import { InlineSubmitModal } from '@/components/client/inline-submit-modal'
+import { isValidSubmissionKind, type SubmissionKind } from '@/lib/submissions/kinds'
 
 // The fixed sequence pre-launch firms see on their overview, per the
 // 2026-05-12 whiteboard. The portal counts approved submissions of the
@@ -23,9 +29,19 @@ export type PreLaunchStepRow = {
   latest_at: string | null
 }
 
-export function PreLaunchChecklistCard({ rows }: { rows: PreLaunchStepRow[] }) {
+export function PreLaunchChecklistCard({
+  rows,
+  clientId,
+  isStaff = false,
+}: {
+  rows: PreLaunchStepRow[]
+  // Required only when isStaff is true (used to scope inline submissions).
+  clientId?: string
+  isStaff?: boolean
+}) {
   const byKind = new Map(rows.map((r) => [r.kind, r]))
   const completed = STEPS.filter((s) => (byKind.get(s.kind)?.done_count ?? 0) > 0).length
+  const [openStep, setOpenStep] = useState<{ kind: SubmissionKind; label: string } | null>(null)
 
   return (
     <Card>
@@ -54,21 +70,42 @@ export function PreLaunchChecklistCard({ rows }: { rows: PreLaunchStepRow[] }) {
                     {step.label}
                   </span>
                 </span>
-                {row?.latest_link_url && (
-                  <a
-                    href={row.latest_link_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-fg-brand hover:underline"
-                  >
-                    view <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
+                <span className="flex items-center gap-2">
+                  {row?.latest_link_url && (
+                    <a
+                      href={row.latest_link_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-fg-brand hover:underline"
+                    >
+                      view <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                  {isStaff && !done && clientId && isValidSubmissionKind(step.kind) && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => setOpenStep({ kind: step.kind as SubmissionKind, label: step.label })}
+                    >
+                      Mark done
+                    </Button>
+                  )}
+                </span>
               </li>
             )
           })}
         </ul>
       </CardContent>
+      {isStaff && clientId && openStep && (
+        <InlineSubmitModal
+          open={openStep !== null}
+          onOpenChange={(o) => !o && setOpenStep(null)}
+          clientId={clientId}
+          kind={openStep.kind}
+          triggerLabel={openStep.label}
+        />
+      )}
     </Card>
   )
 }

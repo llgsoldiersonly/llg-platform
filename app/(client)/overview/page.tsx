@@ -26,6 +26,7 @@ import { MonthlyProductionCard } from '@/components/client/cards/monthly-product
 import { LlgUpdatesCard } from '@/components/client/cards/llg-updates'
 import { aggregateProduction, type RawProductionRow } from '@/lib/post-launch-production'
 import { fetchLlgBlogPosts, type LlgBlogPost } from '@/lib/llg-blog-feed'
+import { isAgencyStaff } from '@/lib/auth/rbac'
 import CustomerPortalRocketFlyover from '@/components/customer-portal/CustomerPortalRocketFlyover'
 
 export const dynamic = 'force-dynamic'
@@ -79,6 +80,9 @@ export default async function OverviewPage({
 
   const supabase = await createClient()
   const admin = createAdminClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  const isStaff = isAgencyStaff(user)
 
   const preLaunch = ctx.client.status === 'onboarding' || ctx.client.status === 'prospect'
   const subIds = ctx.selectedSubscriptions.map((s) => s.id)
@@ -271,6 +275,8 @@ export default async function OverviewPage({
       {preLaunch ? (
         <PreLaunchLayout
           firmName={ctx.client.firm_name}
+          clientId={ctx.client.id}
+          isStaff={isStaff}
           packageName={activeSub?.package?.display_name ?? null}
           packageColorHex={activeSub?.package?.color_hex ?? null}
           monthlyFeeCents={activeSub?.package?.monthly_fee_cents ?? null}
@@ -283,6 +289,8 @@ export default async function OverviewPage({
       ) : (
         <PostLaunchLayout
           firmName={ctx.client.firm_name}
+          clientId={ctx.client.id}
+          isStaff={isStaff}
           packageName={activeSub?.package?.display_name ?? null}
           packageColorHex={activeSub?.package?.color_hex ?? null}
           monthlyFeeCents={activeSub?.package?.monthly_fee_cents ?? null}
@@ -305,6 +313,8 @@ export default async function OverviewPage({
 
 function PreLaunchLayout({
   firmName,
+  clientId,
+  isStaff,
   packageName,
   packageColorHex,
   monthlyFeeCents,
@@ -315,6 +325,8 @@ function PreLaunchLayout({
   submissions,
 }: {
   firmName: string
+  clientId: string
+  isStaff: boolean
   packageName: string | null
   packageColorHex: string | null
   monthlyFeeCents: number | null
@@ -356,7 +368,7 @@ function PreLaunchLayout({
       {/* CENTER — why-this-matters + the build checklist */}
       <div className="space-y-6 lg:col-span-6">
         <WhyThisMattersCard preLaunch />
-        <PreLaunchChecklistCard rows={rows} />
+        <PreLaunchChecklistCard rows={rows} clientId={clientId} isStaff={isStaff} />
       </div>
 
       {/* RIGHT — tickets + resources */}
@@ -370,6 +382,8 @@ function PreLaunchLayout({
 
 function PostLaunchLayout({
   firmName,
+  clientId,
+  isStaff,
   packageName,
   packageColorHex,
   monthlyFeeCents,
@@ -386,6 +400,8 @@ function PostLaunchLayout({
   llgPosts,
 }: {
   firmName: string
+  clientId: string
+  isStaff: boolean
   packageName: string | null
   packageColorHex: string | null
   monthlyFeeCents: number | null
@@ -451,7 +467,12 @@ function PostLaunchLayout({
       {/* CENTER — why-this-matters + condensed monthly production + tickets + walkthrough */}
       <div className="space-y-6 lg:col-span-5">
         <WhyThisMattersCard preLaunch={false} />
-        <MonthlyProductionCard categories={productionCategories} periodLabel={periodLabel} />
+        <MonthlyProductionCard
+          categories={productionCategories}
+          periodLabel={periodLabel}
+          clientId={clientId}
+          isStaff={isStaff}
+        />
         <SupportTicketsCard tickets={tickets} />
         <FeatureVideoCard />
       </div>
