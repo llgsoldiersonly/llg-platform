@@ -35,8 +35,12 @@ export async function getLlmMentions(
   input: LlmMentionsInput,
   opts: CallOpts = {}
 ): Promise<LlmMentionsResult> {
+  // DataForSEO LLM Mentions accepts `target` as an array of domains we want
+  // to detect mentions/citations of (we only ever check one — the client's
+  // primary_domain). Was a single string in earlier API versions; now must
+  // be an array or DFS returns "expected array" 400.
   const task: Record<string, unknown> = {
-    target: input.targetDomain,
+    target: [input.targetDomain],
     keyword: input.keyword,
     platform: input.platform ?? 'google',
     language_code: input.languageCode ?? 'en',
