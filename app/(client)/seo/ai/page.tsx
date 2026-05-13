@@ -4,7 +4,7 @@ import { getClientContext } from '@/lib/client-context'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Bot, CheckCircle2, XCircle } from 'lucide-react'
+import { Bot, CheckCircle2, XCircle, ExternalLink, Sparkles } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,8 +17,7 @@ type AiRow = {
   client_mentioned: boolean
   client_cited: boolean
   client_mention_count: number
-  competitor_mentions: unknown
-  top_domains: unknown
+  client_citation_urls: unknown
 }
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -46,16 +45,24 @@ export default async function SeoAiVisibilityPage({
 
   const { data: rows } = await admin
     .from('dfs_ai_visibility_snapshots')
-    .select('id, snapshot_date, month_key, platform, prompt, client_mentioned, client_cited, client_mention_count, competitor_mentions, top_domains')
+    .select('id, snapshot_date, month_key, platform, prompt, client_mentioned, client_cited, client_mention_count, client_citation_urls')
     .eq('client_id', ctx.client.id)
     .eq('month_key', monthKey)
     .order('platform', { ascending: true })
     .order('prompt', { ascending: true })
     .returns<AiRow[]>()
 
-  const totalPrompts = rows?.length ?? 0
-  const mentioned = (rows ?? []).filter((r) => r.client_mentioned).length
-  const cited = (rows ?? []).filter((r) => r.client_cited).length
+  const allRows = rows ?? []
+  const totalPrompts = allRows.length
+  const mentionedRows = allRows.filter((r) => r.client_mentioned)
+  const citedRows = allRows.filter((r) => r.client_cited)
+  // "Winning" = the firm showed up in some form. Cited is stronger signal
+  // than mentioned (an actual link, not just a name-drop), so list cited
+  // first.
+  const winningRows = [
+    ...citedRows,
+    ...mentionedRows.filter((r) => !r.client_cited),
+  ]
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-8 py-8">
@@ -78,17 +85,57 @@ export default async function SeoAiVisibilityPage({
         <>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Kpi label="Prompts tested" value={totalPrompts} />
-            <Kpi label="Times mentioned" value={mentioned} suffix={` / ${totalPrompts}`} />
-            <Kpi label="Times cited (with link)" value={cited} suffix={` / ${totalPrompts}`} />
+            <Kpi label="Times mentioned" value={mentionedRows.length} suffix={` / ${totalPrompts}`} />
+            <Kpi label="Times cited (with link)" value={citedRows.length} suffix={` / ${totalPrompts}`} />
           </div>
 
+          {/* Featured: the prompts that actually surfaced the firm. Most valuable
+              view for the client — concrete evidence the work is paying off. */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">This month&apos;s prompts</CardTitle>
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-fg-brand" />
+                <CardTitle className="text-base">Where you&apos;re showing up</CardTitle>
+              </div>
+              <p className="mt-1 text-xs text-body">
+                The prompts where AI assistants actually surfaced your firm this month.
+              </p>
+            </CardHeader>
+            <CardContent className="p-0">
+              {winningRows.length === 0 ? (
+                <div className="px-6 py-8 text-center">
+                  <p className="text-sm text-body">
+                    No mentions yet this month across the {totalPrompts} prompts we tested.
+                  </p>
+                  <p className="mt-1 text-xs text-body-subtle">
+                    AI visibility builds over time as your domain authority, citations, and review profile grow.
+                    Our team prioritizes work that influences AI surfaces: structured FAQ pages, GBP optimization,
+                    and authoritative backlinks.
+                  </p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-border-light">
+                  {winningRows.map((r) => (
+                    <FeaturedRow key={r.id} row={r} />
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Full list of every prompt we tested, including the misses, so the
+              client can see gaps. */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">All prompts tested</CardTitle>
+              <p className="mt-1 text-xs text-body">
+                Every prompt run against AI assistants this month, including the ones that didn&apos;t surface your firm.
+                These are the gaps we&apos;re working to close.
+              </p>
             </CardHeader>
             <CardContent className="p-0">
               <ul className="divide-y divide-border-light">
-                {rows?.map((r) => (
+                {allRows.map((r) => (
                   <li key={r.id} className="grid grid-cols-12 items-start gap-3 px-6 py-4">
                     <div className="col-span-8">
                       <div className="flex items-center gap-2">
@@ -111,19 +158,66 @@ export default async function SeoAiVisibilityPage({
                         <ResultPill
                           ok={r.client_cited}
                           okText="Cited"
-                          notText="No citation"
-                          neutralIfNotMentioned={!r.client_mentioned}
+                          notText="No link"
                         />
                       )}
                     </div>
                   </li>
-                )) ?? null}
+                ))}
               </ul>
             </CardContent>
           </Card>
         </>
       )}
     </div>
+  )
+}
+
+function FeaturedRow({ row }: { row: AiRow }) {
+  const citationUrls = Array.isArray(row.client_citation_urls)
+    ? (row.client_citation_urls as string[]).filter((u) => typeof u === 'string')
+    : []
+
+  return (
+    <li className="px-6 py-4">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">
+              {PLATFORM_LABELS[row.platform] ?? row.platform}
+            </Badge>
+            {row.client_cited ? (
+              <Badge variant="success">Cited with link</Badge>
+            ) : (
+              <Badge variant="info">Mentioned by name</Badge>
+            )}
+            <span className="text-xs text-body-subtle">
+              {new Date(row.snapshot_date).toLocaleDateString()}
+            </span>
+          </div>
+          <p className="mt-1.5 text-sm font-medium text-heading">{row.prompt}</p>
+          {citationUrls.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {citationUrls.slice(0, 3).map((url, i) => (
+                <a
+                  key={i}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex max-w-full items-center gap-1 text-xs text-fg-brand hover:underline"
+                >
+                  <span className="truncate">{url}</span>
+                  <ExternalLink className="h-3 w-3 shrink-0" />
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </li>
   )
 }
 
@@ -145,14 +239,11 @@ function ResultPill({
   ok,
   okText,
   notText,
-  neutralIfNotMentioned,
 }: {
   ok: boolean
   okText: string
   notText: string
-  neutralIfNotMentioned?: boolean
 }) {
-  if (neutralIfNotMentioned) return null
   if (ok) {
     return (
       <span className="inline-flex items-center gap-1 text-xs text-emerald-600">
