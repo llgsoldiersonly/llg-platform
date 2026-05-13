@@ -68,6 +68,18 @@ function normalizeDomain(raw: string | null | undefined): string | null {
   return d
 }
 
+// Returns true when the candidate is either the directory itself OR a
+// subdomain of it. Catches cases like `attorneys.superlawyers.com` (which
+// should be filtered out because superlawyers.com is a directory) without
+// requiring every subdomain to be enumerated in the filter sets.
+function isInDomainSet(candidate: string, set: Set<string>): boolean {
+  if (set.has(candidate)) return true
+  for (const known of set) {
+    if (candidate.endsWith(`.${known}`)) return true
+  }
+  return false
+}
+
 export type DiscoveredCompetitor = {
   domain: string
   occurrence_count: number
@@ -93,8 +105,8 @@ export function discoverCompetitorsFromSnapshots(
     for (const c of competitors) {
       const domain = normalizeDomain(c.domain ?? c.url ?? null)
       if (!domain) continue
-      if (DIRECTORY_DOMAINS.has(domain)) continue
-      if (SOCIAL_OR_KNOWLEDGE.has(domain)) continue
+      if (isInDomainSet(domain, DIRECTORY_DOMAINS)) continue
+      if (isInDomainSet(domain, SOCIAL_OR_KNOWLEDGE)) continue
       if (clientDomainNorm && domain === clientDomainNorm) continue
       if (seenInThisSerp.has(domain)) continue
       seenInThisSerp.add(domain)
