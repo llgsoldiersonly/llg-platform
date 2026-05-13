@@ -388,7 +388,7 @@ function PostLaunchLayout({
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-      {/* LEFT — firm header + recent updates */}
+      {/* LEFT — firm header + recent updates + support team */}
       <div className="space-y-6 lg:col-span-3">
         <FirmHeaderCard
           firmName={firmName}
@@ -402,14 +402,14 @@ function PostLaunchLayout({
           nextBillingAt={nextBillingAt}
         />
         <RecentUpdatesCard updates={updates} />
+        <SupportTeamCard members={team} />
       </div>
 
-      {/* CENTER — why-this-matters + the condensed monthly production + tickets + team + walkthrough */}
+      {/* CENTER — why-this-matters + condensed monthly production + tickets + walkthrough */}
       <div className="space-y-6 lg:col-span-5">
         <WhyThisMattersCard preLaunch={false} />
         <MonthlyProductionCard categories={productionCategories} periodLabel={periodLabel} />
         <SupportTicketsCard tickets={tickets} />
-        <SupportTeamCard members={team} />
         <FeatureVideoCard />
       </div>
 

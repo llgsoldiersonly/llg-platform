@@ -9,7 +9,7 @@ export function LlgUpdatesCard({ posts }: { posts: LlgBlogPost[] }) {
       <CardHeader>
         <div className="flex items-center gap-2">
           <Newspaper className="h-4 w-4 text-fg-brand" />
-          <CardTitle className="text-lg">LLG updates</CardTitle>
+          <CardTitle className="text-lg">LLG Updates</CardTitle>
         </div>
       </CardHeader>
       <CardContent>
