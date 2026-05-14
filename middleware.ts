@@ -3,7 +3,24 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 const PUBLIC_PATHS = ['/login', '/forgot-password', '/auth/callback']
 
+// Routes that belong strictly to the client portal (clients only — staff
+// and super_admin shouldn't accidentally land here). Listed explicitly
+// rather than relying on a path prefix because the client portal lives
+// at the root, which would otherwise match everything.
+const CLIENT_ONLY_PATHS = [
+  '/overview',
+  '/plan',
+  '/seo',
+  '/tickets',
+  '/profile',
+  '/team',
+]
+
 type CookieToSet = { name: string; value: string; options: CookieOptions }
+
+function isClientOnlyPath(pathname: string): boolean {
+  return CLIENT_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+}
 
 export async function middleware(req: NextRequest) {
   const host = req.headers.get('host') ?? ''
@@ -35,6 +52,8 @@ export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p))
   const isAdminPath = pathname.startsWith('/admin')
+  const isStaffPath = pathname.startsWith('/staff')
+  const isClientPath = isClientOnlyPath(pathname)
 
   // Unauthenticated → /login (with where-they-were-going)
   if (!user && !isPublic) {
@@ -46,40 +65,59 @@ export async function middleware(req: NextRequest) {
 
   if (user) {
     const role = (user.app_metadata?.role as string | undefined) ?? null
-    const isAdmin = role === 'super_admin'
-    const isStaff = role === 'agency_staff' || isAdmin
+    const isSuperAdmin = role === 'super_admin'
+    const isAgencyStaff = role === 'agency_staff'
+    const isClient = role === 'client_user'
 
-    // /admin/* is super_admin only. agency_staff lives in the client portal
-    // with role-gated edit affordances; they shouldn't see admin tooling.
-    if (isAdminPath && !isAdmin) {
+    // Each role gets one portal. Visiting the wrong portal redirects to
+    // your own home.
+    function homeForRole(): string {
+      if (isSuperAdmin) return '/admin/dashboard'
+      if (isAgencyStaff) return '/staff'
+      return '/overview' // client_user (or no-role fallback)
+    }
+
+    // /admin/* is super_admin only.
+    if (isAdminPath && !isSuperAdmin) {
       const url = req.nextUrl.clone()
-      if (isStaff) {
-        // agency_staff trying to navigate to /admin — bounce them home to the
-        // client portal instead of throwing a forbidden error.
-        url.pathname = '/overview'
-        url.search = ''
-      } else {
-        url.pathname = '/login'
-        url.searchParams.set('error', 'forbidden')
-      }
+      url.pathname = homeForRole()
+      url.search = ''
       return NextResponse.redirect(url)
     }
 
-    // Admin-host requires super_admin (defense in depth — covers cases
-    // where someone hits ops.* with a non-/admin path).
-    if (isAdminHost && !isAdmin) {
+    // /staff/* is agency_staff only. super_admin is intentionally NOT
+    // allowed here — keeps the three portals strictly separate. If admin
+    // needs to inspect the staff view, they should sign in as a staff
+    // account.
+    if (isStaffPath && !isAgencyStaff) {
       const url = req.nextUrl.clone()
-      url.pathname = isStaff ? '/overview' : '/login'
-      if (!isStaff) url.searchParams.set('error', 'forbidden')
-      else url.search = ''
+      url.pathname = homeForRole()
+      url.search = ''
       return NextResponse.redirect(url)
     }
 
-    // Root redirect: super_admin → admin dashboard, everyone else → overview
-    // (agency_staff lives in client portal; client_users go to their overview)
+    // Client-only paths (/overview, /seo, /tickets, /plan, /profile, /team)
+    // are client_user only. Staff and admins are routed to their own portals.
+    if (isClientPath && !isClient) {
+      const url = req.nextUrl.clone()
+      url.pathname = homeForRole()
+      url.search = ''
+      return NextResponse.redirect(url)
+    }
+
+    // Admin-host (ops.*) requires super_admin (defense in depth — covers
+    // cases where someone hits ops.* with a non-/admin path).
+    if (isAdminHost && !isSuperAdmin) {
+      const url = req.nextUrl.clone()
+      url.pathname = homeForRole()
+      url.search = ''
+      return NextResponse.redirect(url)
+    }
+
+    // Root redirect: send each role to their own portal.
     if (pathname === '/' && !isPublic) {
       const url = req.nextUrl.clone()
-      url.pathname = isAdmin ? '/admin/dashboard' : '/overview'
+      url.pathname = homeForRole()
       return NextResponse.redirect(url)
     }
   }
