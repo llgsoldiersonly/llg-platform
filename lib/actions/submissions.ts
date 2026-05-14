@@ -88,6 +88,109 @@ export async function submitDeliverable(
   return ok({ id: data.id })
 }
 
+// Replace an existing submission with a corrected version. Used when staff
+// realizes the URL/title was wrong AFTER submission. Implementation: the
+// original row gets marked rejected with reason 'Replaced' (kept for audit,
+// hidden from clients via RLS). A fresh row inserts with the same kind /
+// client_id / deliverable_id; the auto-approve trigger flips it to approved
+// immediately.
+//
+// Net effect on deliverable.actual_count: zero. The original's +1 stays in
+// the count, now attributable to the replacement instead. If we ever allow
+// changing the deliverable_id during replace, we'd need to dec-old + inc-new
+// explicitly — currently we lock those fields to preserve the invariant.
+export type ReplaceSubmissionInput = {
+  original_id: string
+  link_url: string
+  title?: string | null
+  notes?: string | null
+}
+
+export async function replaceSubmission(
+  input: ReplaceSubmissionInput
+): Promise<Result<{ original_id: string; new_id: string }>> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return err('UNAUTHORIZED')
+  if (!isAgencyStaff(user)) return err('FORBIDDEN')
+
+  if (!input.link_url?.trim() || !isValidUrl(input.link_url.trim())) {
+    return err('VALIDATION_FAILED', 'A valid link (https://…) is required.')
+  }
+
+  const admin = createAdminClient()
+  const { data: original } = await admin
+    .from('deliverable_submissions')
+    .select('id, client_id, kind, deliverable_id, status')
+    .eq('id', input.original_id)
+    .maybeSingle()
+
+  if (!original) return err('NOT_FOUND', 'Original submission not found.')
+  if (original.status === 'rejected') {
+    return err('VALIDATION_FAILED', 'This submission has already been replaced or rejected.')
+  }
+
+  // Mark the original rejected so RLS hides it from clients. Audit trail
+  // preserved (submitted_by, submitted_at, link_url stay intact).
+  const { error: updateErr } = await admin
+    .from('deliverable_submissions')
+    .update({
+      status: 'rejected',
+      reviewed_by: user.id,
+      reviewed_at: new Date().toISOString(),
+      rejection_reason: 'Replaced',
+    })
+    .eq('id', input.original_id)
+  if (updateErr) {
+    return err('INTERNAL', `Failed to mark original replaced: ${updateErr.message}`)
+  }
+
+  // Insert the corrected row — trigger auto-approves on insert.
+  const { data: inserted, error: insertErr } = await admin
+    .from('deliverable_submissions')
+    .insert({
+      client_id: original.client_id,
+      kind: original.kind,
+      deliverable_id: original.deliverable_id,
+      link_url: input.link_url.trim(),
+      title: input.title?.trim() || null,
+      notes: input.notes?.trim() || null,
+      submitted_by: user.id,
+    })
+    .select('id')
+    .single()
+
+  if (insertErr || !inserted) {
+    // Roll back the original-replacement update so we don't leave the
+    // submission in a half-applied state.
+    await admin
+      .from('deliverable_submissions')
+      .update({ status: 'approved', rejection_reason: null, reviewed_by: null, reviewed_at: null })
+      .eq('id', input.original_id)
+    return err('INTERNAL', `Failed to insert replacement: ${insertErr?.message ?? 'unknown'}`)
+  }
+
+  await admin.from('activity_log').insert({
+    actor_id: user.id,
+    entity_type: 'deliverable_submission',
+    entity_id: inserted.id,
+    action: 'replaced',
+    after: {
+      replaced_original_id: input.original_id,
+      kind: original.kind,
+      client_id: original.client_id,
+      new_link_url: input.link_url,
+    },
+  })
+
+  revalidatePath('/admin/submissions')
+  revalidatePath(`/admin/clients/${original.client_id}`)
+  revalidatePath('/overview')
+
+  return ok({ original_id: input.original_id, new_id: inserted.id })
+}
+
 // Atomically bumps actual_count on the linked deliverable. Uses an RPC-style
 // raw update with a CASE for the completed_at stamp on first count.
 async function incrementDeliverableCount(

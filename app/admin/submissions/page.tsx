@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { getSubmissionKind } from '@/lib/submissions/kinds'
 import { Plus, ExternalLink } from 'lucide-react'
+import { ReplaceSubmissionRow } from './replace-submission-row'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,6 +23,7 @@ type Row = {
   status: 'pending_approval' | 'approved' | 'rejected'
   submitted_at: string
   submitted_by_name: string | null
+  rejection_reason: string | null
 }
 
 export default async function SubmissionsPage() {
@@ -33,7 +35,7 @@ export default async function SubmissionsPage() {
   const admin = createAdminClient()
   const { data } = await admin
     .from('deliverable_submissions_with_actors')
-    .select('id, client_id, firm_name, kind, title, link_url, notes, status, submitted_at, submitted_by_name')
+    .select('id, client_id, firm_name, kind, title, link_url, notes, status, submitted_at, submitted_by_name, rejection_reason')
     .order('submitted_at', { ascending: false })
     .limit(100)
     .returns<Row[]>()
@@ -68,14 +70,27 @@ export default async function SubmissionsPage() {
             <ul className="divide-y divide-border-light">
               {rows.map((r) => {
                 const meta = getSubmissionKind(r.kind)
+                const isReplaced = r.status === 'rejected' && r.rejection_reason === 'Replaced'
+                const isActive = r.status === 'approved'
                 return (
-                  <li key={r.id} className="grid grid-cols-12 items-center gap-3 px-6 py-4">
-                    <div className="col-span-9">
-                      <div className="flex items-center gap-2">
+                  <li
+                    key={r.id}
+                    className={
+                      isActive
+                        ? 'grid grid-cols-12 items-center gap-3 px-6 py-4'
+                        : 'grid grid-cols-12 items-center gap-3 px-6 py-4 opacity-60'
+                    }
+                  >
+                    <div className="col-span-7">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium text-heading">
                           {r.title || meta?.label || r.kind}
                         </span>
                         <Badge variant="secondary">{meta?.label ?? r.kind}</Badge>
+                        {isReplaced && <Badge variant="warning">Replaced</Badge>}
+                        {r.status === 'rejected' && !isReplaced && (
+                          <Badge variant="destructive">Rejected</Badge>
+                        )}
                         <a
                           href={r.link_url}
                           target="_blank"
@@ -89,8 +104,18 @@ export default async function SubmissionsPage() {
                         {r.firm_name ?? '—'} · by {r.submitted_by_name ?? '—'}
                       </p>
                     </div>
-                    <div className="col-span-3 text-xs text-body text-right">
+                    <div className="col-span-3 text-xs text-body">
                       {new Date(r.submitted_at).toLocaleString()}
+                    </div>
+                    <div className="col-span-2 flex justify-end">
+                      {isActive && (
+                        <ReplaceSubmissionRow
+                          submissionId={r.id}
+                          currentLinkUrl={r.link_url}
+                          currentTitle={r.title}
+                          currentNotes={r.notes}
+                        />
+                      )}
                     </div>
                   </li>
                 )
