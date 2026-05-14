@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { getSubmissionKind } from '@/lib/submissions/kinds'
 import { Plus, ExternalLink } from 'lucide-react'
 import { ReplaceSubmissionRow } from './replace-submission-row'
+import { SubmissionsFilterBar, type FirmOption } from './submissions-filter-bar'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,21 +27,68 @@ type Row = {
   rejection_reason: string | null
 }
 
-export default async function SubmissionsPage() {
+// Maps the ?since= URL param to a number of days. 'all' means no cutoff.
+const SINCE_DAYS: Record<string, number | null> = {
+  '7d': 7,
+  '30d': 30,
+  '90d': 90,
+  all: null,
+}
+
+export default async function SubmissionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const sb = await createClient()
   const { data: { user } } = await sb.auth.getUser()
   if (!user) redirect('/login?next=/admin/submissions')
   if (!isAgencyStaff(user)) redirect('/login?error=forbidden')
 
+  const params = await searchParams
+  const firmParam = typeof params.firm === 'string' ? params.firm : 'all'
+  const kindParam = typeof params.kind === 'string' ? params.kind : 'all'
+  const statusParam = typeof params.status === 'string' ? params.status : 'active'
+  const sinceParam = typeof params.since === 'string' ? params.since : '30d'
+  const sinceDays = SINCE_DAYS[sinceParam] ?? 30
+
   const admin = createAdminClient()
-  const { data } = await admin
+
+  // Build the query with filters layered on.
+  let query = admin
     .from('deliverable_submissions_with_actors')
     .select('id, client_id, firm_name, kind, title, link_url, notes, status, submitted_at, submitted_by_name, rejection_reason')
     .order('submitted_at', { ascending: false })
-    .limit(100)
-    .returns<Row[]>()
+    .limit(200)
 
-  const rows = data ?? []
+  if (firmParam !== 'all') {
+    query = query.eq('client_id', firmParam)
+  }
+  if (kindParam !== 'all') {
+    query = query.eq('kind', kindParam)
+  }
+  if (statusParam === 'active') {
+    query = query.eq('status', 'approved')
+  } else if (statusParam === 'replaced') {
+    query = query.eq('status', 'rejected').eq('rejection_reason', 'Replaced')
+  }
+  // statusParam === 'all' → no status filter (shows approved + replaced)
+  if (sinceDays !== null) {
+    const cutoff = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString()
+    query = query.gte('submitted_at', cutoff)
+  }
+
+  const { data: rowsRaw } = await query.returns<Row[]>()
+  const rows = rowsRaw ?? []
+
+  // Firms dropdown — every non-churned client. Sort alphabetically for usability.
+  const { data: firmsRaw } = await admin
+    .from('clients')
+    .select('id, firm_name')
+    .neq('status', 'churned')
+    .order('firm_name', { ascending: true })
+    .returns<FirmOption[]>()
+  const firms = firmsRaw ?? []
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-8">
@@ -59,13 +107,27 @@ export default async function SubmissionsPage() {
         </Link>
       </div>
 
+      <SubmissionsFilterBar
+        firms={firms}
+        current={{
+          firm: firmParam,
+          kind: kindParam,
+          status: statusParam,
+          since: sinceParam,
+        }}
+      />
+
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Recent (last 100)</CardTitle>
+          <CardTitle className="text-base">
+            {rows.length === 200 ? 'Latest 200 matching' : `${rows.length} matching`}
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {rows.length === 0 ? (
-            <p className="p-6 text-sm text-body">No submissions yet.</p>
+            <p className="p-6 text-sm text-body">
+              No submissions match the current filters. Try widening the date range or clearing them.
+            </p>
           ) : (
             <ul className="divide-y divide-border-light">
               {rows.map((r) => {
