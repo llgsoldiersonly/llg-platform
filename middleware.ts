@@ -96,9 +96,14 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    // Client-only paths (/overview, /seo, /tickets, /plan, /profile, /team)
-    // are client_user only. Staff and admins are routed to their own portals.
-    if (isClientPath && !isClient) {
+    // Client paths (/overview, /seo, /tickets, /plan, /profile, /team) are
+    // for client_user, with super_admin also allowed for inspection /
+    // debugging. agency_staff is hard-blocked — they live exclusively at
+    // /staff. When super_admin lands on /overview, the existing
+    // impersonation feature (lib/impersonation.ts) determines which
+    // client's data they're viewing; without a cookie set, RLS picks one
+    // arbitrarily.
+    if (isClientPath && !isClient && !isSuperAdmin) {
       const url = req.nextUrl.clone()
       url.pathname = homeForRole()
       url.search = ''
