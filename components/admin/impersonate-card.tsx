@@ -1,13 +1,11 @@
 import { Eye } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { startImpersonationFormAction } from '@/lib/actions/impersonation'
 
-// Super-admin "View as client" trigger. Reason is required and gets logged
-// to impersonation_log. After submit, super-admin lands on /overview with
-// the banner showing across all client portal pages.
+// Super-admin "View as client" trigger on the per-firm admin page.
+// After submit, super-admin lands on /overview pinned to this client; the
+// impersonation banner shows across all client portal pages.
 export function ImpersonateCard({
   clientId,
   clientName,
@@ -28,24 +26,12 @@ export function ImpersonateCard({
       <CardContent>
         <p className="mb-3 text-sm text-body">
           Opens the client portal pinned to <strong>{clientName}</strong>. Useful for
-          replicating a client&apos;s view of their own dashboard. Your actions while in
-          this mode are recorded.
+          replicating a client&apos;s view of their own dashboard.
         </p>
-        <form action={startImpersonationFormAction} className="space-y-3">
+        <form action={startImpersonationFormAction}>
           <input type="hidden" name="client_id" value={clientId} />
-          <div className="space-y-1.5">
-            <Label htmlFor="impersonation-reason">Reason (required)</Label>
-            <Input
-              id="impersonation-reason"
-              name="reason"
-              required
-              minLength={5}
-              maxLength={200}
-              placeholder="e.g. debugging Reiersen's missing call data"
-            />
-          </div>
           {errorMessage && (
-            <p className="text-xs text-fg-danger">{errorMessage}</p>
+            <p className="mb-3 text-xs text-fg-danger">{errorMessage}</p>
           )}
           <Button type="submit" variant="default" className="w-full">
             Start viewing as {clientName}

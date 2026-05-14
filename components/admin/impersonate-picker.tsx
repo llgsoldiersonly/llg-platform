@@ -11,28 +11,19 @@ type Firm = {
 }
 
 // Compact "View as client" dropdown for the admin topbar. Super_admin only.
-// Pick a firm → server action sets the impersonation cookie with a default
-// reason ("Topbar quick-view") + redirects to /overview, so admin lands on
-// the client portal pinned to that firm.
-//
-// The default reason is loggable but light-touch. If a specific debug session
-// needs a richer reason (e.g. "tracking missing call data"), use the
-// ImpersonateCard on /admin/clients/[id] instead — it has a full reason input.
+// Pick a firm → server action sets the impersonation cookie + redirects to
+// /overview, so admin lands on the client portal pinned to that firm.
 export function ImpersonatePicker({ firms }: { firms: Firm[] }) {
   const formRef = useRef<HTMLFormElement>(null)
 
   function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
     if (!e.target.value) return
-    // Set the hidden input on the form so the server action sees it, then
-    // submit. (We can't pass the value directly because action= is a server
-    // function reference, not a click handler.)
     formRef.current?.requestSubmit()
   }
 
   return (
     <form ref={formRef} action={startImpersonationFormAction} className="flex items-center gap-2">
       <Eye className="h-4 w-4 text-body-subtle" aria-hidden="true" />
-      <input type="hidden" name="reason" value="Topbar quick-view" />
       <select
         name="client_id"
         defaultValue=""

@@ -23,11 +23,15 @@ const COOKIE_OPTIONS = {
 
 export async function startImpersonation(formData: FormData): Promise<Result<{ redirectTo: string }>> {
   const clientId = formData.get('client_id')
-  const reason = formData.get('reason')
+  const reasonRaw = formData.get('reason')
   if (typeof clientId !== 'string' || !clientId) return err('VALIDATION_FAILED', 'Missing client_id')
-  if (typeof reason !== 'string' || reason.trim().length < 5) {
-    return err('VALIDATION_FAILED', 'Reason must be at least 5 characters')
-  }
+
+  // Reason is optional. Audit row still captures who-viewed-what-when via
+  // impersonator_id + impersonated_client_id + started_at; reason is a nicety
+  // for context-rich debug sessions, not a requirement.
+  const reason = typeof reasonRaw === 'string' && reasonRaw.trim().length > 0
+    ? reasonRaw.trim()
+    : null
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -48,7 +52,7 @@ export async function startImpersonation(formData: FormData): Promise<Result<{ r
     .insert({
       impersonator_id: user.id,
       impersonated_client_id: clientId,
-      reason: reason.trim(),
+      reason,
     })
     .select('id')
     .single()
