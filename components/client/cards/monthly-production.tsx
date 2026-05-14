@@ -1,12 +1,6 @@
-'use client'
-
-import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ProgressBar } from '@/components/ui/progress-bar'
-import { Button } from '@/components/ui/button'
-import { FileText, MessageCircleQuestion, Bot, Share2, MapPin, Link as LinkIcon, Plus } from 'lucide-react'
-import { InlineSubmitModal } from '@/components/client/inline-submit-modal'
-import type { SubmissionKind } from '@/lib/submissions/kinds'
+import { FileText, MessageCircleQuestion, Bot, Share2, MapPin, Link as LinkIcon } from 'lucide-react'
 
 export type ProductionCategory = {
   key: 'blogs' | 'faqs' | 'ai' | 'social' | 'gbp' | 'links_citations'
@@ -24,33 +18,15 @@ const ICONS: Record<ProductionCategory['key'], typeof FileText> = {
   links_citations: LinkIcon,
 }
 
-// Each visible category maps to a single submission kind for inline staff
-// logging. links_citations is one row but covers two distinct kinds — we
-// default to 'link'; staff can still log a 'citation' via the full form.
-const CATEGORY_TO_KIND: Record<ProductionCategory['key'], SubmissionKind> = {
-  blogs: 'blog',
-  faqs: 'faq',
-  ai: 'ai_page',
-  social: 'social_post',
-  gbp: 'gmb_post',
-  links_citations: 'link',
-}
-
 export function MonthlyProductionCard({
   categories,
   periodLabel,
-  clientId,
-  isStaff = false,
 }: {
   categories: ProductionCategory[]
   periodLabel: string
-  // Required only when isStaff is true (used to scope inline submissions).
-  clientId?: string
-  isStaff?: boolean
 }) {
   const totalDone = categories.reduce((sum, c) => sum + c.done, 0)
   const totalTarget = categories.reduce((sum, c) => sum + c.target, 0)
-  const [openKind, setOpenKind] = useState<{ kind: SubmissionKind; label: string } | null>(null)
 
   return (
     <Card>
@@ -88,29 +64,14 @@ export function MonthlyProductionCard({
                       {c.label}
                     </span>
                   </span>
-                  <span className="flex items-center gap-2">
-                    {isStaff && !isInactive && clientId && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="xs"
-                        onClick={() => setOpenKind({ kind: CATEGORY_TO_KIND[c.key], label: c.label })}
-                        title={`Log a new ${c.label.toLowerCase()}`}
-                        aria-label={`Log a new ${c.label.toLowerCase()}`}
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        Add
-                      </Button>
-                    )}
-                    <span
-                      className={
-                        isInactive
-                          ? 'text-xs font-medium text-body-subtle'
-                          : 'text-xs font-semibold text-heading'
-                      }
-                    >
-                      {isInactive ? 'not in package' : `${done}/${target}`}
-                    </span>
+                  <span
+                    className={
+                      isInactive
+                        ? 'text-xs font-medium text-body-subtle'
+                        : 'text-xs font-semibold text-heading'
+                    }
+                  >
+                    {isInactive ? 'not in package' : `${done}/${target}`}
                   </span>
                 </div>
                 {!isInactive && <ProgressBar value={done} max={target} />}
@@ -119,15 +80,6 @@ export function MonthlyProductionCard({
           })}
         </ul>
       </CardContent>
-      {isStaff && clientId && openKind && (
-        <InlineSubmitModal
-          open={openKind !== null}
-          onOpenChange={(o) => !o && setOpenKind(null)}
-          clientId={clientId}
-          kind={openKind.kind}
-          triggerLabel={openKind.label}
-        />
-      )}
     </Card>
   )
 }

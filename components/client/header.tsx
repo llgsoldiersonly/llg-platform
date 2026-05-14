@@ -1,21 +1,16 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { LlgWordmark } from '@/components/brand/logo'
 import { LocationSwitcher } from './location-switcher'
 import { ClientTopNav } from './top-nav'
-import { StaffFirmPicker, type FirmOption } from './staff-firm-picker'
 import { signOutAction } from '@/lib/actions/auth'
 import { getClientContext } from '@/lib/client-context'
-import { isAgencyStaff } from '@/lib/auth/rbac'
 
-// Top-of-page header for the client portal — replaces the old sidebar +
-// thin topbar combo. Layout matches the brand reference: wordmark + tagline
-// on the left, top-nav tabs in the middle, user/firm card + sign-out on
-// the right. The nav itself is a client component because it needs the
-// active-route highlight; everything else stays server-rendered.
+// Top-of-page header for the client portal. Clients only — agency_staff
+// and super_admin live in entirely separate portals (/staff and /admin)
+// and never reach this header.
 export async function ClientHeader() {
   const ctx = await getClientContext()
   const supabase = await createClient()
@@ -23,20 +18,6 @@ export async function ClientHeader() {
 
   const firmName = ctx?.client.firm_name ?? 'Your firm'
   const initial = (firmName[0] ?? 'C').toUpperCase()
-
-  // For staff: load the list of firms they can switch between. Service-role
-  // query because agency_staff doesn't have client_users membership rows.
-  let staffFirms: FirmOption[] = []
-  if (user && isAgencyStaff(user)) {
-    const admin = createAdminClient()
-    const { data } = await admin
-      .from('clients')
-      .select('id, firm_name, status, is_demo_only')
-      .neq('status', 'churned')
-      .order('firm_name', { ascending: true })
-      .returns<FirmOption[]>()
-    staffFirms = data ?? []
-  }
 
   return (
     <header className="border-b border-border-default bg-neutral-primary-soft">
@@ -48,9 +29,6 @@ export async function ClientHeader() {
         <ClientTopNav />
 
         <div className="flex shrink-0 items-center gap-3">
-          {staffFirms.length > 0 && (
-            <StaffFirmPicker firms={staffFirms} currentFirmId={ctx?.client.id ?? null} />
-          )}
           {ctx?.client.is_demo_only && <Badge variant="warning">DEMO</Badge>}
           <Link
             href="/profile"

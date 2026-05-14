@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { isAgencyStaff, isSuperAdmin } from '@/lib/auth/rbac'
+import { isSuperAdmin } from '@/lib/auth/rbac'
 import { getActiveImpersonation } from '@/lib/impersonation'
 
 export type ClientLocation = {
@@ -86,44 +86,20 @@ export async function getClientContext(searchParams?: URLSearchParams): Promise<
   // expires. Non-super-admins with a stray cookie are ignored.
   const impersonation = isSuperAdmin(user) ? await getActiveImpersonation() : null
 
-  // Agency staff path: they don't have client_users rows, so RLS would
-  // return any client. Resolve the firm in this order:
-  //   1. ?firm=<uuid> URL param (the firm picker writes this)
-  //   2. First active non-demo firm alphabetically (default landing)
-  const staffFirmIdFromUrl = isAgencyStaff(user)
-    ? searchParams?.get('firm') ?? null
-    : null
-
   const baseQuery = () =>
     supabase
       .from('clients')
       .select('id, firm_name, primary_domain, is_demo_only, status, onboarded_at, agreed_launch_date, ad_date, next_billing_at')
 
-  // Resolution precedence: impersonation cookie > staff URL param >
-  // alphabetical-first-active-non-demo (staff default) > whatever RLS
-  // returns first (client_user path).
-  let clients: Awaited<ReturnType<typeof baseQuery>>['data'] = null
-  if (impersonation) {
-    clients = (await baseQuery().eq('id', impersonation.clientId).limit(1)).data
-  } else if (staffFirmIdFromUrl) {
-    clients = (await baseQuery().eq('id', staffFirmIdFromUrl).limit(1)).data
-  } else if (isAgencyStaff(user)) {
-    clients = (
-      await baseQuery()
-        .eq('status', 'active')
-        .eq('is_demo_only', false)
-        .order('firm_name', { ascending: true })
-        .limit(1)
-    ).data
-  } else {
-    clients = (await baseQuery().limit(1)).data
-  }
+  let clients = impersonation
+    ? (await baseQuery().eq('id', impersonation.clientId).limit(1)).data
+    : (await baseQuery().limit(1)).data
 
-  // Stale cookie / bad URL param: impersonated/selected client was
-  // hard-deleted or never existed. Fall back to the default lookup so
-  // layouts don't crash. The ImpersonationBanner remains visible so the
-  // user can click Exit to clear.
-  if ((impersonation || staffFirmIdFromUrl) && (clients?.length ?? 0) === 0) {
+  // Stale cookie: impersonated client was hard-deleted while the session
+  // was active. Fall back to the default lookup so layouts don't crash;
+  // the ImpersonationBanner remains visible so the user can click Exit
+  // to clear.
+  if (impersonation && (clients?.length ?? 0) === 0) {
     clients = (await baseQuery().limit(1)).data
   }
 
