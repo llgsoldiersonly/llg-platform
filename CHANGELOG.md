@@ -58,7 +58,7 @@ All notable changes per phase. Newest first.
 - **Repo:** `llgsoldiersonly/llg-platform` (private), default branch `phase-1-foundation`
 - **Vercel:** linked to `llg-team/llg-platform`, env vars wired for production + preview + dev, deployed at `https://llg-platform-llg-team.vercel.app`
 - **Supabase:** project `ifonutjkbciqtpckynhb`, free tier, magic-link auth verified working
-- **Resend:** plugged into Supabase as SMTP (sender `onboarding@resend.dev` for dev)
+- **Resend:** plugged into Supabase as SMTP (sender `spaceman@llgportal.com`, domain verified)
 - **Sentry:** org `llg`, project `llg-platform`, DSN active in production deploys
 - **Dev port:** pinned to **3001** (3000 conflicts with local Remotion)
 

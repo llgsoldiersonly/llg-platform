@@ -2,17 +2,11 @@
  * One-off: create or update a user as agency_staff, bypass email send, and
  * print a magic-link URL the user can paste into their browser.
  *
- * Why this exists: Supabase Auth's outbound email goes through Resend, and
- * Resend is in test mode (only the account-owner email receives mail) until
- * the lucrativelegal.com domain is verified at resend.com/domains. So the
- * built-in `inviteStaff` admin UI flow returns 500 for anyone except
- * nathan.u@lucrativelegal.com. This script sidesteps the email path:
- * creates the user, sets role=agency_staff, mints a one-hour magic link
- * URL. Forward the URL over a secure channel to the inbox owner.
- *
- * After Resend domain verification lands, you can stop using this script
- * and go through /admin/settings/users instead — the standard invite flow
- * will then email a real magic link.
+ * Day-to-day, prefer the admin UI at /admin/settings/users — Supabase Auth
+ * is wired to Resend (sender `spaceman@llgportal.com`) and the standard
+ * invite flow emails a real magic link. Use this script only when you need
+ * to bypass email delivery entirely (e.g. troubleshooting a mailbox issue,
+ * or seeding an account before DNS propagates).
  *
  * Usage:
  *   pnpm tsx --env-file=.env.local scripts/grant-staff-user.ts <email> "<full_name>"

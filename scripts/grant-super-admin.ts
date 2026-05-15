@@ -2,9 +2,11 @@
  * One-off: directly create a super_admin user, bypass email send, and print
  * a magic-link URL the user can paste into their browser.
  *
- * Use this when Supabase Auth's outbound email isn't configured (e.g. Resend
- * is still in test mode and won't deliver to the target address). Forward the
- * printed URL to the inbox owner — they click once and they're in.
+ * Day-to-day, Supabase Auth delivers magic links via Resend (sender
+ * `spaceman@llgportal.com`). Use this script only when you need to bypass
+ * email entirely — e.g. seeding an account before DNS propagates, or
+ * troubleshooting a mailbox issue. Forward the printed URL to the inbox
+ * owner over a secure channel — they click once and they're in.
  *
  * Usage:
  *   pnpm tsx --env-file=.env.local scripts/grant-super-admin.ts <email> "<full_name>"
