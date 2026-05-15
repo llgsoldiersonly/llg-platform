@@ -47,11 +47,16 @@ function LoginForm() {
 
     const { error } = await supabase.auth.signInWithOtp({
       email: values.email,
-      options: { emailRedirectTo: redirectTo },
+      options: { emailRedirectTo: redirectTo, shouldCreateUser: false },
     })
 
     if (error) {
-      setServerError(error.message)
+      // Don't leak whether the email exists — show the same friendly message
+      // for "signups disabled" / "user not found" as for genuine failures.
+      const msg = /not.*found|not.*allowed|disabled|signups/i.test(error.message)
+        ? "If that email is provisioned, a sign-in link is on its way. Otherwise, contact your admin for access."
+        : error.message
+      setServerError(msg)
       return
     }
     setSent(true)
