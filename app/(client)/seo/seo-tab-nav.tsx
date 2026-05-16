@@ -12,6 +12,7 @@ const tabs: Tab[] = [
   { href: '/seo/rankings',    label: 'Rankings' },
   { href: '/seo/ai',          label: 'AI Visibility' },
   { href: '/seo/competitors', label: 'Competitors' },
+  { href: '/seo/weekly',      label: 'Weekly Report' },
   { href: '/seo/reports',     label: 'Monthly Report' },
 ]
 
