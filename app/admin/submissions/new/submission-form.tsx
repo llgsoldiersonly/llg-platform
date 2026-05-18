@@ -7,8 +7,8 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { submitDeliverable } from '@/lib/actions/submissions'
-import { SUBMISSION_KINDS, getSubmissionKind, type SubmissionKind } from '@/lib/submissions/kinds'
+import { submitDeliverable, submitDeliverableBatch } from '@/lib/actions/submissions'
+import { SUBMISSION_KINDS, type SubmissionKind } from '@/lib/submissions/kinds'
 import { errorMessages, type ErrorCode } from '@/lib/errors'
 
 type FirmRow = { id: string; firm_name: string; status: string }
@@ -23,6 +23,8 @@ type DeliverableRow = {
   actual_count: number | null
 }
 
+type Mode = 'single' | 'bulk'
+
 export function SubmissionForm({
   firms,
   deliverables,
@@ -34,9 +36,11 @@ export function SubmissionForm({
 }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const [mode, setMode] = useState<Mode>('single')
   const [clientId, setClientId] = useState<string>(preselectedClientId ?? '')
   const [kind, setKind] = useState<SubmissionKind>('blog')
   const [deliverableId, setDeliverableId] = useState<string>('')
+  const [markComplete, setMarkComplete] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
@@ -49,19 +53,42 @@ export function SubmissionForm({
     setError(null)
     setNotice(null)
     startTransition(async () => {
-      const result = await submitDeliverable({
+      if (mode === 'single') {
+        const result = await submitDeliverable({
+          client_id: clientId,
+          kind,
+          link_url: String(formData.get('link_url') ?? '').trim(),
+          title: String(formData.get('title') ?? '').trim() || null,
+          notes: String(formData.get('notes') ?? '').trim() || null,
+          deliverable_id: deliverableId || null,
+        })
+        if (result.ok) {
+          setNotice('Logged. Client sees this immediately.')
+          resetForm()
+          router.refresh()
+        } else {
+          setError(result.error.message ?? errorMessages[result.error.code as ErrorCode])
+        }
+        return
+      }
+
+      const raw = String(formData.get('bulk_urls') ?? '')
+      const urls = raw.split(/\r?\n/).map((s) => s.trim()).filter(Boolean)
+      const result = await submitDeliverableBatch({
         client_id: clientId,
         kind,
-        link_url: String(formData.get('link_url') ?? '').trim(),
+        link_urls: urls,
         title: String(formData.get('title') ?? '').trim() || null,
         notes: String(formData.get('notes') ?? '').trim() || null,
         deliverable_id: deliverableId || null,
+        mark_complete: markComplete,
       })
       if (result.ok) {
-        setNotice('Logged. Client sees this immediately.')
-        const form = document.getElementById('submission-form') as HTMLFormElement | null
-        form?.reset()
-        setDeliverableId('')
+        const completedSuffix = result.data.marked_complete
+          ? ' Deliverable marked complete.'
+          : ''
+        setNotice(`Logged ${result.data.inserted} submission${result.data.inserted === 1 ? '' : 's'}.${completedSuffix}`)
+        resetForm()
         router.refresh()
       } else {
         setError(result.error.message ?? errorMessages[result.error.code as ErrorCode])
@@ -69,8 +96,36 @@ export function SubmissionForm({
     })
   }
 
+  function resetForm() {
+    const form = document.getElementById('submission-form') as HTMLFormElement | null
+    form?.reset()
+    setDeliverableId('')
+    setMarkComplete(false)
+  }
+
   return (
     <form id="submission-form" action={onSubmit} className="space-y-5">
+      <div className="flex items-center gap-2 rounded-md border border-border-default bg-neutral-secondary-soft p-1 text-xs">
+        <button
+          type="button"
+          onClick={() => setMode('single')}
+          className={`flex-1 rounded px-3 py-1.5 transition ${
+            mode === 'single' ? 'bg-bg-default font-medium shadow-sm' : 'text-body'
+          }`}
+        >
+          Single
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('bulk')}
+          className={`flex-1 rounded px-3 py-1.5 transition ${
+            mode === 'bulk' ? 'bg-bg-default font-medium shadow-sm' : 'text-body'
+          }`}
+        >
+          Bulk paste
+        </button>
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor="client_id">Firm *</Label>
         <Select
@@ -79,6 +134,7 @@ export function SubmissionForm({
           onChange={(e) => {
             setClientId(e.target.value)
             setDeliverableId('')
+            setMarkComplete(false)
           }}
           required
         >
@@ -113,7 +169,10 @@ export function SubmissionForm({
           <Select
             id="deliverable_id"
             value={deliverableId}
-            onChange={(e) => setDeliverableId(e.target.value)}
+            onChange={(e) => {
+              setDeliverableId(e.target.value)
+              if (!e.target.value) setMarkComplete(false)
+            }}
             disabled={!clientId || matchingDeliverables.length === 0}
           >
             <option value="">— None / pre-launch —</option>
@@ -126,19 +185,36 @@ export function SubmissionForm({
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="link_url">Link to work *</Label>
-        <Input
-          id="link_url"
-          name="link_url"
-          type="url"
-          required
-          placeholder="https://example.com/the-blog-post"
-        />
-        <p className="text-xs text-body-subtle">
-          The URL the client (or a manager) can open to verify the work.
-        </p>
-      </div>
+      {mode === 'single' ? (
+        <div className="space-y-2">
+          <Label htmlFor="link_url">Link to work *</Label>
+          <Input
+            id="link_url"
+            name="link_url"
+            type="url"
+            required
+            placeholder="https://example.com/the-blog-post"
+          />
+          <p className="text-xs text-body-subtle">
+            The URL the client (or a manager) can open to verify the work.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <Label htmlFor="bulk_urls">Links to work * (one per line)</Label>
+          <Textarea
+            id="bulk_urls"
+            name="bulk_urls"
+            rows={8}
+            required
+            placeholder={'https://example.com/page-1\nhttps://example.com/page-2\nhttps://example.com/page-3'}
+            className="font-mono text-xs"
+          />
+          <p className="text-xs text-body-subtle">
+            Paste any number of URLs (one per line). Each becomes its own audit-trail row the client can open. Title and notes below apply to the whole batch.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label htmlFor="title">Title (optional)</Label>
@@ -146,7 +222,7 @@ export function SubmissionForm({
           id="title"
           name="title"
           maxLength={200}
-          placeholder="e.g. 'Top 10 things to do after a car accident'"
+          placeholder={mode === 'bulk' ? 'Shared title for all rows in this batch' : "e.g. 'Top 10 things to do after a car accident'"}
         />
       </div>
 
@@ -160,6 +236,32 @@ export function SubmissionForm({
         />
       </div>
 
+      {mode === 'bulk' && (
+        <label
+          className={`flex items-start gap-3 rounded-md border p-3 text-sm ${
+            deliverableId
+              ? 'border-border-default'
+              : 'border-border-light bg-neutral-secondary-soft text-body-subtle'
+          }`}
+        >
+          <input
+            type="checkbox"
+            checked={markComplete}
+            onChange={(e) => setMarkComplete(e.target.checked)}
+            disabled={!deliverableId}
+            className="mt-0.5"
+          />
+          <span>
+            <span className="font-medium">Also mark this deliverable complete</span>
+            <span className="block text-xs">
+              {deliverableId
+                ? 'Flips the deliverable to ✅ Done regardless of how many URLs are pasted. The count stays as-is (e.g. 20/100 logged, marked complete).'
+                : 'Pick a deliverable above to enable this.'}
+            </span>
+          </span>
+        </label>
+      )}
+
       {error && (
         <p className="rounded-md bg-danger-soft p-3 text-sm text-fg-danger-strong">{error}</p>
       )}
@@ -172,7 +274,7 @@ export function SubmissionForm({
           Cancel
         </Button>
         <Button type="submit" disabled={isPending || !clientId}>
-          {isPending ? 'Submitting…' : 'Submit'}
+          {isPending ? 'Submitting…' : mode === 'bulk' ? 'Submit batch' : 'Submit'}
         </Button>
       </div>
     </form>

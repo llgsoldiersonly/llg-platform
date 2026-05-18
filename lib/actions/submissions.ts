@@ -16,6 +16,18 @@ export type SubmitDeliverableInput = {
   deliverable_id?: string | null
 }
 
+export type SubmitDeliverableBatchInput = {
+  client_id: string
+  kind: SubmissionKind
+  link_urls: string[]
+  title?: string | null
+  notes?: string | null
+  deliverable_id?: string | null
+  mark_complete?: boolean
+}
+
+const MAX_BATCH_URLS = 500
+
 function isValidUrl(value: string): boolean {
   try {
     const u = new URL(value)
@@ -86,6 +98,114 @@ export async function submitDeliverable(
   revalidatePath('/overview')
 
   return ok({ id: data.id })
+}
+
+// Submits N URLs in one call as separate deliverable_submission rows tied to
+// the same client/kind/deliverable. Each URL becomes its own audit row so the
+// client timeline still shows every link individually. If `mark_complete` is
+// true and a deliverable is targeted, the deliverable is flipped to status=done
+// at the end of the batch regardless of actual_count vs target_count — that's
+// the "20 of 100 pages submitted but staff calls it complete" path.
+export async function submitDeliverableBatch(
+  input: SubmitDeliverableBatchInput
+): Promise<Result<{ inserted: number; marked_complete: boolean }>> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return err('UNAUTHORIZED')
+  if (!isAgencyStaff(user)) return err('FORBIDDEN')
+
+  if (!isValidSubmissionKind(input.kind)) {
+    return err('VALIDATION_FAILED', 'Unknown submission kind.')
+  }
+  if (!input.client_id) {
+    return err('VALIDATION_FAILED', 'Pick a firm.')
+  }
+  if (input.mark_complete && !input.deliverable_id) {
+    return err('VALIDATION_FAILED', 'Pick a deliverable before marking complete.')
+  }
+
+  const cleaned = (input.link_urls ?? [])
+    .map((u) => u.trim())
+    .filter((u) => u.length > 0)
+  if (cleaned.length === 0) {
+    return err('VALIDATION_FAILED', 'Paste at least one URL.')
+  }
+  if (cleaned.length > MAX_BATCH_URLS) {
+    return err('VALIDATION_FAILED', `Batch is limited to ${MAX_BATCH_URLS} URLs at a time.`)
+  }
+  const invalid = cleaned.filter((u) => !isValidUrl(u))
+  if (invalid.length > 0) {
+    return err(
+      'VALIDATION_FAILED',
+      `${invalid.length} of ${cleaned.length} entries aren't valid http(s) URLs. First bad one: ${invalid[0]}`
+    )
+  }
+
+  const admin = createAdminClient()
+  const sharedTitle = input.title?.trim() || null
+  const sharedNotes = input.notes?.trim() || null
+  const rows = cleaned.map((url) => ({
+    client_id: input.client_id,
+    kind: input.kind,
+    link_url: url,
+    title: sharedTitle,
+    notes: sharedNotes,
+    deliverable_id: input.deliverable_id || null,
+    submitted_by: user.id,
+  }))
+
+  const { data: inserted, error } = await admin
+    .from('deliverable_submissions')
+    .insert(rows)
+    .select('id')
+
+  if (error || !inserted) {
+    return err('INTERNAL', `Failed to submit batch: ${error?.message ?? 'unknown error'}`, error)
+  }
+
+  if (input.deliverable_id) {
+    await incrementDeliverableCountBy(admin, input.deliverable_id, inserted.length)
+  }
+
+  let markedComplete = false
+  if (input.mark_complete && input.deliverable_id) {
+    const { error: completeErr } = await admin
+      .from('deliverables')
+      .update({
+        status: 'done',
+        completed_at: new Date().toISOString(),
+        completed_by: user.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', input.deliverable_id)
+    if (completeErr) {
+      return err('INTERNAL', `Inserted rows, but failed to mark complete: ${completeErr.message}`)
+    }
+    markedComplete = true
+  }
+
+  await admin.from('activity_log').insert({
+    actor_id: user.id,
+    entity_type: 'deliverable_submission',
+    entity_id: inserted[0]?.id ?? null,
+    action: 'submitted_batch',
+    after: {
+      kind: input.kind,
+      client_id: input.client_id,
+      count: inserted.length,
+      deliverable_id: input.deliverable_id ?? null,
+      marked_complete: markedComplete,
+    },
+  })
+
+  revalidatePath('/admin/submissions')
+  revalidatePath(`/admin/clients/${input.client_id}`)
+  revalidatePath(`/admin/clients/${input.client_id}/deliverables`)
+  revalidatePath('/overview')
+  revalidatePath('/staff')
+
+  return ok({ inserted: inserted.length, marked_complete: markedComplete })
 }
 
 // Replace an existing submission with a corrected version. Used when staff
@@ -197,6 +317,16 @@ async function incrementDeliverableCount(
   admin: ReturnType<typeof createAdminClient>,
   deliverableId: string
 ) {
+  return incrementDeliverableCountBy(admin, deliverableId, 1)
+}
+
+async function incrementDeliverableCountBy(
+  admin: ReturnType<typeof createAdminClient>,
+  deliverableId: string,
+  by: number
+) {
+  if (by <= 0) return
+
   const { data: row } = await admin
     .from('deliverables')
     .select('actual_count, target_count, custom_target_count, template_id, status')
@@ -205,7 +335,6 @@ async function incrementDeliverableCount(
 
   if (!row) return
 
-  // Resolve target from template or custom column.
   let target: number | null = row.custom_target_count
   if (row.template_id) {
     const { data: tmpl } = await admin
@@ -216,7 +345,7 @@ async function incrementDeliverableCount(
     target = tmpl?.target_count ?? null
   }
 
-  const nextCount = (row.actual_count ?? 0) + 1
+  const nextCount = (row.actual_count ?? 0) + by
   const updates: Record<string, unknown> = {
     actual_count: nextCount,
     updated_at: new Date().toISOString(),

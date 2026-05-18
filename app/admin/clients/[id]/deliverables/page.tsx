@@ -132,6 +132,7 @@ export default async function ClientDeliverablesPage({
                   const source = sourceBadge[d.source]
                   const statusVar = statusBadge[d.status] ?? 'secondary'
                   const tracking = d.template?.tracking_source ?? 'manual'
+                  const isPartialComplete = d.status === 'done' && target > 0 && d.actual_count < target
                   return (
                     <tr key={d.id}>
                       <td className="px-6 py-4">
@@ -156,7 +157,12 @@ export default async function ClientDeliverablesPage({
                         {d.period_start} → {d.period_end}
                       </td>
                       <td className="px-6 py-4 text-body">
-                        {d.actual_count} / {target} {unit}
+                        <div>
+                          {d.actual_count} / {target} {unit}
+                        </div>
+                        {isPartialComplete && (
+                          <div className="text-xs text-body-subtle">marked complete</div>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <Badge variant={statusVar}>{d.status.replace('_', ' ')}</Badge>
