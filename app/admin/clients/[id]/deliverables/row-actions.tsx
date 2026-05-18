@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { Trash2 } from 'lucide-react'
+import { CheckCircle2, Trash2 } from 'lucide-react'
 import { updateDeliverableStatus, deleteCustomDeliverable } from '@/lib/actions/deliverables'
 
 const STATUSES = [
@@ -52,8 +52,31 @@ export function DeliverableRowActions({
     })
   }
 
+  function handleMarkComplete() {
+    setError(null)
+    startTransition(async () => {
+      const result = await updateDeliverableStatus(deliverableId, 'done', clientId)
+      if (!result.ok) setError(result.error.message)
+      else router.refresh()
+    })
+  }
+
   return (
     <div className="flex items-center gap-2 justify-end">
+      {status !== 'done' && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleMarkComplete}
+          disabled={isPending}
+          aria-label="Mark complete"
+          title="Mark complete (flips status to Done; actual_count stays as-is)"
+          className="text-xs"
+        >
+          <CheckCircle2 className="mr-1 h-3.5 w-3.5 text-fg-success" />
+          Mark complete
+        </Button>
+      )}
       <Select
         value={status}
         onChange={handleStatusChange}
