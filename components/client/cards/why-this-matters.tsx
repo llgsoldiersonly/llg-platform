@@ -1,5 +1,8 @@
+'use client'
+
+import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, PlayCircle } from 'lucide-react'
 
 const PRE_LAUNCH_BLOCKS = [
   {
@@ -27,25 +30,81 @@ const POST_LAUNCH_BLOCKS = [
   },
 ]
 
+// Hosted on Vercel Blob (store: llg-platform-assets). Re-upload via
+// `vercel blob put <local> --pathname tutorials/dashboard-tutorial.mp4 ...`
+// to refresh; the URL stays stable.
+const DASHBOARD_TUTORIAL_URL =
+  'https://5mqokpkfed2vbwak.public.blob.vercel-storage.com/tutorials/dashboard-tutorial.mp4'
+
+type Tab = 'about' | 'tutorial'
+
 export function WhyThisMattersCard({ preLaunch }: { preLaunch: boolean }) {
+  const [tab, setTab] = useState<Tab>('about')
   const blocks = preLaunch ? PRE_LAUNCH_BLOCKS : POST_LAUNCH_BLOCKS
+  const aboutLabel = preLaunch ? 'About pre-launch' : 'About your monthly work'
+
   return (
     <Card>
       <CardContent className="space-y-4 p-6">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-fg-brand" />
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-fg-brand-strong">
-            {preLaunch ? 'About pre-launch' : 'About your monthly work'}
-          </h3>
+        <div
+          role="tablist"
+          aria-label="Helpful context"
+          className="flex items-center gap-1 rounded-md border border-border-default bg-neutral-secondary-soft p-1 text-xs"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'about'}
+            onClick={() => setTab('about')}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded px-3 py-1.5 transition ${
+              tab === 'about' ? 'bg-bg-default font-semibold text-fg-brand-strong shadow-sm' : 'text-body'
+            }`}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            {aboutLabel}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'tutorial'}
+            onClick={() => setTab('tutorial')}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded px-3 py-1.5 transition ${
+              tab === 'tutorial' ? 'bg-bg-default font-semibold text-fg-brand-strong shadow-sm' : 'text-body'
+            }`}
+          >
+            <PlayCircle className="h-3.5 w-3.5" />
+            Dashboard Tutorial
+          </button>
         </div>
-        <div className="space-y-4">
-          {blocks.map((b) => (
-            <div key={b.title}>
-              <h4 className="text-sm font-semibold text-heading">{b.title}</h4>
-              <p className="mt-1 text-sm text-body">{b.body}</p>
+
+        {tab === 'about' ? (
+          <div className="space-y-4">
+            {blocks.map((b) => (
+              <div key={b.title}>
+                <h4 className="text-sm font-semibold text-heading">{b.title}</h4>
+                <p className="mt-1 text-sm text-body">{b.body}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="aspect-video w-full overflow-hidden rounded-md bg-black">
+              <video
+                controls
+                preload="metadata"
+                playsInline
+                className="h-full w-full"
+                src={DASHBOARD_TUTORIAL_URL}
+              >
+                Your browser doesn&apos;t support embedded video. Download it directly:{' '}
+                <a href={DASHBOARD_TUTORIAL_URL}>dashboard-tutorial.mp4</a>.
+              </video>
             </div>
-          ))}
-        </div>
+            <p className="text-xs text-body-subtle">
+              A quick walkthrough of your dashboard — what each section means and where to find what.
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
