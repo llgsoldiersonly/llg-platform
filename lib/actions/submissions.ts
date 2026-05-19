@@ -329,20 +329,23 @@ async function incrementDeliverableCountBy(
 
   const { data: row } = await admin
     .from('deliverables')
-    .select('actual_count, target_count, custom_target_count, template_id, status')
+    .select('actual_count, custom_target_count, custom_frequency, template_id, status')
     .eq('id', deliverableId)
     .maybeSingle()
 
   if (!row) return
 
+  // Resolve target + frequency from template or custom columns.
   let target: number | null = row.custom_target_count
+  let frequency: string | null = row.custom_frequency
   if (row.template_id) {
     const { data: tmpl } = await admin
       .from('package_deliverables')
-      .select('target_count')
+      .select('target_count, frequency')
       .eq('id', row.template_id)
       .maybeSingle()
     target = tmpl?.target_count ?? null
+    frequency = tmpl?.frequency ?? null
   }
 
   const nextCount = (row.actual_count ?? 0) + by
@@ -350,7 +353,13 @@ async function incrementDeliverableCountBy(
     actual_count: nextCount,
     updated_at: new Date().toISOString(),
   }
-  if (target !== null && nextCount >= target && row.status !== 'done') {
+
+  // Auto-complete on count >= target ONLY for recurring deliverables.
+  // For frequency='once' (pre-launch checklist items), completion is binary
+  // and driven by an explicit "Mark complete" action — the counter is just
+  // an audit-trail tally, not the completion signal.
+  const isOnce = frequency === 'once'
+  if (!isOnce && target !== null && nextCount >= target && row.status !== 'done') {
     updates.status = 'done'
     updates.completed_at = new Date().toISOString()
   } else if (row.status === 'pending') {

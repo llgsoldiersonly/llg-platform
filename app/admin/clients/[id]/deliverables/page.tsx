@@ -1,60 +1,13 @@
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { AddCustomDeliverableButton } from './add-custom-button'
-import { DeliverableRowActions } from './row-actions'
+import { DeliverablesTabs, type DeliverableRow } from './deliverables-tabs'
 
 export const dynamic = 'force-dynamic'
-
-type DeliverableRow = {
-  id: string
-  source: 'package' | 'incentive' | 'custom'
-  is_incentive: boolean
-  template_id: string | null
-  status: string
-  actual_count: number
-  period_start: string
-  period_end: string
-  notes: string | null
-  custom_title: string | null
-  custom_description: string | null
-  custom_department_slug: string | null
-  custom_frequency: string | null
-  custom_target_count: number | null
-  custom_target_unit: string | null
-  template: {
-    code: string
-    display_name: string
-    department_slug: string
-    frequency: string
-    target_count: number | null
-    target_unit: string | null
-    tracking_source: string
-  } | null
-  subscription: {
-    id: string
-    package: { code: string; display_name: string } | null
-  }
-}
 
 type Subscription = {
   id: string
   package: { code: string; display_name: string } | null
-}
-
-const sourceBadge = {
-  package: { variant: 'secondary' as const, label: 'Package' },
-  incentive: { variant: 'success' as const, label: 'Free Bonus' },
-  custom: { variant: 'info' as const, label: 'Custom' },
-}
-
-const statusBadge: Record<string, 'secondary' | 'info' | 'success' | 'warning' | 'destructive'> = {
-  pending: 'secondary',
-  in_progress: 'info',
-  done: 'success',
-  skipped: 'warning',
-  blocked: 'destructive',
 }
 
 export default async function ClientDeliverablesPage({
@@ -103,86 +56,7 @@ export default async function ClientDeliverablesPage({
         <AddCustomDeliverableButton clientId={id} subscriptions={subscriptions} />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">All deliverables</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {deliverables.length === 0 ? (
-            <p className="p-6 text-sm text-body">
-              No deliverables yet. They'll be auto-generated as subscriptions roll into a new period, or you can add a custom one above.
-            </p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="border-b border-border-default bg-neutral-secondary-soft text-xs uppercase tracking-wide text-body">
-                <tr>
-                  <th className="px-6 py-3 text-left font-medium">Item</th>
-                  <th className="px-6 py-3 text-left font-medium">Source</th>
-                  <th className="px-6 py-3 text-left font-medium">Period</th>
-                  <th className="px-6 py-3 text-left font-medium">Progress</th>
-                  <th className="px-6 py-3 text-left font-medium">Status</th>
-                  <th className="px-6 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border-light">
-                {deliverables.map((d) => {
-                  const title = d.template?.display_name ?? d.custom_title ?? '—'
-                  const target = d.template?.target_count ?? d.custom_target_count ?? 0
-                  const unit = d.template?.target_unit ?? d.custom_target_unit ?? ''
-                  const source = sourceBadge[d.source]
-                  const statusVar = statusBadge[d.status] ?? 'secondary'
-                  const tracking = d.template?.tracking_source ?? 'manual'
-                  const isPartialComplete = d.status === 'done' && target > 0 && d.actual_count < target
-                  return (
-                    <tr key={d.id}>
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-heading">{title}</div>
-                        <div className="text-xs text-body">
-                          {d.subscription.package?.code ?? '—'}
-                          {d.template?.department_slug && (
-                            <> · {d.template.department_slug}</>
-                          )}
-                          {d.custom_department_slug && (
-                            <> · {d.custom_department_slug}</>
-                          )}
-                          {tracking !== 'manual' && (
-                            <> · auto: {tracking}</>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <Badge variant={source.variant}>{source.label}</Badge>
-                      </td>
-                      <td className="px-6 py-4 text-xs text-body">
-                        {d.period_start} → {d.period_end}
-                      </td>
-                      <td className="px-6 py-4 text-body">
-                        <div>
-                          {d.actual_count} / {target} {unit}
-                        </div>
-                        {isPartialComplete && (
-                          <div className="text-xs text-body-subtle">marked complete</div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <Badge variant={statusVar}>{d.status.replace('_', ' ')}</Badge>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <DeliverableRowActions
-                          deliverableId={d.id}
-                          clientId={id}
-                          status={d.status}
-                          isCustom={d.template_id === null}
-                        />
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          )}
-        </CardContent>
-      </Card>
+      <DeliverablesTabs deliverables={deliverables} clientId={id} />
     </div>
   )
 }
