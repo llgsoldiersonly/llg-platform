@@ -50,6 +50,14 @@ export async function POST(req: Request) {
       const url = `https://${client.primary_domain}/`
       const psi = await fetchPsi({ apiKey, url, strategy })
 
+      const cruxFields = {
+        crux_lcp_ms: psi.crux.lcp_ms,
+        crux_inp_ms: psi.crux.inp_ms,
+        crux_cls: psi.crux.cls,
+        crux_fcp_ms: psi.crux.fcp_ms,
+        crux_category: psi.crux.category,
+      }
+
       await supa.from('raw_lighthouse').insert({
         client_id: client.id,
         url,
@@ -62,6 +70,7 @@ export async function POST(req: Request) {
         fid_ms: psi.fid_ms != null ? Math.round(psi.fid_ms) : null,
         cls: psi.cls,
         opportunities: psi.opportunities,
+        ...cruxFields,
         captured_at: new Date().toISOString(),
       })
 
@@ -77,6 +86,7 @@ export async function POST(req: Request) {
           lcp_ms: psi.lcp_ms != null ? Math.round(psi.lcp_ms) : null,
           fid_ms: psi.fid_ms != null ? Math.round(psi.fid_ms) : null,
           cls: psi.cls,
+          ...cruxFields,
           captured_on: today,
         },
         { onConflict: 'client_id,url,strategy,captured_on' }
