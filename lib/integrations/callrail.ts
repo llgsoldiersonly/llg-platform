@@ -18,6 +18,13 @@ export type CallRailCall = {
   // can have zero or many; downstream code (lib/calls/status.ts) derives a
   // single status from this array.
   tags?: string[] | null
+  // AI-generated lead-quality narrative ("lead_explanation" in the raw
+  // response). Present on calls that CallRail's AI has scored — older calls
+  // and outbound calls often won't have it.
+  ai_summary?: string | null
+  // 0-100 integer score that accompanies ai_summary. Comes back as a string
+  // from CallRail; we coerce to int when we have a valid value.
+  lead_score?: number | null
   raw?: unknown
 }
 
@@ -71,16 +78,30 @@ export async function fetchCallRailCalls(opts: CallRailFetchOpts): Promise<CallR
     // column) sees ['Conversion', 'Existing Customer'] instead of stringified
     // JSON blobs. Lowercasing happens at status-derivation time, not here.
     type RawTag = string | { name?: string | null }
-    type RawCall = Omit<CallRailCall, 'tags'> & { tags?: RawTag[] | null }
+    type RawCall = Omit<CallRailCall, 'tags' | 'ai_summary' | 'lead_score'> & {
+      tags?: RawTag[] | null
+      lead_explanation?: string | null
+      lead_score?: string | number | null
+    }
     const json = (await res.json()) as { calls: RawCall[]; total_pages?: number; page?: number }
-    const calls: CallRailCall[] = (json.calls ?? []).map((c) => ({
-      ...c,
-      tags: Array.isArray(c.tags)
-        ? c.tags
-            .map((t) => (typeof t === 'string' ? t : t?.name ?? ''))
-            .filter((s): s is string => Boolean(s))
-        : null,
-    }))
+    const calls: CallRailCall[] = (json.calls ?? []).map((c) => {
+      const ai = c.lead_explanation?.trim() || null
+      let score: number | null = null
+      if (c.lead_score != null) {
+        const n = typeof c.lead_score === 'number' ? c.lead_score : Number(c.lead_score)
+        if (Number.isFinite(n)) score = Math.round(n)
+      }
+      return {
+        ...c,
+        tags: Array.isArray(c.tags)
+          ? c.tags
+              .map((t) => (typeof t === 'string' ? t : t?.name ?? ''))
+              .filter((s): s is string => Boolean(s))
+          : null,
+        ai_summary: ai,
+        lead_score: score,
+      }
+    })
     allCalls.push(...calls)
     if (calls.length < perPage) break
     if (json.total_pages && page >= json.total_pages) break
