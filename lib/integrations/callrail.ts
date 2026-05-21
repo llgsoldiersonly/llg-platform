@@ -66,8 +66,21 @@ export async function fetchCallRailCalls(opts: CallRailFetchOpts): Promise<CallR
       const body = await res.text()
       throw new Error(`CallRail fetch failed (${res.status}): ${body.slice(0, 300)}`)
     }
-    const json = (await res.json()) as { calls: CallRailCall[]; total_pages?: number; page?: number }
-    const calls = json.calls ?? []
+    // CallRail returns `tags` as an array of objects { id, name, tag_level, … },
+    // not strings. Flatten to just the names so downstream code (and our text[]
+    // column) sees ['Conversion', 'Existing Customer'] instead of stringified
+    // JSON blobs. Lowercasing happens at status-derivation time, not here.
+    type RawTag = string | { name?: string | null }
+    type RawCall = Omit<CallRailCall, 'tags'> & { tags?: RawTag[] | null }
+    const json = (await res.json()) as { calls: RawCall[]; total_pages?: number; page?: number }
+    const calls: CallRailCall[] = (json.calls ?? []).map((c) => ({
+      ...c,
+      tags: Array.isArray(c.tags)
+        ? c.tags
+            .map((t) => (typeof t === 'string' ? t : t?.name ?? ''))
+            .filter((s): s is string => Boolean(s))
+        : null,
+    }))
     allCalls.push(...calls)
     if (calls.length < perPage) break
     if (json.total_pages && page >= json.total_pages) break
