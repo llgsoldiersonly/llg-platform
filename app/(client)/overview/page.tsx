@@ -25,16 +25,26 @@ import {
 import { MonthlyProductionCard } from '@/components/client/cards/monthly-production'
 import { LlgUpdatesCard } from '@/components/client/cards/llg-updates'
 import { aggregateProduction, type RawProductionRow } from '@/lib/post-launch-production'
+import { blendSiteHealth } from '@/lib/integrations/score-blend'
 import { fetchLlgBlogPosts, type LlgBlogPost } from '@/lib/llg-blog-feed'
 import CustomerPortalRocketFlyover from '@/components/customer-portal/CustomerPortalRocketFlyover'
 
 export const dynamic = 'force-dynamic'
 
 type RawSiteHealth = {
+  strategy: 'mobile' | 'desktop'
   performance: number | null
   seo: number | null
   accessibility: number | null
   best_practices: number | null
+  lcp_ms: number | null
+  fid_ms: number | null
+  cls: number | null
+  crux_lcp_ms: number | null
+  crux_inp_ms: number | null
+  crux_cls: number | null
+  crux_fcp_ms: number | null
+  crux_category: string | null
   captured_on: string
 }
 
@@ -114,11 +124,16 @@ export default async function OverviewPage({
       .returns<TicketSummary[]>(),
     admin
       .from('site_health')
-      .select('performance, seo, accessibility, best_practices, captured_on')
+      .select(`
+        strategy, performance, seo, accessibility, best_practices,
+        lcp_ms, fid_ms, cls,
+        crux_lcp_ms, crux_inp_ms, crux_cls, crux_fcp_ms, crux_category,
+        captured_on
+      `)
       .eq('client_id', ctx.client.id)
       .order('captured_on', { ascending: false })
-      .limit(1)
-      .maybeSingle<RawSiteHealth>(),
+      .limit(8)
+      .returns<RawSiteHealth[]>(),
     admin
       .from('posts')
       .select('id, title, published_at, source_type')
@@ -174,6 +189,14 @@ export default async function OverviewPage({
     ctx.selectedSubscriptions.find((s) => s.status === 'active') ??
     ctx.selectedSubscriptions[0] ??
     null
+
+  // CrUX/lab blend weight — single config value, read once per render.
+  const { data: settingsRow } = await admin
+    .from('platform_settings')
+    .select('crux_weight')
+    .eq('id', 1)
+    .maybeSingle<{ crux_weight: number | null }>()
+  const cruxWeight = settingsRow?.crux_weight ?? 0.66
 
   const productionRows: RawProductionRow[] = (productionRes.data ?? []).map((r) => ({
     code: r.template?.code ?? null,
@@ -293,7 +316,8 @@ export default async function OverviewPage({
           tickets={ticketsRes.data ?? []}
           updates={updates}
           creds={credsRes.data ?? null}
-          siteHealth={siteHealthRes.data ?? null}
+          siteHealth={siteHealthRes.data ?? []}
+          cruxWeight={cruxWeight}
           gbpSnapshot={gbpSnapshotShaped}
           gbpLatestPost={latestGbpPost}
           llgPosts={llgPosts}
@@ -381,6 +405,7 @@ function PostLaunchLayout({
   updates,
   creds,
   siteHealth,
+  cruxWeight,
   gbpSnapshot,
   gbpLatestPost,
   llgPosts,
@@ -402,7 +427,8 @@ function PostLaunchLayout({
     google_ads_customer_id: string | null
     lsa_account_url: string | null
   } | null
-  siteHealth: RawSiteHealth | null
+  siteHealth: RawSiteHealth[]
+  cruxWeight: number
   gbpSnapshot: GbpSnapshot | null
   gbpLatestPost: GbpLatestPost | null
   llgPosts: LlgBlogPost[]
@@ -419,13 +445,48 @@ function PostLaunchLayout({
 
   const team: TeamMember[] = []
 
-  const lighthouseScores: LighthouseScores | null = siteHealth
+  // Prefer mobile (closer to what most law-firm visitors actually use); fall
+  // back to desktop, then to whatever's most recent. Card displays one row.
+  const preferredHealth: RawSiteHealth | null = (() => {
+    const mobile = siteHealth.find((r) => r.strategy === 'mobile')
+    if (mobile) return mobile
+    const desktop = siteHealth.find((r) => r.strategy === 'desktop')
+    if (desktop) return desktop
+    return siteHealth[0] ?? null
+  })()
+
+  // Blend the Lighthouse lab score with a CrUX-derived "field score" computed
+  // from real-user p75 metrics. When CrUX isn't available (low-traffic sites)
+  // the displayed score falls back to lab-only.
+  const blended = preferredHealth
+    ? blendSiteHealth(
+        preferredHealth.strategy,
+        {
+          performance: preferredHealth.performance,
+          lcp_ms: preferredHealth.lcp_ms,
+          fid_ms: preferredHealth.fid_ms,
+          cls: preferredHealth.cls,
+        },
+        {
+          lcp_ms: preferredHealth.crux_lcp_ms,
+          inp_ms: preferredHealth.crux_inp_ms,
+          cls: preferredHealth.crux_cls,
+          fcp_ms: preferredHealth.crux_fcp_ms,
+        },
+        cruxWeight
+      )
+    : null
+
+  const lighthouseScores: LighthouseScores | null = preferredHealth
     ? {
-        performance: siteHealth.performance,
-        accessibility: siteHealth.accessibility,
-        best_practices: siteHealth.best_practices,
-        seo: siteHealth.seo,
-        captured_on: siteHealth.captured_on,
+        performance: blended?.displayed_score ?? preferredHealth.performance,
+        accessibility: preferredHealth.accessibility,
+        best_practices: preferredHealth.best_practices,
+        seo: preferredHealth.seo,
+        captured_on: preferredHealth.captured_on,
+        source: blended?.source,
+        crux_score: blended?.crux_score ?? null,
+        lab_score: blended?.lab_score ?? null,
       }
     : null
 
