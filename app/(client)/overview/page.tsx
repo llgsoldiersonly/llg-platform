@@ -318,6 +318,7 @@ export default async function OverviewPage({
           creds={credsRes.data ?? null}
           siteHealth={siteHealthRes.data ?? []}
           cruxWeight={cruxWeight}
+          showSiteHealth={ctx.client.show_site_health}
           gbpSnapshot={gbpSnapshotShaped}
           gbpLatestPost={latestGbpPost}
           llgPosts={llgPosts}
@@ -406,6 +407,7 @@ function PostLaunchLayout({
   creds,
   siteHealth,
   cruxWeight,
+  showSiteHealth,
   gbpSnapshot,
   gbpLatestPost,
   llgPosts,
@@ -429,6 +431,7 @@ function PostLaunchLayout({
   } | null
   siteHealth: RawSiteHealth[]
   cruxWeight: number
+  showSiteHealth: boolean
   gbpSnapshot: GbpSnapshot | null
   gbpLatestPost: GbpLatestPost | null
   llgPosts: LlgBlogPost[]
@@ -522,7 +525,7 @@ function PostLaunchLayout({
 
       {/* RIGHT — site health + GBP + integrations + LLG updates + resources */}
       <div className="space-y-6 lg:col-span-4">
-        <LighthouseScoresCard scores={lighthouseScores} />
+        {showSiteHealth && <LighthouseScoresCard scores={lighthouseScores} />}
         <GoogleBusinessProfileCard
           snapshot={gbpSnapshot}
           latestPost={gbpLatestPost}
