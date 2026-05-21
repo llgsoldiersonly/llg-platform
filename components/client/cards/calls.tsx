@@ -28,6 +28,9 @@ const STATUS_BADGE: Record<CallStatus, { variant: 'secondary' | 'info' | 'succes
   rejected: { variant: 'destructive', label: 'Rejected' },
   pending: { variant: 'info', label: 'Pending' },
   unknown: { variant: 'secondary', label: '—' },
+  // Filtered calls are removed from `enriched` before render, so this badge
+  // entry exists only to satisfy the Record<CallStatus> type contract.
+  filtered: { variant: 'secondary', label: '—' },
 }
 
 function formatPhone(raw: string | null): string {
@@ -45,13 +48,17 @@ function formatPhone(raw: string | null): string {
 
 export function CallsCard({ calls }: { calls: CallRow[] }) {
   // Pre-compute status for each row once; tabs filter on the cached value.
+  // Calls tagged 'test' / 'spam' get status='filtered' and are dropped here so
+  // they never appear in the widget — not even in the unknown bucket.
   const enriched = useMemo(
     () =>
-      calls.map((c) => ({
-        ...c,
-        status: deriveStatusFromTags(c.tags),
-        primary_tag: primaryTag(c.tags),
-      })),
+      calls
+        .map((c) => ({
+          ...c,
+          status: deriveStatusFromTags(c.tags),
+          primary_tag: primaryTag(c.tags),
+        }))
+        .filter((c) => c.status !== 'filtered'),
     [calls]
   )
 
