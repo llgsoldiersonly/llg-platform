@@ -6,6 +6,7 @@ import { getClientContext } from '@/lib/client-context'
 import { SupportTicketsCard, type TicketSummary } from '@/components/client/cards/support-tickets'
 import { SupportTeamCard, type TeamMember } from '@/components/client/cards/support-team'
 import { LighthouseScoresCard, type LighthouseScores } from '@/components/client/cards/lighthouse-scores'
+import { CallsCard, type CallRow } from '@/components/client/cards/calls'
 import { RecentUpdatesCard, type RecentUpdate } from '@/components/client/cards/recent-updates'
 import { IntegrationsCard, type IntegrationLink } from '@/components/client/cards/integrations'
 import {
@@ -49,7 +50,13 @@ type RawSiteHealth = {
 }
 
 type RawPost = { id: string; title: string | null; published_at: string | null; source_type: string }
-type RawCall = { id: string; caller_name: string | null; started_at: string | null }
+type RawCall = {
+  id: string
+  caller_name: string | null
+  caller_number: string | null
+  tags: string[] | null
+  started_at: string | null
+}
 type RawSubmission = {
   id: string
   kind: string
@@ -143,10 +150,10 @@ export default async function OverviewPage({
       .returns<RawPost[]>(),
     admin
       .from('calls')
-      .select('id, caller_name, started_at')
+      .select('id, caller_name, caller_number, tags, started_at')
       .eq('client_id', ctx.client.id)
       .order('started_at', { ascending: false })
-      .limit(2)
+      .limit(60)
       .returns<RawCall[]>(),
     admin
       .from('client_credentials')
@@ -319,6 +326,7 @@ export default async function OverviewPage({
           siteHealth={siteHealthRes.data ?? []}
           cruxWeight={cruxWeight}
           showSiteHealth={ctx.client.show_site_health}
+          calls={callsRes.data ?? []}
           gbpSnapshot={gbpSnapshotShaped}
           gbpLatestPost={latestGbpPost}
           llgPosts={llgPosts}
@@ -408,6 +416,7 @@ function PostLaunchLayout({
   siteHealth,
   cruxWeight,
   showSiteHealth,
+  calls,
   gbpSnapshot,
   gbpLatestPost,
   llgPosts,
@@ -432,6 +441,7 @@ function PostLaunchLayout({
   siteHealth: RawSiteHealth[]
   cruxWeight: number
   showSiteHealth: boolean
+  calls: CallRow[]
   gbpSnapshot: GbpSnapshot | null
   gbpLatestPost: GbpLatestPost | null
   llgPosts: LlgBlogPost[]
@@ -519,6 +529,7 @@ function PostLaunchLayout({
           categories={productionCategories}
           periodLabel={periodLabel}
         />
+        <CallsCard calls={calls} />
         <SupportTicketsCard tickets={tickets} />
         <FeatureVideoCard />
       </div>

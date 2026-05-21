@@ -92,6 +92,7 @@ export async function POST(req: Request) {
         first_call: c.first_call,
         agent_email: c.agent_email,
         started_at: c.start_time ? new Date(c.start_time).toISOString() : null,
+        tags: c.tags ?? [],
         raw_json: c,
         fetched_at: new Date().toISOString(),
       }))
@@ -109,6 +110,7 @@ export async function POST(req: Request) {
         first_call: c.first_call,
         agent_email: c.agent_email,
         started_at: c.start_time ? new Date(c.start_time).toISOString() : null,
+        tags: c.tags ?? [],
       }))
       await supa.from('calls').upsert(normRows, { onConflict: 'client_id,external_id' })
 

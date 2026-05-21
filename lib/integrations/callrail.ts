@@ -13,6 +13,11 @@ export type CallRailCall = {
   first_call: boolean
   agent_email: string | null
   start_time: string
+  // CallRail returns tags only when `fields=tags` is on the request. Each
+  // tag is a string like "qualified" / "conversion" / "abandoned". Calls
+  // can have zero or many; downstream code (lib/calls/status.ts) derives a
+  // single status from this array.
+  tags?: string[] | null
   raw?: unknown
 }
 
@@ -44,6 +49,8 @@ export async function fetchCallRailCalls(opts: CallRailFetchOpts): Promise<CallR
       page: String(page),
       start_date: ymd(opts.startDate),
       end_date: ymd(opts.endDate),
+      // Default response omits tags. Explicitly request them.
+      fields: 'tags',
     })
     if (opts.companyId) params.set('company_id', opts.companyId)
 
