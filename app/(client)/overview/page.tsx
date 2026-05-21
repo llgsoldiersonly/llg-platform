@@ -56,6 +56,8 @@ type RawCall = {
   caller_number: string | null
   tags: string[] | null
   started_at: string | null
+  ai_summary: string | null
+  lead_score: number | null
 }
 type RawSubmission = {
   id: string
@@ -150,7 +152,7 @@ export default async function OverviewPage({
       .returns<RawPost[]>(),
     admin
       .from('calls')
-      .select('id, caller_name, caller_number, tags, started_at')
+      .select('id, caller_name, caller_number, tags, started_at, ai_summary, lead_score')
       .eq('client_id', ctx.client.id)
       .order('started_at', { ascending: false })
       .limit(60)

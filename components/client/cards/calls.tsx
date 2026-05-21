@@ -3,7 +3,13 @@
 import { useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Phone } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import { Phone, Sparkles } from 'lucide-react'
 import { formatDistanceToNow, format } from 'date-fns'
 import { deriveStatusFromTags, primaryTag, type CallStatus } from '@/lib/calls/status'
 
@@ -13,6 +19,8 @@ export type CallRow = {
   caller_number: string | null
   tags: string[] | null
   started_at: string | null
+  ai_summary: string | null
+  lead_score: number | null
 }
 
 type Tab = 'pending' | 'accepted' | 'rejected'
@@ -35,7 +43,6 @@ const STATUS_BADGE: Record<CallStatus, { variant: 'secondary' | 'info' | 'succes
 
 function formatPhone(raw: string | null): string {
   if (!raw) return '—'
-  // Crude formatting: +1xxxxxxxxxx → +1 (xxx) xxx-xxxx
   const digits = raw.replace(/\D/g, '')
   if (digits.length === 11 && digits.startsWith('1')) {
     return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`
@@ -46,11 +53,13 @@ function formatPhone(raw: string | null): string {
   return raw
 }
 
+type EnrichedCall = CallRow & {
+  status: CallStatus
+  primary_tag: string | null
+}
+
 export function CallsCard({ calls }: { calls: CallRow[] }) {
-  // Pre-compute status for each row once; tabs filter on the cached value.
-  // Calls tagged 'test' / 'spam' get status='filtered' and are dropped here so
-  // they never appear in the widget — not even in the unknown bucket.
-  const enriched = useMemo(
+  const enriched: EnrichedCall[] = useMemo(
     () =>
       calls
         .map((c) => ({
@@ -72,8 +81,6 @@ export function CallsCard({ calls }: { calls: CallRow[] }) {
     return acc
   }, [enriched])
 
-  // Default to the tab with the most cases — usually Pending in active funnels,
-  // but if Accepted is dominant (good problem) or Rejected, surface that first.
   const initialTab: Tab = useMemo(() => {
     if (counts.pending > 0) return 'pending'
     if (counts.accepted > 0) return 'accepted'
@@ -81,6 +88,7 @@ export function CallsCard({ calls }: { calls: CallRow[] }) {
   }, [counts])
 
   const [tab, setTab] = useState<Tab>(initialTab)
+  const [selected, setSelected] = useState<EnrichedCall | null>(null)
   const visible = enriched.filter((c) => c.status === tab).slice(0, 30)
 
   if (enriched.length === 0) {
@@ -99,58 +107,134 @@ export function CallsCard({ calls }: { calls: CallRow[] }) {
   }
 
   return (
-    <Card>
-      <CardHeader className="space-y-3">
-        <div className="flex items-center gap-2">
+    <>
+      <Card>
+        <CardHeader className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Phone className="h-4 w-4 text-fg-brand" />
+            <CardTitle className="text-lg">Calls</CardTitle>
+          </div>
+          <div role="tablist" aria-label="Filter calls by status" className="flex items-center gap-1 rounded-md border border-border-default bg-neutral-secondary-soft p-1 text-xs">
+            {(['pending', 'accepted', 'rejected'] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                role="tab"
+                aria-selected={tab === t}
+                onClick={() => setTab(t)}
+                className={`flex-1 rounded px-3 py-1.5 transition ${
+                  tab === t ? 'bg-bg-default font-semibold text-fg-brand-strong shadow-sm' : 'text-body'
+                }`}
+              >
+                {TAB_LABEL[t]}
+                <span className="ml-1.5 text-body-subtle">{counts[t]}</span>
+              </button>
+            ))}
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {visible.length === 0 ? (
+            <p className="p-6 text-sm text-body">No {TAB_LABEL[tab].toLowerCase()} calls in your recent history.</p>
+          ) : (
+            <ul className="divide-y divide-border-light">
+              {visible.map((c) => {
+                const statusInfo = STATUS_BADGE[c.status]
+                const hasSummary = !!c.ai_summary
+                return (
+                  <li key={c.id}>
+                    <button
+                      type="button"
+                      onClick={() => setSelected(c)}
+                      className="flex w-full items-center gap-3 px-6 py-3 text-left text-sm transition hover:bg-neutral-secondary-soft focus:bg-neutral-secondary-soft focus:outline-none"
+                      aria-label={`Open AI summary for call from ${c.caller_name?.trim() || 'Unknown caller'}`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 truncate font-medium text-heading">
+                          {c.caller_name?.trim() || 'Unknown caller'}
+                          {hasSummary && <Sparkles className="h-3 w-3 shrink-0 text-fg-brand" aria-label="AI summary available" />}
+                        </div>
+                        <div className="text-xs text-body">
+                          {formatPhone(c.caller_number)}
+                          {c.primary_tag && <> · {c.primary_tag}</>}
+                        </div>
+                      </div>
+                      <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+                      <div className="hidden text-xs text-body-subtle sm:block min-w-[88px] text-right" title={c.started_at ? format(new Date(c.started_at), 'PPpp') : ''}>
+                        {c.started_at ? formatDistanceToNow(new Date(c.started_at), { addSuffix: true }) : '—'}
+                      </div>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <CallDetailDialog
+        call={selected}
+        onClose={() => setSelected(null)}
+      />
+    </>
+  )
+}
+
+function CallDetailDialog({
+  call,
+  onClose,
+}: {
+  call: EnrichedCall | null
+  onClose: () => void
+}) {
+  const open = call !== null
+  if (!call) {
+    return (
+      <Dialog open={false} onOpenChange={(o) => { if (!o) onClose() }}>
+        <DialogContent />
+      </Dialog>
+    )
+  }
+  const statusInfo = STATUS_BADGE[call.status]
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="max-w-md">
+        <DialogTitle className="flex items-center gap-2 text-base">
           <Phone className="h-4 w-4 text-fg-brand" />
-          <CardTitle className="text-lg">Calls</CardTitle>
+          {call.caller_name?.trim() || 'Unknown caller'}
+        </DialogTitle>
+        <DialogDescription className="text-xs text-body-subtle">
+          {formatPhone(call.caller_number)}
+          {call.started_at && <> · {format(new Date(call.started_at), 'PPp')}</>}
+        </DialogDescription>
+
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+          <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+          {call.primary_tag && (
+            <span className="rounded-full border border-border-default px-2 py-0.5 text-body">
+              {call.primary_tag}
+            </span>
+          )}
+          {call.lead_score != null && (
+            <span className="rounded-full border border-border-default px-2 py-0.5 text-body">
+              Lead score: {call.lead_score}/100
+            </span>
+          )}
         </div>
-        <div role="tablist" aria-label="Filter calls by status" className="flex items-center gap-1 rounded-md border border-border-default bg-neutral-secondary-soft p-1 text-xs">
-          {(['pending', 'accepted', 'rejected'] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              role="tab"
-              aria-selected={tab === t}
-              onClick={() => setTab(t)}
-              className={`flex-1 rounded px-3 py-1.5 transition ${
-                tab === t ? 'bg-bg-default font-semibold text-fg-brand-strong shadow-sm' : 'text-body'
-              }`}
-            >
-              {TAB_LABEL[t]}
-              <span className="ml-1.5 text-body-subtle">{counts[t]}</span>
-            </button>
-          ))}
+
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-fg-brand-strong">
+            <Sparkles className="h-3.5 w-3.5" />
+            AI Summary
+          </div>
+          {call.ai_summary ? (
+            <p className="whitespace-pre-line text-sm leading-relaxed text-body">{call.ai_summary}</p>
+          ) : (
+            <p className="text-sm text-body-subtle">
+              No AI summary available for this call. CallRail generates summaries on inbound calls that get scored — older calls and some outbound calls won't have one.
+            </p>
+          )}
         </div>
-      </CardHeader>
-      <CardContent className="p-0">
-        {visible.length === 0 ? (
-          <p className="p-6 text-sm text-body">No {TAB_LABEL[tab].toLowerCase()} calls in your recent history.</p>
-        ) : (
-          <ul className="divide-y divide-border-light">
-            {visible.map((c) => {
-              const statusInfo = STATUS_BADGE[c.status]
-              return (
-                <li key={c.id} className="flex items-center gap-3 px-6 py-3 text-sm">
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium text-heading">
-                      {c.caller_name?.trim() || 'Unknown caller'}
-                    </div>
-                    <div className="text-xs text-body">
-                      {formatPhone(c.caller_number)}
-                      {c.primary_tag && <> · {c.primary_tag}</>}
-                    </div>
-                  </div>
-                  <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
-                  <div className="hidden text-xs text-body-subtle sm:block min-w-[88px] text-right" title={c.started_at ? format(new Date(c.started_at), 'PPpp') : ''}>
-                    {c.started_at ? formatDistanceToNow(new Date(c.started_at), { addSuffix: true }) : '—'}
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   )
 }
