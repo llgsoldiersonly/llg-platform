@@ -1,17 +1,21 @@
 // Maps CallRail tags into the four buckets the /overview Calls widget uses.
-// Per Nathan, 2026-05-21 (revised after auditing the real tag set):
+// Per Nathan, 2026-05-21 (tightened — Pending now only counts a confirmed
+// appointment, not mere intent or qualification):
 //
 //   accepted ← "conversion"
-//   pending  ← "qualified" | "opportunity" | "schedule requested" | "schedule booked"
+//   pending  ← "schedule booked"
 //   rejected ← "abandoned" | "other" | "existing customer" | "unsupported case type"
 //            | "out of practice area" | "no answer" | "hung up" | "wrong number"
 //   filtered ← "test" | "spam"   — calls excluded from the widget entirely
+//
+// Tags like "opportunity", "schedule requested", and "qualified" fall to
+// 'unknown' on purpose — they're intentionally not surfaced in any tab.
 //
 // Priority when a call has multiple tags (highest wins):
 //   1. filtered   (test/spam) — removes the call from the widget regardless of other tags
 //   2. accepted   (conversion is the strongest funnel commitment)
 //   3. rejected   (terminal "won't convert" states)
-//   4. pending    (open / actionable lead)
+//   4. pending    (confirmed appointment)
 //   5. unknown    (call has tags but none are mapped)
 
 export type CallStatus = 'accepted' | 'rejected' | 'pending' | 'unknown' | 'filtered'
@@ -29,9 +33,6 @@ const REJECTED_TAGS = new Set([
   'wrong number',
 ])
 const PENDING_TAGS = new Set([
-  'qualified',
-  'opportunity',
-  'schedule requested',
   'schedule booked',
 ])
 
