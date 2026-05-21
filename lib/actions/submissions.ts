@@ -311,8 +311,12 @@ export async function replaceSubmission(
   return ok({ original_id: input.original_id, new_id: inserted.id })
 }
 
-// Atomically bumps actual_count on the linked deliverable. Uses an RPC-style
-// raw update with a CASE for the completed_at stamp on first count.
+// Atomically bumps actual_count on the linked deliverable and flips status
+// to 'done'. Per Nathan, 2026-05-21: any staff submission is treated as a
+// completion signal — staff only submit finished work, so a recurring
+// deliverable doesn't need to wait for count >= target to flip to done.
+// The counter keeps incrementing past target for audit purposes; only
+// 'skipped' / 'blocked' rows are exempt from the auto-flip.
 async function incrementDeliverableCount(
   admin: ReturnType<typeof createAdminClient>,
   deliverableId: string
@@ -327,26 +331,17 @@ async function incrementDeliverableCountBy(
 ) {
   if (by <= 0) return
 
-  const { data: row } = await admin
+  const { data: row, error: selectErr } = await admin
     .from('deliverables')
-    .select('actual_count, custom_target_count, custom_frequency, template_id, status')
+    .select('actual_count, status')
     .eq('id', deliverableId)
     .maybeSingle()
 
-  if (!row) return
-
-  // Resolve target + frequency from template or custom columns.
-  let target: number | null = row.custom_target_count
-  let frequency: string | null = row.custom_frequency
-  if (row.template_id) {
-    const { data: tmpl } = await admin
-      .from('package_deliverables')
-      .select('target_count, frequency')
-      .eq('id', row.template_id)
-      .maybeSingle()
-    target = tmpl?.target_count ?? null
-    frequency = tmpl?.frequency ?? null
+  if (selectErr) {
+    console.error('[incrementDeliverableCountBy] select failed:', selectErr, { deliverableId })
+    return
   }
+  if (!row) return
 
   const nextCount = (row.actual_count ?? 0) + by
   const updates: Record<string, unknown> = {
@@ -354,17 +349,18 @@ async function incrementDeliverableCountBy(
     updated_at: new Date().toISOString(),
   }
 
-  // Auto-complete on count >= target ONLY for recurring deliverables.
-  // For frequency='once' (pre-launch checklist items), completion is binary
-  // and driven by an explicit "Mark complete" action — the counter is just
-  // an audit-trail tally, not the completion signal.
-  const isOnce = frequency === 'once'
-  if (!isOnce && target !== null && nextCount >= target && row.status !== 'done') {
+  // Auto-flip to 'done' on any submission. Staff have been told to submit
+  // only finished work, so every linked submission is a real completion
+  // signal. The actual_count keeps incrementing for audit purposes even
+  // after status='done'. Rows previously set to 'skipped' or 'blocked'
+  // were explicit overrides — leave those alone.
+  if (row.status !== 'done' && row.status !== 'skipped' && row.status !== 'blocked') {
     updates.status = 'done'
     updates.completed_at = new Date().toISOString()
-  } else if (row.status === 'pending') {
-    updates.status = 'in_progress'
   }
 
-  await admin.from('deliverables').update(updates).eq('id', deliverableId)
+  const { error: updateErr } = await admin.from('deliverables').update(updates).eq('id', deliverableId)
+  if (updateErr) {
+    console.error('[incrementDeliverableCountBy] update failed:', updateErr, { deliverableId, updates })
+  }
 }
