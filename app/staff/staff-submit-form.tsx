@@ -8,7 +8,11 @@ import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { submitDeliverable, submitDeliverableBatch } from '@/lib/actions/submissions'
-import { SUBMISSION_KINDS, type SubmissionKind } from '@/lib/submissions/kinds'
+import {
+  SUBMISSION_KINDS,
+  type SubmissionKind,
+  kindMatchesDeliverableCode,
+} from '@/lib/submissions/kinds'
 import { errorMessages, type ErrorCode } from '@/lib/errors'
 
 type FirmRow = { id: string; firm_name: string; status: string }
@@ -17,6 +21,7 @@ type DeliverableRow = {
   client_id: string
   title: string
   module_code: string
+  code: string
   period_start: string
   period_end: string
   target_count: number | null
@@ -47,9 +52,15 @@ export function StaffSubmitForm({
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
+  // Filter deliverables to: (a) the picked firm and (b) whose code is a
+  // sensible match for the selected Kind. Empty/custom codes pass through
+  // so custom one-off deliverables remain pickable.
   const matchingDeliverables = useMemo(
-    () => deliverables.filter((d) => d.client_id === clientId),
-    [deliverables, clientId]
+    () =>
+      deliverables.filter(
+        (d) => d.client_id === clientId && kindMatchesDeliverableCode(kind, d.code)
+      ),
+    [deliverables, clientId, kind]
   )
 
   function onSubmit(formData: FormData) {
@@ -157,7 +168,12 @@ export function StaffSubmitForm({
           <Select
             id="kind"
             value={kind}
-            onChange={(e) => setKind(e.target.value as SubmissionKind)}
+            onChange={(e) => {
+              setKind(e.target.value as SubmissionKind)
+              // Stale selection may no longer match the new kind's filter.
+              setDeliverableId('')
+              setMarkComplete(false)
+            }}
             required
           >
             {SUBMISSION_KINDS.map((k) => (

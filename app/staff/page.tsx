@@ -10,6 +10,7 @@ type DeliverableRow = {
   client_id: string
   title: string
   module_code: string
+  code: string
   period_start: string
   period_end: string
   target_count: number | null
@@ -29,7 +30,7 @@ export default async function StaffHomePage() {
       .returns<FirmRow[]>(),
     admin
       .from('deliverables_display')
-      .select('id, client_id, title, module_code, period_start, period_end, target_count, actual_count')
+      .select('id, client_id, title, module_code, code, period_start, period_end, target_count, actual_count')
       .lte('period_start', today)
       .gte('period_end', today)
       .returns<DeliverableRow[]>(),
