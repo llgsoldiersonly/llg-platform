@@ -386,6 +386,7 @@ function PreLaunchLayout({
           nextBillingAt={null}
         />
         <RecentUpdatesCard updates={updates} />
+        <SupportTicketsCard tickets={tickets} />
       </div>
 
       {/* CENTER — why-this-matters + the build checklist */}
@@ -394,9 +395,8 @@ function PreLaunchLayout({
         <PreLaunchChecklistCard rows={rows} />
       </div>
 
-      {/* RIGHT — tickets + resources */}
+      {/* RIGHT — resources */}
       <div className="space-y-6 lg:col-span-3">
-        <SupportTicketsCard tickets={tickets} />
         <ResourcesCard />
       </div>
     </div>
@@ -522,9 +522,10 @@ function PostLaunchLayout({
         />
         <RecentUpdatesCard updates={updates} />
         <SupportTeamCard members={team} />
+        <SupportTicketsCard tickets={tickets} />
       </div>
 
-      {/* CENTER — why-this-matters + condensed monthly production + tickets + walkthrough */}
+      {/* CENTER — why-this-matters + condensed monthly production + calls + walkthrough */}
       <div className="space-y-6 lg:col-span-5">
         <WhyThisMattersCard preLaunch={false} />
         <MonthlyProductionCard
@@ -532,7 +533,6 @@ function PostLaunchLayout({
           periodLabel={periodLabel}
         />
         <CallsCard calls={calls} />
-        <SupportTicketsCard tickets={tickets} />
         <FeatureVideoCard />
       </div>
 
