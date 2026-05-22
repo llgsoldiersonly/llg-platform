@@ -33,3 +33,40 @@ export function getSubmissionKind(value: string) {
 export function isValidSubmissionKind(value: string): value is SubmissionKind {
   return SUBMISSION_KINDS.some((k) => k.value === value)
 }
+
+// Per submission kind, which package_deliverables.code patterns are relevant.
+// Used by the "Counts toward" dropdown on the submission forms to narrow
+// the deliverable list to what actually makes sense for the work being
+// logged (e.g. picking 'Blog post' as Kind only shows BLOG_* deliverables).
+//
+// A predicate-based shape (rather than a flat allowlist of codes) keeps
+// future additions cheap — when a new code like 'BLOG_QUARTERLY' appears,
+// it matches `code.startsWith('BLOG_')` automatically.
+const KIND_TO_CODE_PREDICATE: Record<SubmissionKind, (code: string) => boolean> = {
+  blog:           (c) => c.startsWith('BLOG_') || c === 'BLOG_IMG_OPT',
+  faq:            (c) => c.includes('FAQ'),
+  ai_page:        (c) => c.startsWith('AI_') || c.includes('GEO_AI') || c.includes('VOICE_SEARCH'),
+  gmb_post:       (c) => c === 'GMB_POSTS' || c === 'GMB_VIDEO',
+  social_post:    (c) => c.startsWith('SOCIAL_'),
+  citation:       (c) => c.startsWith('NAP_') || c.includes('CITATION') || c === 'YAHOO_BING',
+  link:           (c) => c === 'LINK_BUILDING' || c === 'PRESS_RELEASE',
+  parent_page:    (c) => c === 'PARENT_SEO_PAGES',
+  child_page:     (c) => c === 'CHILD_SEO_PAGES' || c === 'INNER_PAGES',
+  design_theme:   (c) => c === 'HOMEPAGE_OPT' || c === 'TECHNICAL_SEO' || c === 'CDN_HOSTING',
+  gmb_build:      (c) => c === 'GMB_OPTIMIZATION' || c === 'GMB_PRACTICE_AREAS',
+  directory:      (c) => c.startsWith('NAP_') || c === 'YAHOO_BING',
+  social_channel: (c) => c === 'SOCIAL_LINKING',
+}
+
+// Returns true if a deliverable with this code is a plausible match for
+// the submission kind. Empty / null codes (custom deliverables that aren't
+// template-backed) always pass through — staff may legitimately want to
+// attach work to a custom one-off deliverable.
+export function kindMatchesDeliverableCode(
+  kind: SubmissionKind,
+  code: string | null | undefined
+): boolean {
+  if (!code) return true
+  const pred = KIND_TO_CODE_PREDICATE[kind]
+  return pred ? pred(code) : true
+}
