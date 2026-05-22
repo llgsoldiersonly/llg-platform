@@ -25,7 +25,7 @@ import {
 } from '@/components/client/cards/pre-launch-checklist'
 import { MonthlyProductionCard } from '@/components/client/cards/monthly-production'
 import { LlgUpdatesCard } from '@/components/client/cards/llg-updates'
-import { aggregateProduction, type RawProductionRow } from '@/lib/post-launch-production'
+import { aggregateProduction, applyPackageVisibility, type RawProductionRow } from '@/lib/post-launch-production'
 import { blendSiteHealth } from '@/lib/integrations/score-blend'
 import { fetchLlgBlogPosts, type LlgBlogPost } from '@/lib/llg-blog-feed'
 import CustomerPortalRocketFlyover from '@/components/customer-portal/CustomerPortalRocketFlyover'
@@ -212,7 +212,10 @@ export default async function OverviewPage({
     target_count: r.template?.target_count ?? null,
     actual_count: r.actual_count,
   }))
-  const productionCategories = aggregateProduction(productionRows)
+  const productionCategories = applyPackageVisibility(
+    aggregateProduction(productionRows),
+    activeSub?.package?.code ?? null
+  )
 
   // GBP posts — sourced from staff submissions (kind='gmb_post', approved)
   // rather than DataForSEO (gated tier) or an OAuth-based GBP API.
