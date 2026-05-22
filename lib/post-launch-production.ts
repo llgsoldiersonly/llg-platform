@@ -69,3 +69,25 @@ export function aggregateProduction(rows: RawProductionRow[]): ProductionCategor
     target: buckets[key].target,
   }))
 }
+
+// Per-package category exclusions for the client-facing Monthly Production
+// card. Even if a category has a seeded target_count > 0 from earlier
+// onboarding (or from a custom deliverable), we hide the row entirely so
+// the client doesn't see a service the firm isn't actually paying for.
+//
+// Adding more package-specific hides later: extend this map, keyed by the
+// package_templates.code value (the canonical 'GRAVITY' / 'LAPETUS' / etc.).
+const PACKAGE_HIDDEN_CATEGORIES: Record<string, CategoryKey[]> = {
+  GRAVITY: ['social'],
+}
+
+export function applyPackageVisibility(
+  categories: ProductionCategory[],
+  packageCode: string | null | undefined
+): ProductionCategory[] {
+  if (!packageCode) return categories
+  const hidden = PACKAGE_HIDDEN_CATEGORIES[packageCode]
+  if (!hidden || hidden.length === 0) return categories
+  const hide = new Set<CategoryKey>(hidden)
+  return categories.filter((c) => !hide.has(c.key))
+}
