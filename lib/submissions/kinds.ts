@@ -8,6 +8,7 @@
 export const SUBMISSION_KINDS = [
   // Recurring (post-launch) — one submission = one count toward monthly deliverable
   { value: 'blog', label: 'Blog post', lifecycle: 'post_launch' },
+  { value: 'video', label: 'Video', lifecycle: 'post_launch' },
   { value: 'faq', label: 'FAQ page', lifecycle: 'post_launch' },
   { value: 'ai_page', label: 'AI page', lifecycle: 'post_launch' },
   { value: 'gmb_post', label: 'GMB post', lifecycle: 'post_launch' },
@@ -44,6 +45,7 @@ export function isValidSubmissionKind(value: string): value is SubmissionKind {
 // it matches `code.startsWith('BLOG_')` automatically.
 const KIND_TO_CODE_PREDICATE: Record<SubmissionKind, (code: string) => boolean> = {
   blog:           (c) => c.startsWith('BLOG_') || c === 'BLOG_IMG_OPT',
+  video:          (c) => c.startsWith('VIDEO_'),
   faq:            (c) => c.includes('FAQ'),
   ai_page:        (c) => c.startsWith('AI_') || c.includes('GEO_AI') || c.includes('VOICE_SEARCH'),
   gmb_post:       (c) => c === 'GMB_POSTS' || c === 'GMB_VIDEO',
