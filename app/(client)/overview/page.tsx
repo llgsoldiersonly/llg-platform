@@ -308,7 +308,6 @@ export default async function OverviewPage({
           firmName={ctx.client.firm_name}
           packageName={activeSub?.package?.display_name ?? null}
           packageColorHex={activeSub?.package?.color_hex ?? null}
-          monthlyFeeCents={activeSub?.package?.monthly_fee_cents ?? null}
           adDate={ctx.client.ad_date}
           agreedLaunchDate={ctx.client.agreed_launch_date}
           tickets={ticketsRes.data ?? []}
@@ -320,7 +319,6 @@ export default async function OverviewPage({
           firmName={ctx.client.firm_name}
           packageName={activeSub?.package?.display_name ?? null}
           packageColorHex={activeSub?.package?.color_hex ?? null}
-          monthlyFeeCents={activeSub?.package?.monthly_fee_cents ?? null}
           launchDate={ctx.client.onboarded_at}
           nextBillingAt={ctx.client.next_billing_at}
           productionCategories={productionCategories}
@@ -345,7 +343,6 @@ function PreLaunchLayout({
   firmName,
   packageName,
   packageColorHex,
-  monthlyFeeCents,
   adDate,
   agreedLaunchDate,
   tickets,
@@ -355,7 +352,6 @@ function PreLaunchLayout({
   firmName: string
   packageName: string | null
   packageColorHex: string | null
-  monthlyFeeCents: number | null
   adDate: string | null
   agreedLaunchDate: string | null
   tickets: TicketSummary[]
@@ -381,7 +377,6 @@ function PreLaunchLayout({
           firmName={firmName}
           packageName={packageName}
           packageColorHex={packageColorHex}
-          monthlyFeeCents={monthlyFeeCents}
           preLaunch
           adDate={adDate}
           agreedLaunchDate={agreedLaunchDate}
@@ -410,7 +405,6 @@ function PostLaunchLayout({
   firmName,
   packageName,
   packageColorHex,
-  monthlyFeeCents,
   launchDate,
   nextBillingAt,
   productionCategories,
@@ -429,7 +423,6 @@ function PostLaunchLayout({
   firmName: string
   packageName: string | null
   packageColorHex: string | null
-  monthlyFeeCents: number | null
   launchDate: string | null
   nextBillingAt: string | null
   productionCategories: ReturnType<typeof aggregateProduction>
@@ -516,7 +509,6 @@ function PostLaunchLayout({
           firmName={firmName}
           packageName={packageName}
           packageColorHex={packageColorHex}
-          monthlyFeeCents={monthlyFeeCents}
           preLaunch={false}
           adDate={null}
           agreedLaunchDate={null}
