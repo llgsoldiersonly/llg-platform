@@ -5,7 +5,6 @@ export type FirmHeaderProps = {
   firmName: string
   packageName: string | null
   packageColorHex: string | null
-  monthlyFeeCents: number | null
   preLaunch: boolean
   adDate: string | null
   agreedLaunchDate: string | null
@@ -22,18 +21,12 @@ function fmt(date: string | null): string {
   }
 }
 
-function fmtMoney(cents: number | null): string | null {
-  if (cents == null) return null
-  return `$${(cents / 100).toLocaleString()}`
-}
-
 const FALLBACK_TIER_COLOR = '#7e22cf'
 
 export function FirmHeaderCard({
   firmName,
   packageName,
   packageColorHex,
-  monthlyFeeCents,
   preLaunch,
   adDate,
   agreedLaunchDate,
@@ -41,7 +34,6 @@ export function FirmHeaderCard({
   nextBillingAt,
 }: FirmHeaderProps) {
   const tierColor = packageColorHex ?? FALLBACK_TIER_COLOR
-  const fee = fmtMoney(monthlyFeeCents)
   const rows = preLaunch
     ? [
         { label: 'Ad date', value: fmt(adDate) },
@@ -78,7 +70,7 @@ export function FirmHeaderCard({
 
         <h2 className="text-xl font-semibold leading-tight text-heading">{firmName}</h2>
 
-        {/* Highlighted package block — tier color background, name + price */}
+        {/* Highlighted package block — tier color background, name only */}
         {packageName && (
           <div
             className="rounded-lg border p-3"
@@ -90,19 +82,13 @@ export function FirmHeaderCard({
             <div className="text-[10px] uppercase tracking-wider" style={{ color: tierColor }}>
               Package
             </div>
-            <div className="mt-1 flex items-baseline justify-between gap-2">
+            <div className="mt-1">
               <span
                 className="text-base font-semibold leading-tight"
                 style={{ color: tierColor }}
               >
                 {packageName}
               </span>
-              {fee && (
-                <span className="whitespace-nowrap text-sm font-medium text-heading">
-                  {fee}
-                  <span className="text-xs text-body">/mo</span>
-                </span>
-              )}
             </div>
           </div>
         )}

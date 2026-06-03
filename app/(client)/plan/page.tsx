@@ -51,40 +51,18 @@ export default async function PlanPage({
   const supabase = await createClient()
 
   const subIds = ctx.selectedSubscriptions.map((s) => s.id)
-  const packageCodes = Array.from(
-    new Set(
-      ctx.selectedSubscriptions
-        .map((s) => s.package?.code)
-        .filter((c): c is string => Boolean(c)),
-    ),
-  )
 
-  const [deliverablesRes, feesRes] = await Promise.all([
+  const deliverablesRes =
     subIds.length > 0
-      ? supabase
+      ? await supabase
           .from('deliverables_display')
           .select('id, title, source, is_incentive, module_code, status, actual_count, target_count, target_unit, frequency, client_visible')
           .in('subscription_id', subIds)
           .eq('client_visible', true)
           .returns<DeliverableDisplay[]>()
-      : Promise.resolve({ data: [] as DeliverableDisplay[] }),
-    packageCodes.length > 0
-      ? supabase
-          .from('package_templates')
-          .select('code, monthly_fee_cents')
-          .in('code', packageCodes)
-          .returns<{ code: string; monthly_fee_cents: number | null }[]>()
-      : Promise.resolve({ data: [] as { code: string; monthly_fee_cents: number | null }[] }),
-  ])
+      : { data: [] as DeliverableDisplay[] }
 
   const all = deliverablesRes.data ?? []
-  const feeByCode = new Map(
-    (feesRes.data ?? []).map((f) => [f.code, f.monthly_fee_cents ?? 0]),
-  )
-  const monthlyFeeCents = ctx.selectedSubscriptions.reduce(
-    (sum, s) => sum + (s.package?.code ? feeByCode.get(s.package.code) ?? 0 : 0),
-    0,
-  )
 
   // Aggregate stats — computed off the unfiltered set so the KPI cards
   // and overall completion bar reflect the whole plan, not just the
@@ -143,8 +121,7 @@ export default async function PlanPage({
         </p>
       </header>
 
-      {/* Hero: package badge(s) + monthly fee + firm name. Mirrors the
-       *  overview's "Saturn Package · $/mo" pill row using the existing
+      {/* Hero: package badge(s) + firm name, using the existing
        *  brand-color pill pattern (no new tokens). */}
       {ctx.selectedSubscriptions.length > 0 && (
         <Card>
@@ -171,11 +148,6 @@ export default async function PlanPage({
                   </span>
                 )
               })}
-              {monthlyFeeCents > 0 && (
-                <Badge variant="secondary" className="font-medium">
-                  ${(monthlyFeeCents / 100).toLocaleString()}/mo
-                </Badge>
-              )}
             </div>
             <span className="text-sm text-body">{ctx.client.firm_name}</span>
           </CardContent>
