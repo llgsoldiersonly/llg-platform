@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Badge } from '@/components/ui/badge'
+import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Plus } from 'lucide-react'
+import { cn } from '@/lib/utils/cn'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,11 +56,17 @@ export default async function ClientsListPage() {
 
   return (
     <div className="mx-auto max-w-6xl p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-heading">Clients</h1>
-        <p className="mt-1 text-sm text-body">
-          {clients?.length ?? 0} total — click a row to drill in
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-heading">Clients</h1>
+          <p className="mt-1 text-sm text-body">
+            {clients?.length ?? 0} total — click a row to drill in
+          </p>
+        </div>
+        <Link href="/admin/clients/new" className={cn(buttonVariants(), 'shrink-0 gap-1')}>
+          <Plus className="h-4 w-4" />
+          New client
+        </Link>
       </div>
 
       <Card>
