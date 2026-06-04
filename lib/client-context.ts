@@ -10,6 +10,13 @@ export type ClientLocation = {
   is_primary: boolean
 }
 
+export type ClientSite = {
+  id: string
+  domain: string
+  label: string | null
+  is_primary: boolean
+}
+
 export type SubscriptionModule = {
   module_code: string
   config: Record<string, unknown>
@@ -45,6 +52,8 @@ export type ClientContext = {
   }
   locations: ClientLocation[]
   selectedLocation: ClientLocation | null
+  sites: ClientSite[]
+  selectedSite: ClientSite | null
   subscriptions: ClientSubscription[]
   selectedSubscriptions: ClientSubscription[]
 }
@@ -107,7 +116,7 @@ export async function getClientContext(searchParams?: URLSearchParams): Promise<
   const client = clients?.[0]
   if (!client) return null
 
-  const [locationsRes, subscriptionsRes] = await Promise.all([
+  const [locationsRes, sitesRes, subscriptionsRes] = await Promise.all([
     supabase
       .from('client_locations')
       .select('id, label, city, state, is_primary')
@@ -115,6 +124,14 @@ export async function getClientContext(searchParams?: URLSearchParams): Promise<
       .order('is_primary', { ascending: false })
       .order('label', { ascending: true })
       .returns<ClientLocation[]>(),
+    supabase
+      .from('client_sites')
+      .select('id, domain, label, is_primary')
+      .eq('client_id', client.id)
+      .eq('is_active', true)
+      .order('is_primary', { ascending: false })
+      .order('domain', { ascending: true })
+      .returns<ClientSite[]>(),
     supabase
       .from('subscriptions')
       .select(`
@@ -163,6 +180,15 @@ export async function getClientContext(searchParams?: URLSearchParams): Promise<
     locations[0] ??
     null
 
+  // Selected tracked website: ?site=<uuid> picks one; default primary.
+  const sites = sitesRes.data ?? []
+  const requestedSiteId = searchParams?.get('site')
+  const selectedSite =
+    sites.find((s) => s.id === requestedSiteId) ??
+    sites.find((s) => s.is_primary) ??
+    sites[0] ??
+    null
+
   // Subscriptions matching the selected location PLUS any with null location_id
   // (Daniels' standalone Live Intakes applies to the whole client, no location).
   const selectedSubscriptions = subscriptions.filter(
@@ -175,6 +201,8 @@ export async function getClientContext(searchParams?: URLSearchParams): Promise<
     client,
     locations,
     selectedLocation,
+    sites,
+    selectedSite,
     subscriptions,
     selectedSubscriptions,
   }

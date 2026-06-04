@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { LlgWordmark } from '@/components/brand/logo'
 import { LocationSwitcher } from './location-switcher'
+import { SiteSwitcher } from './site-switcher'
 import { ClientTopNav } from './top-nav'
 import { signOutAction } from '@/lib/actions/auth'
 import { getClientContext } from '@/lib/client-context'
@@ -52,9 +53,10 @@ export async function ClientHeader() {
         </div>
       </div>
 
-      {ctx && ctx.locations.length > 1 && (
+      {ctx && (ctx.locations.length > 1 || ctx.sites.length > 1) && (
         <div className="border-t border-border-light bg-neutral-secondary-soft/60 px-6 py-2">
-          <div className="mx-auto flex max-w-7xl items-center justify-end">
+          <div className="mx-auto flex max-w-7xl items-center justify-end gap-3">
+            <SiteSwitcher sites={ctx.sites} />
             <LocationSwitcher locations={ctx.locations} />
           </div>
         </div>
