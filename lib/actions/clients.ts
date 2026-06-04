@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isSuperAdmin } from '@/lib/auth/rbac'
+import { normalizeDomain } from '@/lib/integrations/dataforseo/normalize'
 import { ok, err, type Result } from '@/lib/errors'
 
 type ClientStatus = 'prospect' | 'onboarding' | 'active' | 'paused' | 'churned'
@@ -13,6 +14,9 @@ const STATUSES: ClientStatus[] = ['prospect', 'onboarding', 'active', 'paused', 
 export type CreateClientInput = {
   firm_name: string
   primary_domain?: string | null
+  // Optional second tracked website (e.g. a separate GBP/local site). Recorded
+  // in client_sites; domain-driven features fan out to it in a later phase.
+  secondary_domain?: string | null
   primary_contact_name?: string | null
   primary_contact_email?: string | null
   primary_contact_phone?: string | null
@@ -92,6 +96,47 @@ export async function createClientFirm(
     .single()
   if (clientErr || !client) {
     return err('INTERNAL', `Failed to create client: ${clientErr?.message ?? 'no row returned'}`)
+  }
+
+  // 2b. Register tracked website(s). The primary site mirrors back into
+  // clients.primary_domain via the 0029 trigger, so every existing reader/cron
+  // keeps working; an optional secondary can be added now or later.
+  const primaryDomain = trimOrNull(input.primary_domain)
+  const secondaryDomain = trimOrNull(input.secondary_domain)
+  const sitesToInsert: Array<{
+    client_id: string
+    domain: string
+    label: string
+    purpose: string
+    is_primary: boolean
+    is_active: boolean
+  }> = []
+  if (primaryDomain) {
+    sitesToInsert.push({
+      client_id: client.id,
+      domain: normalizeDomain(primaryDomain),
+      label: 'Primary',
+      purpose: 'primary',
+      is_primary: true,
+      is_active: true,
+    })
+  }
+  if (secondaryDomain) {
+    sitesToInsert.push({
+      client_id: client.id,
+      domain: normalizeDomain(secondaryDomain),
+      label: 'Secondary',
+      purpose: 'secondary',
+      is_primary: false,
+      is_active: true,
+    })
+  }
+  if (sitesToInsert.length > 0) {
+    const { error: sitesErr } = await admin.from('client_sites').insert(sitesToInsert)
+    if (sitesErr) {
+      await admin.from('clients').delete().eq('id', client.id)
+      return err('INTERNAL', `Failed to register sites: ${sitesErr.message}`)
+    }
   }
 
   // 3. Insert the primary location.

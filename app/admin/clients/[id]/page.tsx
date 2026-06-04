@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { ImpersonateCard } from '@/components/admin/impersonate-card'
 import { InviteClientCard } from '@/components/admin/invite-client-card'
 import { HardDeleteCard } from '@/components/admin/hard-delete-card'
+import { ClientSitesCard, type ClientSite } from '@/components/admin/client-sites-card'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,7 +42,7 @@ export default async function ClientSummaryPage({
   const { data: { user } } = await supabaseAuth.auth.getUser()
   const showImpersonate = isSuperAdmin(user)
 
-  const [{ data: client }, subscriptionsRes, locationsRes] = await Promise.all([
+  const [{ data: client }, subscriptionsRes, locationsRes, sitesRes] = await Promise.all([
     supa
       .from('clients')
       .select('id, firm_name, primary_domain, primary_contact_name, primary_contact_email, primary_contact_phone, vertical, status, onboarded_at, notes, is_demo_only')
@@ -57,12 +58,20 @@ export default async function ClientSummaryPage({
       .select('id, label, city, state, is_primary')
       .eq('client_id', id)
       .returns<Location[]>(),
+    supa
+      .from('client_sites')
+      .select('id, domain, label, purpose, is_primary, is_active')
+      .eq('client_id', id)
+      .order('is_primary', { ascending: false })
+      .order('domain', { ascending: true })
+      .returns<ClientSite[]>(),
   ])
 
   if (!client) notFound()
 
   const subscriptions = subscriptionsRes.data ?? []
   const locations = locationsRes.data ?? []
+  const sites = sitesRes.data ?? []
   const totalMrr = subscriptions
     .filter((s) => s.status === 'active')
     .reduce((sum, s) => sum + (s.package?.monthly_fee_cents ?? 0), 0)
@@ -131,6 +140,8 @@ export default async function ClientSummaryPage({
           </div>
         </CardContent>
       </Card>
+
+      <ClientSitesCard clientId={client.id} sites={sites} />
 
       <Card>
         <CardHeader>
