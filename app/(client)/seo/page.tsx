@@ -31,6 +31,9 @@ export default async function SeoOverviewPage({
 
   const admin = createAdminClient()
   const monthKey = new Date().toISOString().slice(0, 7)
+  // Backlinks + organic ranks are per-site; scope to the selected website.
+  // (Map grid, AI visibility, and GMB remain client/location-scoped.)
+  const siteId = ctx.selectedSite?.id ?? '00000000-0000-0000-0000-000000000000'
 
   const [
     { data: latestBacklinks },
@@ -43,6 +46,7 @@ export default async function SeoOverviewPage({
       .from('dfs_backlink_snapshots')
       .select('total_backlinks, referring_domains, new_backlinks, lost_backlinks, new_referring_domains, lost_referring_domains, backlink_spam_score, snapshot_date')
       .eq('client_id', ctx.client.id)
+      .eq('site_id', siteId)
       .order('snapshot_date', { ascending: false })
       .limit(1)
       .maybeSingle(),
@@ -50,6 +54,7 @@ export default async function SeoOverviewPage({
       .from('dfs_keyword_rank_snapshots')
       .select('rank_absolute, search_type')
       .eq('client_id', ctx.client.id)
+      .eq('site_id', siteId)
       .eq('month_key', monthKey)
       .eq('search_type', 'organic'),
     admin

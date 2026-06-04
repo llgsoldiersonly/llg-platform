@@ -140,6 +140,7 @@ export default async function OverviewPage({
         captured_on
       `)
       .eq('client_id', ctx.client.id)
+      .eq('site_id', ctx.selectedSite?.id ?? '00000000-0000-0000-0000-000000000000')
       .order('captured_on', { ascending: false })
       .limit(8)
       .returns<RawSiteHealth[]>(),
