@@ -35,6 +35,7 @@ export async function saveBacklinkSummarySnapshot(
   supa: Supa,
   args: {
     clientId: string
+    siteId: string | null
     summary: unknown
     mtdCounts: unknown
   }
@@ -43,6 +44,7 @@ export async function saveBacklinkSummarySnapshot(
   const m = (args.mtdCounts ?? {}) as Record<string, unknown>
   const row = {
     client_id: args.clientId,
+    site_id: args.siteId,
     snapshot_date: todayDate(),
     month_key: todayMonthKey(),
     total_backlinks: numberOr0(s.backlinks),
@@ -60,7 +62,7 @@ export async function saveBacklinkSummarySnapshot(
   }
   const { error } = await supa
     .from('dfs_backlink_snapshots')
-    .upsert(row, { onConflict: 'client_id,snapshot_date' })
+    .upsert(row, { onConflict: 'client_id,site_id,snapshot_date' })
   if (error) throw new Error(`dfs_backlink_snapshots upsert: ${error.message}`)
 }
 
@@ -71,6 +73,7 @@ export async function saveBacklinkRows(
   supa: Supa,
   args: {
     clientId: string
+    siteId: string | null
     monthKey: string
     status: 'new' | 'lost' | 'live'
     items: Array<Record<string, unknown>>
@@ -79,6 +82,7 @@ export async function saveBacklinkRows(
   if (!args.items.length) return
   const rows = args.items.map((b) => ({
     client_id: args.clientId,
+    site_id: args.siteId,
     month_key: args.monthKey,
     status: args.status,
     domain_from: stringOrNull(b.domain_from),
@@ -103,7 +107,7 @@ export async function saveBacklinkRows(
   }))
   const { error } = await supa
     .from('dfs_backlink_rows')
-    .upsert(rows, { onConflict: 'client_id,status,url_from,url_to,month_key' })
+    .upsert(rows, { onConflict: 'client_id,site_id,status,url_from,url_to,month_key' })
   if (error) throw new Error(`dfs_backlink_rows upsert: ${error.message}`)
 }
 
@@ -115,6 +119,7 @@ export async function saveKeywordRankSnapshot(
   args: {
     trackedKeywordId: string
     clientId: string
+    siteId: string | null
     keyword: string
     searchType: string
     device: string | null
@@ -126,6 +131,7 @@ export async function saveKeywordRankSnapshot(
   const row = {
     tracked_keyword_id: args.trackedKeywordId,
     client_id: args.clientId,
+    site_id: args.siteId,
     snapshot_date: todayDate(),
     month_key: todayMonthKey(),
     keyword: args.keyword,

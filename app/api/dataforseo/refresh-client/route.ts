@@ -56,41 +56,60 @@ export async function POST(req: NextRequest) {
   const monthKey = todayMonthKey()
   const { monthStart, nextMonthStart } = monthBounds()
 
-  try {
-    const [summary, mtdCounts, newRows, lostRows] = await Promise.all([
-      getBacklinkSummary(client.primary_domain, { client_id: client.id }),
-      getCurrentMonthNewLostCounts(client.primary_domain, { client_id: client.id }),
-      getNewBacklinkRowsForMonth(client.primary_domain, monthStart, nextMonthStart, 500, {
-        client_id: client.id,
-      }),
-      getLostBacklinkRowsForMonth(client.primary_domain, monthStart, nextMonthStart, 500, {
-        client_id: client.id,
-      }),
-    ])
+  // Active tracked websites (post-0029 always ≥1); fall back to primary_domain.
+  const { data: clientSites } = await supa
+    .from('client_sites')
+    .select('id, domain, is_primary')
+    .eq('client_id', client.id)
+    .eq('is_active', true)
+  const siteList: Array<{ id: string | null; domain: string; is_primary: boolean }> =
+    (clientSites ?? []).length > 0
+      ? (clientSites ?? [])
+      : [{ id: null, domain: client.primary_domain, is_primary: true }]
 
-    await saveBacklinkSummarySnapshot(supa, {
-      clientId: client.id,
-      summary,
-      mtdCounts,
-    })
-    const newItems = ((newRows as { items?: Array<Record<string, unknown>> } | null)?.items ?? [])
-    const lostItems = ((lostRows as { items?: Array<Record<string, unknown>> } | null)?.items ?? [])
-    await saveBacklinkRows(supa, { clientId: client.id, monthKey, status: 'new', items: newItems })
-    await saveBacklinkRows(supa, { clientId: client.id, monthKey, status: 'lost', items: lostItems })
+  try {
+    let newSaved = 0
+    let lostSaved = 0
+    for (const site of siteList) {
+      const [summary, mtdCounts, newRows, lostRows] = await Promise.all([
+        getBacklinkSummary(site.domain, { client_id: client.id }),
+        getCurrentMonthNewLostCounts(site.domain, { client_id: client.id }),
+        getNewBacklinkRowsForMonth(site.domain, monthStart, nextMonthStart, 500, {
+          client_id: client.id,
+        }),
+        getLostBacklinkRowsForMonth(site.domain, monthStart, nextMonthStart, 500, {
+          client_id: client.id,
+        }),
+      ])
+
+      await saveBacklinkSummarySnapshot(supa, {
+        clientId: client.id,
+        siteId: site.id,
+        summary,
+        mtdCounts,
+      })
+      const newItems = ((newRows as { items?: Array<Record<string, unknown>> } | null)?.items ?? [])
+      const lostItems = ((lostRows as { items?: Array<Record<string, unknown>> } | null)?.items ?? [])
+      await saveBacklinkRows(supa, { clientId: client.id, siteId: site.id, monthKey, status: 'new', items: newItems })
+      await saveBacklinkRows(supa, { clientId: client.id, siteId: site.id, monthKey, status: 'lost', items: lostItems })
+      newSaved += newItems.length
+      lostSaved += lostItems.length
+    }
 
     await supa.from('sync_log').insert({
       source: 'manual:dataforseo-refresh-client',
       client_id: client.id,
       status: 'ok',
-      row_count: newItems.length + lostItems.length,
+      row_count: newSaved + lostSaved,
     })
 
     return NextResponse.json({
       ok: true,
       client: { id: client.id, firm_name: client.firm_name },
       backlinks: {
-        new_rows_saved: newItems.length,
-        lost_rows_saved: lostItems.length,
+        sites_processed: siteList.length,
+        new_rows_saved: newSaved,
+        lost_rows_saved: lostSaved,
         summary_snapshot_at: new Date().toISOString(),
       },
     })

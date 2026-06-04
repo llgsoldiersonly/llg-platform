@@ -17,6 +17,9 @@ import {
 export type TrackedKeywordInput = {
   client_id: string
   client_location_id?: string | null
+  // Which tracked website this keyword's organic rank is checked against.
+  // Defaults to the client's primary site when omitted.
+  site_id?: string | null
   keyword: string
   practice_area?: string | null
   city?: string | null
@@ -30,6 +33,24 @@ export type TrackedKeywordInput = {
   priority?: 'low' | 'medium' | 'high'
 }
 
+// Resolve the site a keyword belongs to: the explicit one, else the client's
+// primary site (so keywords created before the site picker existed still bind
+// to a site).
+async function resolveSiteId(
+  admin: ReturnType<typeof createAdminClient>,
+  clientId: string,
+  siteId?: string | null
+): Promise<string | null> {
+  if (siteId) return siteId
+  const { data } = await admin
+    .from('client_sites')
+    .select('id')
+    .eq('client_id', clientId)
+    .eq('is_primary', true)
+    .maybeSingle()
+  return data?.id ?? null
+}
+
 export async function addTrackedKeyword(
   input: TrackedKeywordInput
 ): Promise<Result<{ id: string }>> {
@@ -41,11 +62,13 @@ export async function addTrackedKeyword(
   }
 
   const admin = createAdminClient()
+  const siteId = await resolveSiteId(admin, input.client_id, input.site_id)
   const { data, error } = await admin
     .from('dfs_tracked_keywords')
     .insert({
       client_id: input.client_id,
       client_location_id: input.client_location_id ?? null,
+      site_id: siteId,
       keyword: input.keyword.trim().toLowerCase(),
       practice_area: input.practice_area ?? null,
       city: input.city ?? null,
@@ -75,6 +98,7 @@ export async function bulkAddKeywordTemplates(input: {
   state?: string | null
   search_type: 'organic' | 'local_pack' | 'maps'
   priority?: 'low' | 'medium' | 'high'
+  site_id?: string | null
 }): Promise<Result<{ inserted: number }>> {
   const guard = await guardStaff()
   if (!guard.ok) return guard
@@ -84,9 +108,13 @@ export async function bulkAddKeywordTemplates(input: {
     return err('VALIDATION_FAILED', 'no templates available for that practice area')
   }
 
+  const admin = createAdminClient()
+  const siteId = await resolveSiteId(admin, input.client_id, input.site_id)
+
   const rows = keywords.map((k) => ({
     client_id: input.client_id,
     client_location_id: input.client_location_id ?? null,
+    site_id: siteId,
     keyword: k.toLowerCase(),
     practice_area: input.practice_area,
     city: input.city,
@@ -99,7 +127,6 @@ export async function bulkAddKeywordTemplates(input: {
     is_active: true,
   }))
 
-  const admin = createAdminClient()
   const { data, error } = await admin
     .from('dfs_tracked_keywords')
     .insert(rows)

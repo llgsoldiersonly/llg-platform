@@ -76,19 +76,34 @@ export async function POST(req: Request) {
 
   const supa = createAdminClient()
 
-  // Resolve client_id — explicit wins, else match by hostname
+  // Resolve client_id + site_id — explicit client_id wins, else match the
+  // post URL's hostname to a tracked site (client_sites.domain), which is the
+  // per-site signal. Fall back to clients.primary_domain.
   let clientId =
     typeof body.client_id === 'string' && body.client_id.length > 0
       ? body.client_id
       : null
-  if (!clientId) {
-    let host: string | null = null
-    try {
-      host = new URL(url).hostname.replace(/^www\./, '')
-    } catch {
-      // invalid URL — fall through
-    }
-    if (host) {
+  let siteId: string | null = null
+
+  let host: string | null = null
+  try {
+    host = new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    // invalid URL — fall through
+  }
+  if (host) {
+    const { data: matchedSite } = await supa
+      .from('client_sites')
+      .select('id, client_id')
+      .eq('domain', host)
+      .maybeSingle()
+    if (matchedSite) {
+      // Only adopt the site if it belongs to the (explicit) client.
+      if (!clientId || clientId === matchedSite.client_id) {
+        clientId = clientId ?? matchedSite.client_id
+        siteId = matchedSite.id
+      }
+    } else if (!clientId) {
       const { data: matched } = await supa
         .from('clients')
         .select('id')
@@ -103,6 +118,18 @@ export async function POST(req: Request) {
       { ok: false, error: 'client_id not provided and could not be resolved from url' },
       { status: 400 }
     )
+  }
+
+  // No site matched by hostname — stamp the client's primary site so the row
+  // stays consistent with the per-site unique keys.
+  if (!siteId) {
+    const { data: primarySiteRow } = await supa
+      .from('client_sites')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('is_primary', true)
+      .maybeSingle()
+    siteId = primarySiteRow?.id ?? null
   }
 
   const publishedAt =
@@ -139,6 +166,7 @@ export async function POST(req: Request) {
   const { error: rawErr } = await supa.from('raw_wordpress').upsert(
     {
       client_id: clientId,
+      site_id: siteId,
       post_id: externalId,
       slug,
       title,
@@ -153,7 +181,7 @@ export async function POST(req: Request) {
       fetched_at: new Date().toISOString(),
       raw_json: body as unknown as Record<string, unknown>,
     },
-    { onConflict: 'client_id,post_id,post_type' }
+    { onConflict: 'client_id,site_id,post_id,post_type' }
   )
 
   if (rawErr) {
@@ -170,6 +198,7 @@ export async function POST(req: Request) {
   const { error: postsErr } = await supa.from('posts').upsert(
     {
       client_id: clientId,
+      site_id: siteId,
       source_type: sourceType,
       external_id: externalId,
       slug,
@@ -182,7 +211,7 @@ export async function POST(req: Request) {
       modified_at: modifiedAt,
       url,
     },
-    { onConflict: 'client_id,source_type,external_id' }
+    { onConflict: 'client_id,site_id,source_type,external_id' }
   )
 
   if (postsErr) {
