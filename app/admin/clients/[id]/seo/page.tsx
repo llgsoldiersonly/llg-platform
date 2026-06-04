@@ -23,7 +23,7 @@ export default async function ClientSeoPage({ params }: { params: Promise<{ id: 
     .maybeSingle()
   if (!client) notFound()
 
-  const [{ data: locations }, { data: keywords }, { data: competitors }, { data: gridPoints }, { data: usage }] =
+  const [{ data: locations }, { data: keywords }, { data: competitors }, { data: gridPoints }, { data: usage }, { data: sites }] =
     await Promise.all([
       supa
         .from('client_locations')
@@ -57,6 +57,13 @@ export default async function ClientSeoPage({ params }: { params: Promise<{ id: 
         .select('endpoint, cost')
         .eq('client_id', id)
         .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
+      supa
+        .from('client_sites')
+        .select('id, domain, is_primary')
+        .eq('client_id', id)
+        .eq('is_active', true)
+        .order('is_primary', { ascending: false })
+        .returns<{ id: string; domain: string; is_primary: boolean }[]>(),
     ])
 
   const totalSpend30d = (usage ?? []).reduce((acc, r) => acc + Number(r.cost ?? 0), 0)
@@ -98,7 +105,7 @@ export default async function ClientSeoPage({ params }: { params: Promise<{ id: 
           <CardTitle>Tracked keywords ({keywords?.length ?? 0})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <KeywordForm clientId={id} locations={locations ?? []} />
+          <KeywordForm clientId={id} locations={locations ?? []} sites={sites ?? []} />
           {(keywords?.length ?? 0) === 0 ? (
             <EmptyState
               title="No keywords tracked yet"

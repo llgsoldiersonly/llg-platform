@@ -11,23 +11,30 @@ import {
 import { PRACTICE_AREA_LABELS, type PracticeArea } from '@/lib/seo/keywordTemplates'
 
 type Location = { id: string; label: string; city: string; state: string }
+type Site = { id: string; domain: string; is_primary: boolean }
 
 export function KeywordForm({
   clientId,
   locations,
+  sites = [],
 }: {
   clientId: string
   locations: Location[]
+  sites?: Site[]
 }) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+
+  const defaultSiteId = sites.find((s) => s.is_primary)?.id ?? sites[0]?.id ?? ''
+  const multiSite = sites.length > 1
 
   // Single-add fields
   const [keyword, setKeyword] = useState('')
   const [searchType, setSearchType] = useState<'organic' | 'local_pack' | 'maps' | 'ai_mode'>('organic')
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium')
   const [locationId, setLocationId] = useState<string>('')
+  const [siteId, setSiteId] = useState<string>(defaultSiteId)
 
   // Bulk fields
   const [practiceArea, setPracticeArea] = useState<PracticeArea>('personal_injury')
@@ -42,6 +49,7 @@ export function KeywordForm({
       const res = await addTrackedKeyword({
         client_id: clientId,
         client_location_id: locationId || null,
+        site_id: siteId || null,
         keyword,
         city: loc?.city ?? null,
         state: loc?.state ?? null,
@@ -70,6 +78,7 @@ export function KeywordForm({
       const res = await bulkAddKeywordTemplates({
         client_id: clientId,
         client_location_id: loc.id,
+        site_id: siteId || null,
         practice_area: practiceArea,
         city: loc.city,
         state: loc.state,
@@ -137,6 +146,24 @@ export function KeywordForm({
             ))}
           </select>
         </div>
+        {multiSite && (
+          <div>
+            <Label htmlFor="kw-site">Website</Label>
+            <select
+              id="kw-site"
+              value={siteId}
+              onChange={(e) => setSiteId(e.target.value)}
+              className="mt-1 block w-full rounded border border-border-default bg-bg-base px-2 py-1.5 text-sm"
+            >
+              {sites.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.domain}
+                  {s.is_primary ? ' (primary)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="flex items-end">
           <Button type="submit" disabled={pending} className="w-full">
             {pending ? 'Adding…' : 'Add keyword'}

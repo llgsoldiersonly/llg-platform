@@ -36,18 +36,41 @@ export async function POST(req: Request) {
 
   const today = new Date().toISOString().slice(0, 10)
 
-  // Build flat list of (client, strategy) audit jobs.
-  type Job = { client: { id: string; firm_name: string; primary_domain: string }; strategy: 'mobile' | 'desktop' }
+  // Active tracked websites for these clients (post-0029 ≥1 each); fall back to
+  // primary_domain. Audit every site's homepage, not just the primary's.
+  const clientIds = (clients ?? []).map((c) => c.id)
+  const { data: allSites } = clientIds.length > 0
+    ? await supa
+        .from('client_sites')
+        .select('id, client_id, domain')
+        .eq('is_active', true)
+        .in('client_id', clientIds)
+    : { data: [] as Array<{ id: string; client_id: string; domain: string }> }
+  const sitesByClient = new Map<string, Array<{ id: string | null; domain: string }>>()
+  for (const s of allSites ?? []) {
+    const arr = sitesByClient.get(s.client_id) ?? []
+    arr.push({ id: s.id, domain: s.domain })
+    sitesByClient.set(s.client_id, arr)
+  }
+
+  // Build flat list of (client, site, strategy) audit jobs.
+  type Job = {
+    client: { id: string; firm_name: string }
+    site: { id: string | null; domain: string }
+    strategy: 'mobile' | 'desktop'
+  }
   const jobs: Job[] = []
   for (const c of clients ?? []) {
-    if (!c.primary_domain) continue
-    jobs.push({ client: c as Job['client'], strategy: 'mobile' })
-    jobs.push({ client: c as Job['client'], strategy: 'desktop' })
+    const sites = sitesByClient.get(c.id) ?? (c.primary_domain ? [{ id: null, domain: c.primary_domain }] : [])
+    for (const site of sites) {
+      jobs.push({ client: { id: c.id, firm_name: c.firm_name }, site, strategy: 'mobile' })
+      jobs.push({ client: { id: c.id, firm_name: c.firm_name }, site, strategy: 'desktop' })
+    }
   }
 
   const results = await Promise.allSettled(
-    jobs.map(async ({ client, strategy }) => {
-      const url = `https://${client.primary_domain}/`
+    jobs.map(async ({ client, site, strategy }) => {
+      const url = `https://${site.domain}/`
       const psi = await fetchPsi({ apiKey, url, strategy })
 
       const cruxFields = {
@@ -60,6 +83,7 @@ export async function POST(req: Request) {
 
       await supa.from('raw_lighthouse').insert({
         client_id: client.id,
+        site_id: site.id,
         url,
         strategy,
         performance: psi.performance,
@@ -77,6 +101,7 @@ export async function POST(req: Request) {
       await supa.from('site_health').upsert(
         {
           client_id: client.id,
+          site_id: site.id,
           url,
           strategy,
           performance: psi.performance,

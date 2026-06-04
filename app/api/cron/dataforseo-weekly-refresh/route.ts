@@ -103,34 +103,51 @@ export async function POST(req: Request) {
     const clientStart = Date.now()
     let clientErrored = false
 
-    try {
-      // -------- Backlinks: summary + MTD counts --------
-      const [summary, mtdCounts] = await Promise.all([
-        getBacklinkSummary(client.primary_domain, { client_id: client.id }),
-        getCurrentMonthNewLostCounts(client.primary_domain, { client_id: client.id }),
-      ])
-      await saveBacklinkSummarySnapshot(supa, {
-        clientId: client.id,
-        summary,
-        mtdCounts,
-      })
-      stats.backlink_snapshots += 1
+    // Active tracked websites for this client. Post-0029 every active client
+    // has at least a primary site; fall back to a synthesized one from
+    // primary_domain just in case a row is missing.
+    const { data: clientSites } = await supa
+      .from('client_sites')
+      .select('id, domain, is_primary')
+      .eq('client_id', client.id)
+      .eq('is_active', true)
+    const siteList: Array<{ id: string | null; domain: string; is_primary: boolean }> =
+      (clientSites ?? []).length > 0
+        ? (clientSites ?? [])
+        : [{ id: null, domain: client.primary_domain, is_primary: true }]
+    const primarySite = siteList.find((s) => s.is_primary) ?? siteList[0]
+    const domainBySite = new Map(siteList.filter((s) => s.id).map((s) => [s.id as string, s.domain]))
 
-      // -------- Backlinks: new + lost detail rows --------
-      const [newRows, lostRows] = await Promise.all([
-        getNewBacklinkRowsForMonth(client.primary_domain, monthStart, nextMonthStart, 1000, {
-          client_id: client.id,
-        }),
-        getLostBacklinkRowsForMonth(client.primary_domain, monthStart, nextMonthStart, 1000, {
-          client_id: client.id,
-        }),
-      ])
-      const newItems = ((newRows as { items?: Array<Record<string, unknown>> } | null)?.items ?? [])
-      const lostItems = ((lostRows as { items?: Array<Record<string, unknown>> } | null)?.items ?? [])
-      await saveBacklinkRows(supa, { clientId: client.id, monthKey, status: 'new', items: newItems })
-      await saveBacklinkRows(supa, { clientId: client.id, monthKey, status: 'lost', items: lostItems })
-      stats.backlink_new_rows += newItems.length
-      stats.backlink_lost_rows += lostItems.length
+    try {
+      // -------- Backlinks: summary + detail rows, per site --------
+      for (const site of siteList) {
+        const [summary, mtdCounts] = await Promise.all([
+          getBacklinkSummary(site.domain, { client_id: client.id }),
+          getCurrentMonthNewLostCounts(site.domain, { client_id: client.id }),
+        ])
+        await saveBacklinkSummarySnapshot(supa, {
+          clientId: client.id,
+          siteId: site.id,
+          summary,
+          mtdCounts,
+        })
+        stats.backlink_snapshots += 1
+
+        const [newRows, lostRows] = await Promise.all([
+          getNewBacklinkRowsForMonth(site.domain, monthStart, nextMonthStart, 1000, {
+            client_id: client.id,
+          }),
+          getLostBacklinkRowsForMonth(site.domain, monthStart, nextMonthStart, 1000, {
+            client_id: client.id,
+          }),
+        ])
+        const newItems = ((newRows as { items?: Array<Record<string, unknown>> } | null)?.items ?? [])
+        const lostItems = ((lostRows as { items?: Array<Record<string, unknown>> } | null)?.items ?? [])
+        await saveBacklinkRows(supa, { clientId: client.id, siteId: site.id, monthKey, status: 'new', items: newItems })
+        await saveBacklinkRows(supa, { clientId: client.id, siteId: site.id, monthKey, status: 'lost', items: lostItems })
+        stats.backlink_new_rows += newItems.length
+        stats.backlink_lost_rows += lostItems.length
+      }
     } catch (e) {
       clientErrored = true
       const message = e instanceof Error ? e.message : 'unknown'
@@ -158,19 +175,23 @@ export async function POST(req: Request) {
     if (!clientErrored && !serpAlreadyCurrent) {
       const { data: tracked } = await supa
         .from('dfs_tracked_keywords')
-        .select('id, client_id, client_location_id, keyword, search_type, device, location_name, location_code, language_code, priority')
+        .select('id, client_id, site_id, client_location_id, keyword, search_type, device, location_name, location_code, language_code, priority')
         .eq('client_id', client.id)
         .eq('is_active', true)
         .in('priority', ['high', 'medium']) // weekly = high+medium; low runs monthly only
         .in('search_type', ['organic', 'local_pack'])
 
       for (const kw of tracked ?? []) {
+        // Rank is checked against the website this keyword belongs to (its
+        // site's domain), falling back to the client's primary domain.
+        const kwDomain = (kw.site_id ? domainBySite.get(kw.site_id) : null) ?? client.primary_domain
+        const kwSiteId = kw.site_id ?? primarySite.id
         try {
           if (kw.search_type === 'organic') {
             const result = await getGoogleOrganicRank(
               {
                 keyword: kw.keyword,
-                clientDomain: client.primary_domain,
+                clientDomain: kwDomain,
                 locationCode: kw.location_code ?? undefined,
                 locationName: kw.location_name ?? undefined,
                 languageCode: kw.language_code ?? 'en',
@@ -181,6 +202,7 @@ export async function POST(req: Request) {
             await saveKeywordRankSnapshot(supa, {
               trackedKeywordId: kw.id,
               clientId: client.id,
+              siteId: kwSiteId,
               keyword: kw.keyword,
               searchType: 'organic',
               device: kw.device,
@@ -192,7 +214,7 @@ export async function POST(req: Request) {
             const result = await getGoogleLocalFinderRank(
               {
                 keyword: kw.keyword,
-                clientDomain: client.primary_domain,
+                clientDomain: kwDomain,
                 locationCode: kw.location_code ?? undefined,
                 locationName: kw.location_name ?? undefined,
                 languageCode: kw.language_code ?? 'en',
@@ -204,6 +226,7 @@ export async function POST(req: Request) {
             await saveKeywordRankSnapshot(supa, {
               trackedKeywordId: kw.id,
               clientId: client.id,
+              siteId: kwSiteId,
               keyword: kw.keyword,
               searchType: 'local_pack',
               device: kw.device,

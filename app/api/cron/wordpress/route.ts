@@ -56,6 +56,19 @@ export async function POST(req: Request) {
       continue
     }
 
+    // WP credentials are per-client, so auto-sync runs against the primary
+    // site only; we stamp its site_id to keep posts/raw_wordpress consistent
+    // with the per-site unique keys. (Per-site WP auto-sync needs per-site
+    // credentials — a separate change; secondary-site blogs are logged via
+    // staff Submissions today.)
+    const { data: primarySiteRow } = await supa
+      .from('client_sites')
+      .select('id')
+      .eq('client_id', client.id)
+      .eq('is_primary', true)
+      .maybeSingle()
+    const siteId = primarySiteRow?.id ?? null
+
     try {
       const posts = await fetchWpPosts({
         domain: client.primary_domain,
@@ -79,6 +92,7 @@ export async function POST(req: Request) {
         const terms = extractTerms(p)
         return {
           client_id: client.id,
+          site_id: siteId,
           post_id: p.id,
           slug: p.slug,
           title: p.title?.rendered ?? '',
@@ -95,7 +109,7 @@ export async function POST(req: Request) {
         }
       })
       await supa.from('raw_wordpress').upsert(rawRows, {
-        onConflict: 'client_id,post_id,post_type',
+        onConflict: 'client_id,site_id,post_id,post_type',
       })
 
       // Upsert normalized posts
@@ -103,6 +117,7 @@ export async function POST(req: Request) {
         const terms = extractTerms(p)
         return {
           client_id: client.id,
+          site_id: siteId,
           source_type: p.type === 'page' ? 'wp_page' : 'wp_post',
           external_id: String(p.id),
           slug: p.slug,
@@ -117,7 +132,7 @@ export async function POST(req: Request) {
         }
       })
       await supa.from('posts').upsert(normRows, {
-        onConflict: 'client_id,source_type,external_id',
+        onConflict: 'client_id,site_id,source_type,external_id',
       })
 
       // Reconcile WP-driven deliverables for this client
