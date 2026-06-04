@@ -28,6 +28,7 @@ export function NewClientForm({ packages }: { packages: PackageOption[] }) {
 
   const [firmName, setFirmName] = useState('')
   const [primaryDomain, setPrimaryDomain] = useState('')
+  const [secondaryDomain, setSecondaryDomain] = useState('')
   const [contactName, setContactName] = useState('')
   const [contactEmail, setContactEmail] = useState('')
   const [contactPhone, setContactPhone] = useState('')
@@ -54,6 +55,7 @@ export function NewClientForm({ packages }: { packages: PackageOption[] }) {
       const res = await createClientFirm({
         firm_name: firmName,
         primary_domain: primaryDomain,
+        secondary_domain: secondaryDomain,
         primary_contact_name: contactName,
         primary_contact_email: contactEmail,
         primary_contact_phone: contactPhone,
@@ -99,6 +101,19 @@ export function NewClientForm({ packages }: { packages: PackageOption[] }) {
               onChange={(e) => setPrimaryDomain(e.target.value)}
               placeholder="danielslaw.com"
             />
+          </div>
+          <div>
+            <Label htmlFor="secondary-domain">Secondary website (optional)</Label>
+            <Input
+              id="secondary-domain"
+              value={secondaryDomain}
+              onChange={(e) => setSecondaryDomain(e.target.value)}
+              placeholder="another-site.com"
+            />
+            <p className="mt-1 text-xs text-body-subtle">
+              A second tracked site (e.g. a separate local/GBP site). You can also add or change
+              sites later from the client page.
+            </p>
           </div>
           <div>
             <Label htmlFor="contact-name">Primary contact name</Label>
