@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isSuperAdmin } from '@/lib/auth/rbac'
 import { normalizeDomain } from '@/lib/integrations/dataforseo/normalize'
+import { runPeriodRollover } from '@/lib/deliverables/rollover'
 import { ok, err, type Result } from '@/lib/errors'
 
 type ClientStatus = 'prospect' | 'onboarding' | 'active' | 'paused' | 'churned'
@@ -169,6 +170,41 @@ export async function createClientFirm(
     return err('INTERNAL', `Failed to create subscription: ${subErr.message}`)
   }
 
+  // Materialize this period's deliverables right away so the client isn't empty
+  // until the 1st-of-month rollover cron. Best-effort — a hiccup here shouldn't
+  // undo a successfully created client; the cron (or the manual button) catches
+  // it up.
+  try {
+    await runPeriodRollover(admin, { clientId: client.id })
+  } catch {
+    // non-fatal
+  }
+
   revalidatePath('/admin/clients')
   return ok({ client_id: client.id })
+}
+
+// Super-admin: materialize the current period's package deliverables for one
+// client on demand. Backs the "Generate deliverables now" button so a
+// mid-month signup doesn't have to wait for the monthly rollover cron.
+export async function generateDeliverablesForClient(
+  clientId: string
+): Promise<Result<{ created: number; skipped: number }>> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return err('UNAUTHORIZED')
+  if (!isSuperAdmin(user)) return err('FORBIDDEN', 'Only super-admins can generate deliverables')
+  if (!clientId) return err('VALIDATION_FAILED', 'Missing client id')
+
+  const admin = createAdminClient()
+  try {
+    const res = await runPeriodRollover(admin, { clientId })
+    revalidatePath(`/admin/clients/${clientId}/deliverables`)
+    revalidatePath(`/admin/clients/${clientId}`)
+    return ok({ created: res.created, skipped: res.skipped })
+  } catch (e) {
+    return err('INTERNAL', e instanceof Error ? e.message : 'rollover failed')
+  }
 }
