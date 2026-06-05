@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AddCustomDeliverableButton } from './add-custom-button'
+import { GenerateDeliverablesButton } from './generate-button'
 import { DeliverablesTabs, type DeliverableRow } from './deliverables-tabs'
 
 export const dynamic = 'force-dynamic'
@@ -53,7 +54,10 @@ export default async function ClientDeliverablesPage({
             {deliverables.length} tracked items — package items + custom/incentive add-ons
           </p>
         </div>
-        <AddCustomDeliverableButton clientId={id} subscriptions={subscriptions} />
+        <div className="flex items-center gap-2">
+          <GenerateDeliverablesButton clientId={id} />
+          <AddCustomDeliverableButton clientId={id} subscriptions={subscriptions} />
+        </div>
       </div>
 
       <DeliverablesTabs deliverables={deliverables} clientId={id} />
