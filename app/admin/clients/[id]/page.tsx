@@ -8,6 +8,7 @@ import { ImpersonateCard } from '@/components/admin/impersonate-card'
 import { InviteClientCard } from '@/components/admin/invite-client-card'
 import { HardDeleteCard } from '@/components/admin/hard-delete-card'
 import { ClientSitesCard, type ClientSite } from '@/components/admin/client-sites-card'
+import { PullClientDataButton } from '@/components/admin/pull-client-data-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -78,6 +79,10 @@ export default async function ClientSummaryPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-8">
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-lg font-semibold text-heading">Overview</h2>
+        <PullClientDataButton clientId={client.id} />
+      </div>
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
