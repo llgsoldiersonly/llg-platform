@@ -70,6 +70,53 @@ export async function inviteStaff(input: InviteStaffInput): Promise<Result<{ use
   return ok({ user_id: userId })
 }
 
+export type UpdateStaffInput = {
+  user_id: string
+  full_name?: string | null
+  role?: StaffRole
+  department_id?: string | null
+  title?: string | null
+  is_active?: boolean
+}
+
+// Edits an existing staff member (department / title / role / active). A role
+// change must update BOTH auth.app_metadata.role (middleware reads it for
+// access) AND profiles.role, so they don't drift.
+export async function updateStaffMember(input: UpdateStaffInput): Promise<Result<{ user_id: string }>> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return err('UNAUTHORIZED')
+  if (!isSuperAdmin(user)) return err('FORBIDDEN', 'Only super-admins can edit staff')
+  if (!input.user_id) return err('VALIDATION_FAILED', 'Missing user id')
+
+  const admin = createAdminClient()
+
+  if (input.role !== undefined) {
+    if (input.role !== 'agency_staff' && input.role !== 'super_admin') {
+      return err('VALIDATION_FAILED', 'Invalid role')
+    }
+    const { error: roleErr } = await admin.auth.admin.updateUserById(input.user_id, {
+      app_metadata: { role: input.role },
+    })
+    if (roleErr) return err('INTERNAL', `Role update failed: ${roleErr.message}`)
+  }
+
+  const patch: Record<string, unknown> = {}
+  if (input.full_name !== undefined) patch.full_name = input.full_name?.trim() || null
+  if (input.role !== undefined) patch.role = input.role
+  if (input.department_id !== undefined) patch.department_id = input.department_id || null
+  if (input.title !== undefined) patch.title = input.title?.trim() || null
+  if (input.is_active !== undefined) patch.is_active = input.is_active
+
+  if (Object.keys(patch).length > 0) {
+    const { error: profileErr } = await admin.from('profiles').update(patch).eq('id', input.user_id)
+    if (profileErr) return err('INTERNAL', `Profile update failed: ${profileErr.message}`)
+  }
+
+  revalidatePath('/admin/settings/users')
+  return ok({ user_id: input.user_id })
+}
+
 export type InviteClientInput = {
   client_id: string
   email: string
