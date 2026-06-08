@@ -5,6 +5,7 @@ import { isSuperAdmin } from '@/lib/auth/rbac'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { InviteStaffForm } from './invite-form'
+import { StaffRowEditor } from './staff-row-editor'
 import { GoogleAdsConnectCard } from '@/components/admin/google-ads-connect-card'
 
 export const dynamic = 'force-dynamic'
@@ -87,6 +88,7 @@ export default async function AdminUsersPage({
                 <th className="px-6 py-3 text-left font-medium">Department</th>
                 <th className="px-6 py-3 text-left font-medium">Title</th>
                 <th className="px-6 py-3 text-left font-medium">Status</th>
+                <th className="px-6 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-light">
@@ -107,11 +109,14 @@ export default async function AdminUsersPage({
                       <Badge variant="secondary">Inactive</Badge>
                     )}
                   </td>
+                  <td className="px-6 py-3 text-right">
+                    <StaffRowEditor profile={p} departments={departments} />
+                  </td>
                 </tr>
               ))}
               {profiles.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-sm text-body">
+                  <td colSpan={6} className="px-6 py-8 text-center text-sm text-body">
                     No staff users yet.
                   </td>
                 </tr>
