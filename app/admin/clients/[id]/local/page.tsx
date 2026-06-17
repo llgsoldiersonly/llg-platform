@@ -7,6 +7,7 @@ import { RingChart } from '@/components/ui/ring-chart'
 import { EmptyIntegration } from '@/components/admin/empty-integration'
 import { MapPin, Star, MessageSquare, FileText, Check, X, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import { RefreshCitationsButton } from './refresh-citations-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -151,12 +152,15 @@ export default async function ClientLocalPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-8">
-      <div>
-        <h1 className="text-2xl font-semibold text-heading">Local SEO</h1>
-        <p className="mt-1 text-sm text-body">
-          {client.firm_name} · citations, Google Business, reviews
-          {citations?.captured_on && <> · last pulled {new Date(citations.captured_on).toLocaleDateString()}</>}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-heading">Local SEO</h1>
+          <p className="mt-1 text-sm text-body">
+            {client.firm_name} · citations, Google Business, reviews
+            {citations?.captured_on && <> · last pulled {new Date(citations.captured_on).toLocaleDateString()}</>}
+          </p>
+        </div>
+        <RefreshCitationsButton clientId={id} />
       </div>
 
       {/* KPI strip */}
