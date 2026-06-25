@@ -13,6 +13,7 @@ export function ClientTabNav({ clientId }: { clientId: string }) {
   const tabs: Tab[] = [
     { href: base,                          label: 'Summary' },
     { href: `${base}/deliverables`,        label: 'Deliverables' },
+    { href: `${base}/leads`,               label: 'Leads' },
     { href: `${base}/credentials`,         label: 'Credentials' },
     { href: `${base}/content`,             label: 'Content' },
     { href: `${base}/calls`,               label: 'Calls' },

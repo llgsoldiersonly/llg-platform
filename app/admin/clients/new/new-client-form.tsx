@@ -43,12 +43,13 @@ export function NewClientForm({ packages }: { packages: PackageOption[] }) {
 
   const [packageId, setPackageId] = useState('')
   const [startedAt, setStartedAt] = useState(new Date().toISOString().slice(0, 10))
+  const [isLeadBuyer, setIsLeadBuyer] = useState(false)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    if (!packageId) {
-      setError('Pick a package.')
+    if (!isLeadBuyer && !packageId) {
+      setError('Pick a package, or mark this as a lead-buyer client.')
       return
     }
     startTransition(async () => {
@@ -66,8 +67,9 @@ export function NewClientForm({ packages }: { packages: PackageOption[] }) {
         location_label: locationLabel,
         location_city: city,
         location_state: state,
-        package_id: packageId,
+        package_id: isLeadBuyer ? null : packageId,
         started_at: startedAt,
+        is_lead_buyer: isLeadBuyer,
       })
       if (res.ok) {
         router.push(`/admin/clients/${res.data.client_id}`)
@@ -219,34 +221,47 @@ export function NewClientForm({ packages }: { packages: PackageOption[] }) {
         <legend className="text-xs font-medium uppercase tracking-wide text-body">
           Subscription
         </legend>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <div>
-            <Label htmlFor="package">Package *</Label>
-            <select
-              id="package"
-              value={packageId}
-              onChange={(e) => setPackageId(e.target.value)}
-              className={selectClass}
-              required
-            >
-              <option value="">— select a package —</option>
-              {packages.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.display_name} ({p.code})
-                </option>
-              ))}
-            </select>
+
+        <label className="flex items-center gap-2 text-sm text-body">
+          <input
+            type="checkbox"
+            checked={isLeadBuyer}
+            onChange={(e) => setIsLeadBuyer(e.target.checked)}
+            className="h-4 w-4 rounded border-border-default"
+          />
+          Lead buyer — no package (skips the subscription, turns on the Leads box)
+        </label>
+
+        {!isLeadBuyer && (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div>
+              <Label htmlFor="package">Package *</Label>
+              <select
+                id="package"
+                value={packageId}
+                onChange={(e) => setPackageId(e.target.value)}
+                className={selectClass}
+                required={!isLeadBuyer}
+              >
+                <option value="">— select a package —</option>
+                {packages.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.display_name} ({p.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="started-at">Start date</Label>
+              <Input
+                id="started-at"
+                type="date"
+                value={startedAt}
+                onChange={(e) => setStartedAt(e.target.value)}
+              />
+            </div>
           </div>
-          <div>
-            <Label htmlFor="started-at">Start date</Label>
-            <Input
-              id="started-at"
-              type="date"
-              value={startedAt}
-              onChange={(e) => setStartedAt(e.target.value)}
-            />
-          </div>
-        </div>
+        )}
       </fieldset>
 
       {error && <p className="text-sm text-red-600">{error}</p>}

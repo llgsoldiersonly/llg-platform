@@ -29,11 +29,14 @@ export type CreateClientInput = {
   location_label?: string | null
   location_city: string
   location_state: string
-  // Subscription — required. Fully provisions the client (the on-insert trigger
-  // from migration 0013 generates onboarding tasks; the period-rollover cron
-  // materializes deliverables for the active subscription).
-  package_id: string
+  // Subscription. Required for a normal client (the on-insert trigger from
+  // migration 0013 generates onboarding tasks; the period-rollover cron
+  // materializes deliverables). Optional when is_lead_buyer is true — a
+  // lead-buyer client has no package, just downloadable lead PDFs.
+  package_id?: string | null
   started_at?: string | null
+  // Lead-buyer: skip the package/subscription entirely and turn the Leads box on.
+  is_lead_buyer?: boolean
 }
 
 const trimOrNull = (v: string | null | undefined): string | null => {
@@ -61,7 +64,11 @@ export async function createClientFirm(
   if (!firmName) return err('VALIDATION_FAILED', 'Firm name is required')
   if (!city) return err('VALIDATION_FAILED', 'Primary location city is required')
   if (!state) return err('VALIDATION_FAILED', 'Primary location state is required')
-  if (!input.package_id) return err('VALIDATION_FAILED', 'A package is required')
+
+  const isLeadBuyer = input.is_lead_buyer ?? false
+  if (!isLeadBuyer && !input.package_id) {
+    return err('VALIDATION_FAILED', 'A package is required (or mark this as a lead-buyer client)')
+  }
 
   const status: ClientStatus =
     input.status && STATUSES.includes(input.status) ? input.status : 'onboarding'
@@ -69,14 +76,16 @@ export async function createClientFirm(
 
   const admin = createAdminClient()
 
-  // 1. Verify the package exists before creating anything.
-  const { data: pkg, error: pkgErr } = await admin
-    .from('package_templates')
-    .select('id')
-    .eq('id', input.package_id)
-    .maybeSingle()
-  if (pkgErr) return err('INTERNAL', `Package lookup failed: ${pkgErr.message}`)
-  if (!pkg) return err('VALIDATION_FAILED', 'Selected package does not exist')
+  // 1. Verify the package exists (skipped for lead-buyer clients with no package).
+  if (!isLeadBuyer && input.package_id) {
+    const { data: pkg, error: pkgErr } = await admin
+      .from('package_templates')
+      .select('id')
+      .eq('id', input.package_id)
+      .maybeSingle()
+    if (pkgErr) return err('INTERNAL', `Package lookup failed: ${pkgErr.message}`)
+    if (!pkg) return err('VALIDATION_FAILED', 'Selected package does not exist')
+  }
 
   // 2. Insert the client row.
   const { data: client, error: clientErr } = await admin
@@ -92,6 +101,7 @@ export async function createClientFirm(
       is_demo_only: input.is_demo_only ?? false,
       notes: trimOrNull(input.notes),
       onboarded_at: startedAt,
+      leads_enabled: isLeadBuyer,
     })
     .select('id')
     .single()
@@ -157,27 +167,30 @@ export async function createClientFirm(
     return err('INTERNAL', `Failed to create location: ${locationErr?.message ?? 'no row returned'}`)
   }
 
-  // 4. Insert the subscription. The 0013 trigger auto-generates onboarding tasks.
-  const { error: subErr } = await admin.from('subscriptions').insert({
-    client_id: client.id,
-    package_id: input.package_id,
-    location_id: location.id,
-    status: 'active',
-    started_at: startedAt,
-  })
-  if (subErr) {
-    await admin.from('clients').delete().eq('id', client.id)
-    return err('INTERNAL', `Failed to create subscription: ${subErr.message}`)
-  }
+  // 4. Insert the subscription (skipped for lead-buyer clients — they have no
+  // package). The 0013 trigger auto-generates onboarding tasks for normal clients.
+  if (!isLeadBuyer && input.package_id) {
+    const { error: subErr } = await admin.from('subscriptions').insert({
+      client_id: client.id,
+      package_id: input.package_id,
+      location_id: location.id,
+      status: 'active',
+      started_at: startedAt,
+    })
+    if (subErr) {
+      await admin.from('clients').delete().eq('id', client.id)
+      return err('INTERNAL', `Failed to create subscription: ${subErr.message}`)
+    }
 
-  // Materialize this period's deliverables right away so the client isn't empty
-  // until the 1st-of-month rollover cron. Best-effort — a hiccup here shouldn't
-  // undo a successfully created client; the cron (or the manual button) catches
-  // it up.
-  try {
-    await runPeriodRollover(admin, { clientId: client.id })
-  } catch {
-    // non-fatal
+    // Materialize this period's deliverables right away so the client isn't empty
+    // until the 1st-of-month rollover cron. Best-effort — a hiccup here shouldn't
+    // undo a successfully created client; the cron (or the manual button) catches
+    // it up.
+    try {
+      await runPeriodRollover(admin, { clientId: client.id })
+    } catch {
+      // non-fatal
+    }
   }
 
   revalidatePath('/admin/clients')

@@ -24,6 +24,7 @@ import {
   type PreLaunchStepRow,
 } from '@/components/client/cards/pre-launch-checklist'
 import { MonthlyProductionCard } from '@/components/client/cards/monthly-production'
+import { LeadsCard, type PortalLeadFile } from '@/components/client/cards/leads-card'
 import { LlgUpdatesCard } from '@/components/client/cards/llg-updates'
 import { aggregateProduction, applyPackageVisibility, type RawProductionRow } from '@/lib/post-launch-production'
 import { blendSiteHealth } from '@/lib/integrations/score-blend'
@@ -200,6 +201,18 @@ export default async function OverviewPage({
     ctx.selectedSubscriptions[0] ??
     null
 
+  // Lead PDFs for the "Your Leads" box (only when the client has leads enabled).
+  const leadFiles = ctx.client.leads_enabled
+    ? (
+        await admin
+          .from('client_lead_files')
+          .select('id, file_name, created_at')
+          .eq('client_id', ctx.client.id)
+          .order('created_at', { ascending: false })
+          .returns<PortalLeadFile[]>()
+      ).data ?? []
+    : []
+
   // CrUX/lab blend weight — single config value, read once per render.
   const { data: settingsRow } = await admin
     .from('platform_settings')
@@ -303,6 +316,8 @@ export default async function OverviewPage({
           {ctx.selectedLocation && <> for {ctx.selectedLocation.label}</>}.
         </p>
       </div>
+
+      {ctx.client.leads_enabled && <LeadsCard files={leadFiles} />}
 
       {preLaunch ? (
         <PreLaunchLayout
