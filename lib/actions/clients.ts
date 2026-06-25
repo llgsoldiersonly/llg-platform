@@ -197,6 +197,62 @@ export async function createClientFirm(
   return ok({ client_id: client.id })
 }
 
+export type UpdateClientInput = {
+  client_id: string
+  firm_name?: string
+  primary_domain?: string | null
+  primary_contact_name?: string | null
+  primary_contact_email?: string | null
+  primary_contact_phone?: string | null
+  vertical?: string | null
+  status?: ClientStatus
+  notes?: string | null
+}
+
+// Super-admin: edit a client's record (contact details, domain, vertical,
+// status, notes). Note: this updates the contact email on the record — it does
+// NOT change a portal user's login email (that's an auth-user change).
+export async function updateClientDetails(
+  input: UpdateClientInput
+): Promise<Result<{ client_id: string }>> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return err('UNAUTHORIZED')
+  if (!isSuperAdmin(user)) return err('FORBIDDEN', 'Only super-admins can edit clients')
+  if (!input.client_id) return err('VALIDATION_FAILED', 'Missing client id')
+
+  const patch: Record<string, unknown> = {}
+  if (input.firm_name !== undefined) {
+    const firmName = trimOrNull(input.firm_name)
+    if (!firmName) return err('VALIDATION_FAILED', 'Firm name cannot be empty')
+    patch.firm_name = firmName
+  }
+  if (input.primary_domain !== undefined) patch.primary_domain = trimOrNull(input.primary_domain)
+  if (input.primary_contact_name !== undefined)
+    patch.primary_contact_name = trimOrNull(input.primary_contact_name)
+  if (input.primary_contact_email !== undefined) {
+    const email = trimOrNull(input.primary_contact_email)
+    if (email && !email.includes('@')) return err('VALIDATION_FAILED', 'Enter a valid contact email')
+    patch.primary_contact_email = email
+  }
+  if (input.primary_contact_phone !== undefined)
+    patch.primary_contact_phone = trimOrNull(input.primary_contact_phone)
+  if (input.vertical !== undefined) patch.vertical = trimOrNull(input.vertical)
+  if (input.status !== undefined && STATUSES.includes(input.status)) patch.status = input.status
+  if (input.notes !== undefined) patch.notes = trimOrNull(input.notes)
+
+  if (Object.keys(patch).length === 0) return ok({ client_id: input.client_id })
+
+  const admin = createAdminClient()
+  const { error } = await admin.from('clients').update(patch).eq('id', input.client_id)
+  if (error) return err('INTERNAL', `Failed to update client: ${error.message}`)
+
+  revalidatePath(`/admin/clients/${input.client_id}`)
+  return ok({ client_id: input.client_id })
+}
+
 // Super-admin: materialize the current period's package deliverables for one
 // client on demand. Backs the "Generate deliverables now" button so a
 // mid-month signup doesn't have to wait for the monthly rollover cron.

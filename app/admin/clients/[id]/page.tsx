@@ -9,6 +9,7 @@ import { InviteClientCard } from '@/components/admin/invite-client-card'
 import { HardDeleteCard } from '@/components/admin/hard-delete-card'
 import { ClientSitesCard, type ClientSite } from '@/components/admin/client-sites-card'
 import { PullClientDataButton } from '@/components/admin/pull-client-data-button'
+import { EditClientDialog } from './edit-client-dialog'
 
 export const dynamic = 'force-dynamic'
 
@@ -115,8 +116,21 @@ export default async function ClientSummaryPage({
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">Contact</CardTitle>
+          <EditClientDialog
+            client={{
+              id: client.id,
+              firm_name: client.firm_name,
+              primary_domain: client.primary_domain,
+              primary_contact_name: client.primary_contact_name,
+              primary_contact_email: client.primary_contact_email,
+              primary_contact_phone: client.primary_contact_phone,
+              vertical: client.vertical,
+              status: client.status,
+              notes: client.notes,
+            }}
+          />
         </CardHeader>
         <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
           <div>
