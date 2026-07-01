@@ -30,7 +30,7 @@ export default async function ContentPlansPage() {
   if (!isAgencyStaff(user)) redirect('/admin/dashboard')
 
   const supa = createAdminClient()
-  const [{ data: plans }, { data: clients }, { data: departments }, { data: counts }] =
+  const [{ data: plans }, { data: clients }, { data: departments }, { data: counts }, { data: templates }] =
     await Promise.all([
       supa
         .from('content_plans')
@@ -43,6 +43,8 @@ export default async function ContentPlansPage() {
         .returns<{ id: string; name: string }[]>(),
       supa.from('content_plan_items').select('plan_id, status')
         .returns<{ plan_id: string; status: string }[]>(),
+      supa.from('task_templates').select('id, name').order('name')
+        .returns<{ id: string; name: string }[]>(),
     ])
 
   const firmById = new Map((clients ?? []).map((c) => [c.id, c.firm_name]))
@@ -56,12 +58,20 @@ export default async function ContentPlansPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-8">
-      <div>
-        <h1 className="text-2xl font-semibold text-heading">Content plans</h1>
-        <p className="mt-1 text-sm text-body">
-          Plan bulk content (blogs, SEO pages, a sitemap) as a list, then split the rows across
-          staff. Each assigned row becomes a task on that person&apos;s board.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-heading">Content plans</h1>
+          <p className="mt-1 text-sm text-body">
+            Plan bulk content (blogs, SEO pages, a sitemap) as a list, then split the rows across
+            staff. Each assigned row becomes a task on that person&apos;s board.
+          </p>
+        </div>
+        <Link
+          href="/admin/settings/task-templates"
+          className="shrink-0 text-sm text-fg-brand hover:underline"
+        >
+          Manage workflows →
+        </Link>
       </div>
 
       <Card>
@@ -69,7 +79,11 @@ export default async function ContentPlansPage() {
           <CardTitle className="text-base">New plan</CardTitle>
         </CardHeader>
         <CardContent>
-          <PlanCreateForm clients={clients ?? []} departments={departments ?? []} />
+          <PlanCreateForm
+            clients={clients ?? []}
+            departments={departments ?? []}
+            templates={templates ?? []}
+          />
         </CardContent>
       </Card>
 

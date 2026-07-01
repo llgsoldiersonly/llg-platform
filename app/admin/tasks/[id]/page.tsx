@@ -8,5 +8,15 @@ export default async function AdminTaskDetailPage({ params }: { params: Promise<
   const { id } = await params
   const d = await loadTaskDetail(id)
   if (!d) notFound()
-  return <TaskDetail task={d.task} activity={d.activity} comments={d.comments} backHref="/admin/tasks/board" />
+  return (
+    <TaskDetail
+      task={d.task}
+      activity={d.activity}
+      comments={d.comments}
+      subtasks={d.subtasks}
+      templates={d.templates}
+      taskBase="/admin/tasks"
+      backHref="/admin/tasks/board"
+    />
+  )
 }
