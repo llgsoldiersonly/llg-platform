@@ -149,8 +149,18 @@ export async function updateTaskStatus(
     after: { status },
   })
 
+  // Keep any linked content-plan row in step with its child task. Plan rows
+  // have no "blocked" state, so a paused task reads as in_progress on the plan.
+  const planItemStatus =
+    status === 'blocked' ? 'in_progress' : status
+  await admin
+    .from('content_plan_items')
+    .update({ status: planItemStatus, updated_at: new Date().toISOString() })
+    .eq('task_id', id)
+
   revalidatePath('/admin/tasks')
   revalidatePath('/admin/workload')
+  revalidatePath('/admin/content-plans')
   return ok({ id })
 }
 
