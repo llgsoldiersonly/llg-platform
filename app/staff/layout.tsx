@@ -37,6 +37,12 @@ export default async function StaffLayout({ children }: { children: React.ReactN
               Submit Work
             </Link>
             <Link
+              href="/staff/board"
+              className="text-sm font-medium text-body hover:text-heading"
+            >
+              My Work
+            </Link>
+            <Link
               href="/staff/recent"
               className="text-sm font-medium text-body hover:text-heading"
             >
