@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { TaskDetailData, ActivityRow, CommentRow, SubtaskRow } from '@/components/admin/task-detail'
+import type { TaskDetailData, ActivityRow, CommentRow, SubtaskRow, TaskFileRow } from '@/components/admin/task-detail'
 
 type RawTask = {
   id: string
@@ -26,9 +26,11 @@ export async function loadTaskDetail(
   comments: CommentRow[]
   subtasks: SubtaskRow[]
   templates: { id: string; name: string }[]
+  files: TaskFileRow[]
+  mentionables: { id: string; name: string }[]
 } | null> {
   const supa = createAdminClient()
-  const [{ data: task }, { data: activity }, { data: comments }, { data: subtasks }, { data: templates }] = await Promise.all([
+  const [{ data: task }, { data: activity }, { data: comments }, { data: subtasks }, { data: templates }, { data: files }, { data: staff }] = await Promise.all([
     supa
       .from('tasks')
       .select(
@@ -61,6 +63,19 @@ export async function loadTaskDetail(
       .select('id, name')
       .order('name')
       .returns<{ id: string; name: string }[]>(),
+    supa
+      .from('task_files')
+      .select('id, file_name, content_type, size_bytes, created_at')
+      .eq('task_id', id)
+      .order('created_at', { ascending: true })
+      .returns<{ id: string; file_name: string; content_type: string | null; size_bytes: number | null; created_at: string }[]>(),
+    supa
+      .from('profiles')
+      .select('id, full_name')
+      .in('role', ['agency_staff', 'super_admin'])
+      .eq('is_active', true)
+      .order('full_name')
+      .returns<{ id: string; full_name: string | null }[]>(),
   ])
 
   if (!task) return null
@@ -113,5 +128,15 @@ export async function loadTaskDetail(
       assigneeName: s.assigned_to ? nameById.get(s.assigned_to) ?? null : null,
     })),
     templates: templates ?? [],
+    files: (files ?? []).map((f) => ({
+      id: f.id,
+      file_name: f.file_name,
+      content_type: f.content_type,
+      size_bytes: f.size_bytes,
+      created_at: f.created_at,
+    })),
+    mentionables: (staff ?? [])
+      .filter((p) => p.full_name)
+      .map((p) => ({ id: p.id, name: p.full_name as string })),
   }
 }

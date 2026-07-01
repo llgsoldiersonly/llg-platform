@@ -1,13 +1,15 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { FileText, Image as ImageIcon, Video, FileSpreadsheet, File as FileIcon, Download, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { addTaskComment, setTaskHours, addSubtask } from '@/lib/actions/tasks'
 import { applyTemplateToTask } from '@/lib/actions/task-templates'
+import { uploadTaskFile, deleteTaskFile } from '@/lib/actions/task-files'
 
 export function TaskHoursForm({
   taskId,
@@ -140,20 +142,202 @@ export function ApplyTemplateForm({
   )
 }
 
-export function TaskCommentForm({ taskId }: { taskId: string }) {
+type TaskFile = {
+  id: string
+  file_name: string
+  content_type: string | null
+  size_bytes: number | null
+  created_at: string
+}
+
+function isImage(f: TaskFile): boolean {
+  return (f.content_type ?? '').startsWith('image/') || /\.(png|jpe?g|gif|webp|svg)$/i.test(f.file_name)
+}
+
+function fileIcon(f: TaskFile) {
+  const name = f.file_name.toLowerCase()
+  const ct = f.content_type ?? ''
+  if (isImage(f)) return ImageIcon
+  if (ct.startsWith('video/') || /\.(mp4|mov|webm|m4v)$/.test(name)) return Video
+  if (/\.(csv|xlsx?)$/.test(name)) return FileSpreadsheet
+  if (ct === 'application/pdf' || /\.(pdf|docx?|txt)$/.test(name)) return FileText
+  return FileIcon
+}
+
+function humanSize(bytes: number | null): string {
+  if (!bytes) return ''
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+export function TaskFiles({ taskId, files }: { taskId: string; files: TaskFile[] }) {
+  const router = useRouter()
+  const [pending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setError(null)
+    const fd = new FormData()
+    fd.set('task_id', taskId)
+    fd.set('file', file)
+    startTransition(async () => {
+      const res = await uploadTaskFile(fd)
+      if (!res.ok) setError(res.error.message)
+      if (inputRef.current) inputRef.current.value = ''
+      router.refresh()
+    })
+  }
+
+  function onDelete(fileId: string) {
+    if (!confirm('Remove this attachment?')) return
+    setError(null)
+    startTransition(async () => {
+      const res = await deleteTaskFile(fileId, taskId)
+      if (!res.ok) setError(res.error.message)
+      router.refresh()
+    })
+  }
+
+  return (
+    <div className="space-y-3">
+      {files.length > 0 && (
+        <ul className="space-y-2">
+          {files.map((f) => {
+            const Icon = fileIcon(f)
+            const viewUrl = `/api/task-files/${f.id}/download`
+            return (
+              <li
+                key={f.id}
+                className="flex items-center gap-3 rounded border border-border-default p-2"
+              >
+                {isImage(f) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={viewUrl}
+                    alt={f.file_name}
+                    className="h-10 w-10 shrink-0 rounded object-cover"
+                  />
+                ) : (
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-neutral-secondary-soft">
+                    <Icon className="h-5 w-5 text-body" />
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <a
+                    href={viewUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block truncate text-sm font-medium text-heading hover:text-fg-brand hover:underline"
+                  >
+                    {f.file_name}
+                  </a>
+                  <span className="text-xs text-body-subtle">{humanSize(f.size_bytes)}</span>
+                </div>
+                <a
+                  href={`${viewUrl}?dl=1`}
+                  className="text-body-subtle hover:text-fg-brand"
+                  aria-label="Download"
+                  title="Download"
+                >
+                  <Download className="h-4 w-4" />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => onDelete(f.id)}
+                  disabled={pending}
+                  className="text-body-subtle hover:text-fg-danger disabled:opacity-50"
+                  aria-label="Remove attachment"
+                  title="Remove"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+
+      <div className="flex items-center gap-3">
+        <input
+          ref={inputRef}
+          type="file"
+          onChange={onPick}
+          disabled={pending}
+          accept="image/*,video/*,.pdf,.doc,.docx,.csv,.xls,.xlsx,.txt"
+          className="block w-full text-sm text-body file:mr-3 file:rounded-md file:border-0 file:bg-neutral-secondary-soft file:px-3 file:py-1.5 file:text-sm file:text-heading hover:file:bg-neutral-tertiary-soft"
+        />
+        {pending && <span className="shrink-0 text-xs text-body-subtle">Uploading…</span>}
+      </div>
+      <p className="text-xs text-body-subtle">Images, video, PDF, Word, CSV, or Excel — up to 200MB.</p>
+      {error && <p className="text-sm text-fg-danger">{error}</p>}
+    </div>
+  )
+}
+
+type Mentionable = { id: string; name: string }
+
+export function TaskCommentForm({
+  taskId,
+  mentionables = [],
+}: {
+  taskId: string
+  mentionables?: Mentionable[]
+}) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [body, setBody] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [query, setQuery] = useState<string | null>(null) // active @… token, or null
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Detect an in-progress "@token" immediately before the caret.
+  function onChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const val = e.target.value
+    setBody(val)
+    const caret = e.target.selectionStart ?? val.length
+    const before = val.slice(0, caret)
+    const m = before.match(/(?:^|\s)@([\w-]*)$/)
+    setQuery(m ? m[1].toLowerCase() : null)
+  }
+
+  const matches =
+    query === null
+      ? []
+      : mentionables.filter((p) => p.name.toLowerCase().includes(query)).slice(0, 6)
+
+  function pick(p: Mentionable) {
+    const el = textareaRef.current
+    const caret = el?.selectionStart ?? body.length
+    const before = body.slice(0, caret)
+    const after = body.slice(caret)
+    // Replace the trailing "@token" with "@Full Name ".
+    const replaced = before.replace(/@([\w-]*)$/, `@${p.name} `)
+    const next = replaced + after
+    setBody(next)
+    setQuery(null)
+    // Return focus after React updates.
+    requestAnimationFrame(() => el?.focus())
+  }
+
+  // Resolve which mentionables are actually referenced in the final text.
+  function resolveMentions(text: string): string[] {
+    return mentionables.filter((p) => text.includes(`@${p.name}`)).map((p) => p.id)
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
     if (!body.trim()) return
     setError(null)
+    const mentions = resolveMentions(body)
     startTransition(async () => {
-      const res = await addTaskComment(taskId, body)
+      const res = await addTaskComment(taskId, body, mentions)
       if (res.ok) {
         setBody('')
+        setQuery(null)
         router.refresh()
       } else setError(res.error.message)
     })
@@ -161,12 +345,30 @@ export function TaskCommentForm({ taskId }: { taskId: string }) {
 
   return (
     <form onSubmit={submit} className="space-y-2">
-      <Textarea
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        placeholder="Add a comment…"
-        rows={2}
-      />
+      <div className="relative">
+        <Textarea
+          ref={textareaRef}
+          value={body}
+          onChange={onChange}
+          placeholder="Add a comment… use @ to mention someone"
+          rows={2}
+        />
+        {matches.length > 0 && (
+          <ul className="absolute z-10 mt-1 w-56 overflow-hidden rounded-md border border-border-default bg-bg-default shadow-md">
+            {matches.map((p) => (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  onClick={() => pick(p)}
+                  className="block w-full px-3 py-1.5 text-left text-sm text-heading hover:bg-neutral-secondary-soft"
+                >
+                  @{p.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
       <div className="flex items-center gap-3">
         <Button type="submit" size="sm" disabled={pending || !body.trim()}>
           {pending ? 'Posting…' : 'Comment'}

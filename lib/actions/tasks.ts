@@ -271,7 +271,11 @@ export async function addSubtask(
 
 // --- Task detail: comments + hours ---
 
-export async function addTaskComment(taskId: string, body: string): Promise<Result<{ id: string }>> {
+export async function addTaskComment(
+  taskId: string,
+  body: string,
+  mentionedUserIds?: string[]
+): Promise<Result<{ id: string }>> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return err('UNAUTHORIZED')
@@ -287,6 +291,24 @@ export async function addTaskComment(taskId: string, body: string): Promise<Resu
     .select('id')
     .single()
   if (error || !data) return err('INTERNAL', `Failed to comment: ${error?.message ?? 'no row'}`)
+
+  // Notify @mentioned staff (dedupe, never notify yourself). Mentions only
+  // drive notifications — nothing extra is persisted, so no schema is needed.
+  const mentioned = Array.from(new Set((mentionedUserIds ?? []).filter((id) => id && id !== user.id)))
+  if (mentioned.length > 0) {
+    const { data: task } = await admin.from('tasks').select('title').eq('id', taskId).maybeSingle<{ title: string }>()
+    const authorName = user.user_metadata?.full_name ?? user.email ?? 'Someone'
+    const rows = await Promise.all(
+      mentioned.map(async (uid) => ({
+        user_id: uid,
+        type: 'mention',
+        subject: `${authorName} mentioned you on "${task?.title ?? 'a task'}"`,
+        body: text.slice(0, 240),
+        link: await taskLink(admin, uid, taskId),
+      }))
+    )
+    await admin.from('notifications').insert(rows)
+  }
 
   revalidatePath(`/admin/tasks/${taskId}`)
   revalidatePath(`/staff/tasks/${taskId}`)
