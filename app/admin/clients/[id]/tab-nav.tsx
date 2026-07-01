@@ -13,6 +13,8 @@ export function ClientTabNav({ clientId }: { clientId: string }) {
   const tabs: Tab[] = [
     { href: base,                          label: 'Summary' },
     { href: `${base}/deliverables`,        label: 'Deliverables' },
+    { href: `${base}/tasks`,               label: 'Tasks' },
+    { href: `${base}/assets`,              label: 'Assets' },
     { href: `${base}/leads`,               label: 'Leads' },
     { href: `${base}/credentials`,         label: 'Credentials' },
     { href: `${base}/content`,             label: 'Content' },
@@ -23,7 +25,6 @@ export function ClientTabNav({ clientId }: { clientId: string }) {
     { href: `${base}/local`,               label: 'Local' },
     { href: `${base}/seo`,                 label: 'SEO Visibility' },
     { href: `${base}/tickets`,             label: 'Tickets',      phase: 'global view exists' },
-    { href: `${base}/tasks`,               label: 'Tasks' },
   ]
 
   return (
