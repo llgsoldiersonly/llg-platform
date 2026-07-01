@@ -94,6 +94,46 @@ export async function updateDeliverableStatus(
   return ok({ id })
 }
 
+// Assign (or unassign with null) a deliverable to a staff member — the person
+// responsible for the work this period.
+export async function assignDeliverable(
+  id: string,
+  assigneeUserId: string | null,
+  clientId: string
+): Promise<Result<{ id: string }>> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return err('UNAUTHORIZED')
+  if (!isAgencyStaff(user)) return err('FORBIDDEN')
+
+  const admin = createAdminClient()
+  const { data: row } = await admin
+    .from('deliverables')
+    .select('id, template_id, custom_title, template:package_deliverables(display_name)')
+    .eq('id', id)
+    .maybeSingle<{ id: string; custom_title: string | null; template: { display_name: string } | null }>()
+
+  const { error } = await admin
+    .from('deliverables')
+    .update({ assigned_to: assigneeUserId, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) return err('INTERNAL', `Failed to assign: ${error.message}`)
+
+  if (assigneeUserId) {
+    const title = row?.template?.display_name ?? row?.custom_title ?? 'a deliverable'
+    await admin.from('notifications').insert({
+      user_id: assigneeUserId,
+      type: 'deliverable_assigned',
+      subject: `Assigned: ${title}`,
+      link: `/admin/clients/${clientId}/deliverables`,
+    })
+  }
+
+  revalidatePath(`/admin/clients/${clientId}/deliverables`)
+  revalidatePath('/admin/workload')
+  return ok({ id })
+}
+
 export async function deleteCustomDeliverable(
   id: string,
   clientId: string

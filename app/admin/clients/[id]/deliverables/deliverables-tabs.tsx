@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { DeliverableRowActions } from './row-actions'
+import { DeliverableAssignee, type StaffOption } from './deliverable-assignee'
 
 export type DeliverableRow = {
   id: string
@@ -11,6 +12,7 @@ export type DeliverableRow = {
   is_incentive: boolean
   template_id: string | null
   status: string
+  assigned_to: string | null
   actual_count: number
   period_start: string
   period_end: string
@@ -56,7 +58,15 @@ function getFrequency(d: DeliverableRow): string {
   return d.template?.frequency ?? d.custom_frequency ?? ''
 }
 
-export function DeliverablesTabs({ deliverables, clientId }: { deliverables: DeliverableRow[]; clientId: string }) {
+export function DeliverablesTabs({
+  deliverables,
+  clientId,
+  staff,
+}: {
+  deliverables: DeliverableRow[]
+  clientId: string
+  staff: StaffOption[]
+}) {
   const { prelaunch, recurring } = useMemo(() => {
     const pre: DeliverableRow[] = []
     const rec: DeliverableRow[] = []
@@ -111,16 +121,16 @@ export function DeliverablesTabs({ deliverables, clientId }: { deliverables: Del
       </CardHeader>
       <CardContent className="p-0">
         {tab === 'prelaunch' ? (
-          <PrelaunchTable rows={prelaunch} clientId={clientId} />
+          <PrelaunchTable rows={prelaunch} clientId={clientId} staff={staff} />
         ) : (
-          <RecurringTable rows={recurring} clientId={clientId} />
+          <RecurringTable rows={recurring} clientId={clientId} staff={staff} />
         )}
       </CardContent>
     </Card>
   )
 }
 
-function PrelaunchTable({ rows, clientId }: { rows: DeliverableRow[]; clientId: string }) {
+function PrelaunchTable({ rows, clientId, staff }: { rows: DeliverableRow[]; clientId: string; staff: StaffOption[] }) {
   if (rows.length === 0) {
     return (
       <p className="p-6 text-sm text-body">
@@ -136,6 +146,7 @@ function PrelaunchTable({ rows, clientId }: { rows: DeliverableRow[]; clientId: 
           <th className="px-6 py-3 text-left font-medium">Source</th>
           <th className="px-6 py-3 text-left font-medium">Logged</th>
           <th className="px-6 py-3 text-left font-medium">Status</th>
+          <th className="px-6 py-3 text-left font-medium">Assignee</th>
           <th className="px-6 py-3" />
         </tr>
       </thead>
@@ -171,6 +182,14 @@ function PrelaunchTable({ rows, clientId }: { rows: DeliverableRow[]; clientId: 
               <td className="px-6 py-4">
                 <Badge variant={statusVar}>{d.status.replace('_', ' ')}</Badge>
               </td>
+              <td className="px-6 py-4">
+                <DeliverableAssignee
+                  deliverableId={d.id}
+                  clientId={clientId}
+                  assignedTo={d.assigned_to}
+                  staff={staff}
+                />
+              </td>
               <td className="px-6 py-4 text-right">
                 <DeliverableRowActions
                   deliverableId={d.id}
@@ -187,7 +206,7 @@ function PrelaunchTable({ rows, clientId }: { rows: DeliverableRow[]; clientId: 
   )
 }
 
-function RecurringTable({ rows, clientId }: { rows: DeliverableRow[]; clientId: string }) {
+function RecurringTable({ rows, clientId, staff }: { rows: DeliverableRow[]; clientId: string; staff: StaffOption[] }) {
   if (rows.length === 0) {
     return (
       <p className="p-6 text-sm text-body">
@@ -204,6 +223,7 @@ function RecurringTable({ rows, clientId }: { rows: DeliverableRow[]; clientId: 
           <th className="px-6 py-3 text-left font-medium">Period</th>
           <th className="px-6 py-3 text-left font-medium">Progress</th>
           <th className="px-6 py-3 text-left font-medium">Status</th>
+          <th className="px-6 py-3 text-left font-medium">Assignee</th>
           <th className="px-6 py-3" />
         </tr>
       </thead>
@@ -241,6 +261,14 @@ function RecurringTable({ rows, clientId }: { rows: DeliverableRow[]; clientId: 
               </td>
               <td className="px-6 py-4">
                 <Badge variant={statusVar}>{d.status.replace('_', ' ')}</Badge>
+              </td>
+              <td className="px-6 py-4">
+                <DeliverableAssignee
+                  deliverableId={d.id}
+                  clientId={clientId}
+                  assignedTo={d.assigned_to}
+                  staff={staff}
+                />
               </td>
               <td className="px-6 py-4 text-right">
                 <DeliverableRowActions
