@@ -3,11 +3,12 @@
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, Paperclip } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Select } from '@/components/ui/select'
 import { updateTaskStatus } from '@/lib/actions/tasks'
 import { updateDeliverableStatus } from '@/lib/actions/deliverables'
+import { submitDeliverableProof } from '@/lib/actions/submissions'
 
 export type BoardStatus = 'todo' | 'in_progress' | 'in_review' | 'blocked' | 'done'
 
@@ -101,6 +102,22 @@ export function KanbanBoard({
     })
   }
 
+  // Inline proof: attach a URL straight to a deliverable card. The kind is
+  // inferred server-side from the deliverable's code, so all we send is the link.
+  function addProof(item: KanbanItem) {
+    if (item.kind !== 'deliverable') return
+    const url = window.prompt('Paste the URL that proves this deliverable is done:')
+    if (url === null) return // cancelled
+    const trimmed = url.trim()
+    if (!trimmed) return
+    setError(null)
+    startTransition(async () => {
+      const res = await submitDeliverableProof(item.id, trimmed)
+      if (!res.ok) setError(res.error.message)
+      router.refresh()
+    })
+  }
+
   return (
     <div className="space-y-3">
       {(showAssigneeFilter || error) && (
@@ -156,6 +173,21 @@ export function KanbanBoard({
                       <p className="font-medium leading-tight text-heading">{item.title}</p>
                       <div className="flex shrink-0 items-center gap-1">
                         {item.kind === 'deliverable' && <Badge variant="secondary">deliv</Badge>}
+                        {item.kind === 'deliverable' && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              addProof(item)
+                            }}
+                            disabled={pending}
+                            className="text-body-subtle hover:text-fg-brand disabled:opacity-50"
+                            aria-label="Add proof URL"
+                            title="Add proof URL"
+                          >
+                            <Paperclip className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                         {item.kind === 'task' && taskDetailBase && (
                           <Link
                             href={`${taskDetailBase}/${item.id}`}

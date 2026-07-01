@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isAgencyStaff } from '@/lib/auth/rbac'
 import { ok, err, type Result } from '@/lib/errors'
-import { isValidSubmissionKind, type SubmissionKind } from '@/lib/submissions/kinds'
+import { isValidSubmissionKind, deriveKindFromCode, type SubmissionKind } from '@/lib/submissions/kinds'
 
 export type SubmitDeliverableInput = {
   client_id: string
@@ -95,6 +95,77 @@ export async function submitDeliverable(
 
   revalidatePath('/admin/submissions')
   revalidatePath(`/admin/clients/${input.client_id}`)
+  revalidatePath('/overview')
+
+  return ok({ id: data.id })
+}
+
+// Inline deliverable proof: staff paste a single URL straight onto a
+// deliverable card (kanban / My Day) without opening the full submit form.
+// We look the deliverable up server-side, infer the submission kind from its
+// template code, insert one auto-approved submission, and bump the counter
+// (which flips the deliverable to done). Client passes nothing it isn't
+// allowed to — client_id / kind are derived here, not trusted from the browser.
+export async function submitDeliverableProof(
+  deliverableId: string,
+  url: string
+): Promise<Result<{ id: string }>> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return err('UNAUTHORIZED')
+  if (!isAgencyStaff(user)) return err('FORBIDDEN')
+  if (!deliverableId) return err('VALIDATION_FAILED', 'Missing deliverable.')
+
+  const link = url?.trim()
+  if (!link || !isValidUrl(link)) {
+    return err('VALIDATION_FAILED', 'A valid link (https://…) is required.')
+  }
+
+  const admin = createAdminClient()
+  const { data: deliverable } = await admin
+    .from('deliverables_display')
+    .select('id, client_id, code, title')
+    .eq('id', deliverableId)
+    .maybeSingle<{ id: string; client_id: string; code: string | null; title: string | null }>()
+
+  if (!deliverable) return err('NOT_FOUND', 'Deliverable not found.')
+
+  const kind = deriveKindFromCode(deliverable.code)
+
+  const { data, error } = await admin
+    .from('deliverable_submissions')
+    .insert({
+      client_id: deliverable.client_id,
+      kind,
+      link_url: link,
+      title: deliverable.title ?? null,
+      deliverable_id: deliverableId,
+      submitted_by: user.id,
+    })
+    .select('id')
+    .single()
+
+  if (error || !data) {
+    return err('INTERNAL', `Failed to submit: ${error?.message ?? 'unknown error'}`, error)
+  }
+
+  // Auto-approved by trigger → bump the counter / flip to done immediately.
+  await incrementDeliverableCount(admin, deliverableId)
+
+  await admin.from('activity_log').insert({
+    actor_id: user.id,
+    entity_type: 'deliverable_submission',
+    entity_id: data.id,
+    action: 'submitted',
+    after: { kind, client_id: deliverable.client_id, link_url: link, via: 'inline_proof' },
+  })
+
+  revalidatePath('/admin/submissions')
+  revalidatePath(`/admin/clients/${deliverable.client_id}`)
+  revalidatePath('/staff')
+  revalidatePath('/staff/board')
+  revalidatePath('/admin/tasks/board')
   revalidatePath('/overview')
 
   return ok({ id: data.id })
