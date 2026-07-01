@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { InviteStaffForm } from './invite-form'
 import { StaffRowEditor } from './staff-row-editor'
+import { StaffRowActions } from './staff-row-actions'
 import { GoogleAdsConnectCard } from '@/components/admin/google-ads-connect-card'
 
 export const dynamic = 'force-dynamic'
@@ -77,7 +78,9 @@ export default async function AdminUsersPage({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Active staff ({profiles.filter((p) => p.is_active).length})</CardTitle>
+          <CardTitle className="text-base">
+            Staff ({profiles.length}) · {profiles.filter((p) => p.is_active).length} active
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <table className="w-full text-sm">
@@ -109,8 +112,11 @@ export default async function AdminUsersPage({
                       <Badge variant="secondary">Inactive</Badge>
                     )}
                   </td>
-                  <td className="px-6 py-3 text-right">
-                    <StaffRowEditor profile={p} departments={departments} />
+                  <td className="px-6 py-3">
+                    <div className="flex items-center justify-end gap-1">
+                      <StaffRowEditor profile={p} departments={departments} />
+                      <StaffRowActions profile={p} currentUserId={user.id} />
+                    </div>
                   </td>
                 </tr>
               ))}

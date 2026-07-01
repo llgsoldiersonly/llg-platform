@@ -106,15 +106,190 @@ export async function updateStaffMember(input: UpdateStaffInput): Promise<Result
   if (input.role !== undefined) patch.role = input.role
   if (input.department_id !== undefined) patch.department_id = input.department_id || null
   if (input.title !== undefined) patch.title = input.title?.trim() || null
-  if (input.is_active !== undefined) patch.is_active = input.is_active
 
   if (Object.keys(patch).length > 0) {
     const { error: profileErr } = await admin.from('profiles').update(patch).eq('id', input.user_id)
     if (profileErr) return err('INTERNAL', `Profile update failed: ${profileErr.message}`)
   }
 
+  // Active state is handled through the same ban/unban + reassign path as the
+  // dedicated Activate/Deactivate control, so the two never drift.
+  if (input.is_active !== undefined) {
+    const res = await applyActiveState(admin, input.user_id, input.is_active)
+    if (!res.ok) return res
+  }
+
   revalidatePath('/admin/settings/users')
   return ok({ user_id: input.user_id })
+}
+
+// Long ban == effectively locked out. Supabase has no "disabled" flag, so a
+// far-future ban_duration is how we block a deactivated user from logging in.
+const LOCK_BAN_DURATION = '876000h' // ~100 years
+
+// Centralized active/inactive transition:
+//  - flips profiles.is_active
+//  - bans (deactivate) or unbans (reactivate) the auth user so login is gated
+//  - on deactivate, unassigns their still-open tasks + deliverables so nothing
+//    is stranded on a person who can't act on it (history stays intact).
+async function applyActiveState(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  active: boolean
+): Promise<Result<{ user_id: string }>> {
+  const { error: profileErr } = await admin
+    .from('profiles')
+    .update({ is_active: active, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+  if (profileErr) return err('INTERNAL', `Failed to set active state: ${profileErr.message}`)
+
+  const { error: banErr } = await admin.auth.admin.updateUserById(userId, {
+    ban_duration: active ? 'none' : LOCK_BAN_DURATION,
+  })
+  if (banErr) return err('INTERNAL', `Active state saved, but login gate update failed: ${banErr.message}`)
+
+  if (!active) {
+    const now = new Date().toISOString()
+    await admin
+      .from('tasks')
+      .update({ assigned_to: null, updated_at: now })
+      .eq('assigned_to', userId)
+      .not('status', 'in', '("done","cancelled")')
+    await admin
+      .from('deliverables')
+      .update({ assigned_to: null, updated_at: now })
+      .eq('assigned_to', userId)
+      .not('status', 'in', '("done","skipped")')
+  }
+
+  return ok({ user_id: userId })
+}
+
+// Guard: the last active super-admin can't be locked out / removed, or nobody
+// can administer the platform. Returns an error Result if `userId` is that
+// person, otherwise null.
+async function blockIfLastSuperAdmin(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string
+): Promise<Result<never> | null> {
+  const { data: target } = await admin
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .maybeSingle<{ role: string }>()
+  if (target?.role !== 'super_admin') return null
+
+  const { count } = await admin
+    .from('profiles')
+    .select('id', { count: 'exact', head: true })
+    .eq('role', 'super_admin')
+    .eq('is_active', true)
+  if ((count ?? 0) <= 1) {
+    return err('VALIDATION_FAILED', 'This is the last active super-admin — promote someone else first.')
+  }
+  return null
+}
+
+// Deactivate (soft) or reactivate a staff member. Deactivating hides them from
+// pickers, blocks their login, and unassigns their open work; reactivating
+// restores login. History is preserved either way.
+export async function setStaffActive(
+  userId: string,
+  active: boolean
+): Promise<Result<{ user_id: string }>> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return err('UNAUTHORIZED')
+  if (!isSuperAdmin(user)) return err('FORBIDDEN', 'Only super-admins can change staff status')
+  if (!userId) return err('VALIDATION_FAILED', 'Missing user id')
+  if (userId === user.id) return err('VALIDATION_FAILED', "You can't deactivate your own account.")
+
+  const admin = createAdminClient()
+
+  if (!active) {
+    const guard = await blockIfLastSuperAdmin(admin, userId)
+    if (guard) return guard
+  }
+
+  const res = await applyActiveState(admin, userId, active)
+  if (!res.ok) return res
+
+  await admin.from('activity_log').insert({
+    actor_id: user.id,
+    entity_type: 'user',
+    entity_id: userId,
+    action: active ? 'reactivated' : 'deactivated',
+  })
+
+  revalidatePath('/admin/settings/users')
+  return ok({ user_id: userId })
+}
+
+// Hard-delete a staff user — ONLY allowed when the account has no history
+// (never assigned/created a task, submitted work, commented, or logged
+// activity). Anything with history must be deactivated instead so attribution
+// and audit trails survive. Direct FK references to auth.users would also block
+// the delete at the DB level, so this gate is both UX and correctness.
+export async function deleteStaffMember(userId: string): Promise<Result<{ user_id: string }>> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return err('UNAUTHORIZED')
+  if (!isSuperAdmin(user)) return err('FORBIDDEN', 'Only super-admins can delete users')
+  if (!userId) return err('VALIDATION_FAILED', 'Missing user id')
+  if (userId === user.id) return err('VALIDATION_FAILED', "You can't delete your own account.")
+
+  const admin = createAdminClient()
+
+  const guard = await blockIfLastSuperAdmin(admin, userId)
+  if (guard) return guard
+
+  // Existence checks across every table that references the user. A missing
+  // table (migration not yet applied) errors rather than throws — we treat
+  // that as "no rows" since the table can't hold references yet.
+  const activityCount = await countUserActivity(admin, userId)
+  if (activityCount > 0) {
+    return err(
+      'VALIDATION_FAILED',
+      'This user has activity (tasks, submissions, or comments). Deactivate them instead — deleting would erase attribution.'
+    )
+  }
+
+  const { error: delErr } = await admin.auth.admin.deleteUser(userId)
+  if (delErr) {
+    return err(
+      'INTERNAL',
+      `Delete failed: ${delErr.message}. If they have any linked records, deactivate instead.`
+    )
+  }
+
+  await admin.from('activity_log').insert({
+    actor_id: user.id,
+    entity_type: 'user',
+    entity_id: userId,
+    action: 'deleted',
+  })
+
+  revalidatePath('/admin/settings/users')
+  return ok({ user_id: userId })
+}
+
+// Sums references to a user across activity-bearing tables. Any table that
+// doesn't exist yet (owed migration) contributes 0.
+async function countUserActivity(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string
+): Promise<number> {
+  const head = { count: 'exact' as const, head: true }
+  const checks = await Promise.all([
+    admin.from('tasks').select('id', head).or(`created_by.eq.${userId},assigned_to.eq.${userId}`),
+    admin.from('deliverable_submissions').select('id', head).eq('submitted_by', userId),
+    admin.from('deliverables').select('id', head).or(`assigned_to.eq.${userId},completed_by.eq.${userId}`),
+    admin.from('task_comments').select('id', head).eq('author_id', userId),
+    admin.from('activity_log').select('id', head).eq('actor_id', userId),
+    admin.from('client_assets').select('id', head).eq('uploaded_by', userId),
+    admin.from('client_lead_files').select('id', head).eq('uploaded_by', userId),
+  ])
+  return checks.reduce((sum, c) => sum + (c.count ?? 0), 0)
 }
 
 export type InviteClientInput = {
