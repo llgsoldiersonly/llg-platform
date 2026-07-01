@@ -13,6 +13,7 @@ type RawTask = {
   status: string
   priority: string
   assigned_to: string | null
+  block_reason: string | null
   client: { id: string; firm_name: string } | null
 }
 
@@ -27,7 +28,7 @@ export default async function TasksBoardPage() {
   const [{ data: rawTasks }, { data: staff }] = await Promise.all([
     supa
       .from('tasks')
-      .select('id, task_number, title, status, priority, assigned_to, client:clients(id, firm_name)')
+      .select('id, task_number, title, status, priority, assigned_to, block_reason, client:clients(id, firm_name)')
       .neq('status', 'cancelled')
       .order('created_at', { ascending: false })
       .limit(500)
@@ -51,6 +52,7 @@ export default async function TasksBoardPage() {
       priority: t.priority,
       clientId: t.client?.id ?? null,
       assigneeName: t.assigned_to ? nameById.get(t.assigned_to) ?? null : null,
+      blockReason: t.block_reason,
     }))
 
   return (
