@@ -23,7 +23,7 @@ export function ClientTabNav({ clientId }: { clientId: string }) {
     { href: `${base}/local`,               label: 'Local' },
     { href: `${base}/seo`,                 label: 'SEO Visibility' },
     { href: `${base}/tickets`,             label: 'Tickets',      phase: 'global view exists' },
-    { href: `${base}/tasks`,               label: 'Tasks',        phase: 'global view exists' },
+    { href: `${base}/tasks`,               label: 'Tasks' },
   ]
 
   return (
