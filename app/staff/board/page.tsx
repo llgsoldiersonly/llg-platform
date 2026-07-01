@@ -13,6 +13,7 @@ type RawTask = {
   status: string
   priority: string
   block_reason: string | null
+  parent_task_id: string | null
   client: { id: string; firm_name: string } | null
 }
 type RawDeliverable = {
@@ -46,7 +47,7 @@ export default async function MyWorkBoardPage() {
   const [{ data: rawTasks }, { data: rawDeliv }, { data: firms }] = await Promise.all([
     supa
       .from('tasks')
-      .select('id, task_number, title, status, priority, block_reason, client:clients(id, firm_name)')
+      .select('id, task_number, title, status, priority, block_reason, parent_task_id, client:clients(id, firm_name)')
       .eq('assigned_to', user.id)
       .neq('status', 'cancelled')
       .returns<RawTask[]>(),
@@ -72,6 +73,7 @@ export default async function MyWorkBoardPage() {
       priority: t.priority,
       clientId: t.client?.id ?? null,
       blockReason: t.block_reason,
+      isSubtask: !!t.parent_task_id,
     }))
 
   const delivItems: KanbanItem[] = (rawDeliv ?? []).map((d) => ({

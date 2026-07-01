@@ -104,14 +104,23 @@ export async function updateTaskStatus(
 
   const { data: current } = await admin
     .from('tasks')
-    .select('status, department_id')
+    .select('title, status, department_id, parent_task_id, position')
     .eq('id', id)
-    .maybeSingle<{ status: string; department_id: string | null }>()
+    .maybeSingle<{
+      title: string
+      status: string
+      department_id: string | null
+      parent_task_id: string | null
+      position: number | null
+    }>()
 
   // Submitting (moving a task to done) is the final approval. Staff take work
   // as far as "in review"; a super-admin submits it — OR the department lead
   // for the task's own department (they own their team's output).
-  if (status === 'done' && !isSuperAdmin(user)) {
+  //
+  // Workflow STEPS (subtasks) are exempt: "done" on a step just means the step
+  // is finished — the parent still goes through the in_review → Submitted gate.
+  if (status === 'done' && !current?.parent_task_id && !isSuperAdmin(user)) {
     const scope = await getLeadScope(admin, user.id)
     if (!canManageDept(scope, current?.department_id ?? null)) {
       return err('FORBIDDEN', 'Only a super-admin or the department lead can submit this task. Move it to In review instead.')
@@ -158,10 +167,130 @@ export async function updateTaskStatus(
     .update({ status: planItemStatus, updated_at: new Date().toISOString() })
     .eq('task_id', id)
 
+  // Pipeline automation: completing a workflow step hands off to the next one
+  // and rolls the parent up to In review once every step is done.
+  if (status === 'done' && current?.parent_task_id) {
+    await handleStepCompleted(admin, user.id, {
+      stepTitle: current.title,
+      parentId: current.parent_task_id,
+      position: current.position ?? 0,
+    })
+  }
+
   revalidatePath('/admin/tasks')
   revalidatePath('/admin/workload')
   revalidatePath('/admin/content-plans')
   return ok({ id })
+}
+
+// After a workflow step is completed:
+//  1. Notify the next incomplete step's assignee ("your step is ready") — or,
+//     if that step has no owner, the parent department's lead.
+//  2. If ALL steps are now done, auto-move the parent to in_review and notify
+//     the parent's assignee + department lead. The parent still needs a
+//     super-admin / dept lead to push it to Submitted — this just removes the
+//     "who's chasing the pipeline" coordination work.
+async function handleStepCompleted(
+  admin: ReturnType<typeof createAdminClient>,
+  actorId: string,
+  ctx: { stepTitle: string; parentId: string; position: number }
+) {
+  const [{ data: siblings }, { data: parent }] = await Promise.all([
+    admin
+      .from('tasks')
+      .select('id, title, status, position, assigned_to')
+      .eq('parent_task_id', ctx.parentId)
+      .order('position')
+      .returns<{ id: string; title: string; status: string; position: number | null; assigned_to: string | null }[]>(),
+    admin
+      .from('tasks')
+      .select('id, title, status, assigned_to, department_id')
+      .eq('id', ctx.parentId)
+      .maybeSingle<{ id: string; title: string; status: string; assigned_to: string | null; department_id: string | null }>(),
+  ])
+  if (!parent || !siblings?.length) return
+
+  const active = siblings.filter((s) => s.status !== 'cancelled')
+  const remaining = active.filter((s) => s.status !== 'done')
+
+  // Department leads of the parent's department, for unowned-step + rollup pings.
+  const { data: leads } = parent.department_id
+    ? await admin
+        .from('profiles')
+        .select('id')
+        .eq('is_department_lead', true)
+        .eq('is_active', true)
+        .eq('department_id', parent.department_id)
+        .returns<{ id: string }[]>()
+    : { data: [] as { id: string }[] }
+  const leadIds = (leads ?? []).map((l) => l.id)
+
+  const notify = async (userId: string, subject: string, body: string, taskId: string) => {
+    if (userId === actorId) return
+    await admin.from('notifications').insert({
+      user_id: userId,
+      type: 'step_ready',
+      subject,
+      body,
+      link: await taskLink(admin, userId, taskId),
+    })
+  }
+
+  if (remaining.length > 0) {
+    // Hand off to the next incomplete step after this one (or the earliest
+    // incomplete one if the pipeline was worked out of order).
+    const next =
+      remaining.find((s) => (s.position ?? 0) > ctx.position) ?? remaining[0]
+    if (next.assigned_to) {
+      await notify(
+        next.assigned_to,
+        `Your step is ready: ${next.title}`,
+        `"${ctx.stepTitle}" was completed on "${parent.title}".`,
+        next.id
+      )
+    } else {
+      for (const leadId of leadIds) {
+        await notify(
+          leadId,
+          `Next step needs an owner: ${next.title}`,
+          `"${ctx.stepTitle}" was completed on "${parent.title}" — the next step is unassigned.`,
+          next.id
+        )
+      }
+    }
+    return
+  }
+
+  // Every step is done → roll the parent up to In review (unless it's already
+  // in review / submitted / cancelled).
+  if (parent.status === 'todo' || parent.status === 'in_progress' || parent.status === 'blocked') {
+    await admin
+      .from('tasks')
+      .update({ status: 'in_review', block_reason: null, updated_at: new Date().toISOString() })
+      .eq('id', parent.id)
+    await admin.from('activity_log').insert({
+      actor_id: actorId,
+      entity_type: 'task',
+      entity_id: parent.id,
+      action: 'updated',
+      after: { status: 'in_review', via: 'auto_rollup' },
+    })
+    await admin
+      .from('content_plan_items')
+      .update({ status: 'in_review', updated_at: new Date().toISOString() })
+      .eq('task_id', parent.id)
+
+    const recipients = new Set<string>(leadIds)
+    if (parent.assigned_to) recipients.add(parent.assigned_to)
+    for (const uid of recipients) {
+      await notify(
+        uid,
+        `All steps complete: ${parent.title}`,
+        'Every workflow step is done — the task moved to In review automatically.',
+        parent.id
+      )
+    }
+  }
 }
 
 export async function reassignTask(

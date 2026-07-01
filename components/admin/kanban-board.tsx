@@ -23,6 +23,9 @@ export type KanbanItem = {
   assigneeName?: string | null
   assigneeId?: string | null
   blockReason?: string | null
+  // Workflow step (has a parent task). Steps skip the submit gate — "done" on
+  // a step isn't the final client submission, the parent still carries that.
+  isSubtask?: boolean
 }
 
 const COLUMNS: { key: BoardStatus; label: string }[] = [
@@ -134,8 +137,9 @@ export function KanbanBoard({
     setError(null)
 
     // Submitting a task (→ Submitted) needs submit rights (super-admin, or a
-    // department lead on their own board). The server re-checks per task.
-    if (item.kind === 'task' && target === 'done' && !canReopen && !canSubmit) {
+    // department lead on their own board) — except workflow steps, which any
+    // staffer can finish. The server re-checks per task.
+    if (item.kind === 'task' && target === 'done' && !item.isSubtask && !canReopen && !canSubmit) {
       setError('Only a super-admin or department lead can submit a task. Move it to In review instead.')
       return
     }
@@ -274,6 +278,7 @@ export function KanbanBoard({
                       <p className="font-medium leading-tight text-heading">{item.title}</p>
                       <div className="flex shrink-0 items-center gap-1">
                         {item.kind === 'deliverable' && <Badge variant="secondary">deliv</Badge>}
+                        {item.isSubtask && <Badge variant="secondary">step</Badge>}
                         {item.kind === 'deliverable' && (
                           <button
                             type="button"

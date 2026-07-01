@@ -11,7 +11,14 @@ import { TemplateDeleteButton } from './template-delete-button'
 export const dynamic = 'force-dynamic'
 
 type Template = { id: string; name: string; kind: string }
-type Step = { template_id: string; position: number; title: string }
+type Step = {
+  template_id: string
+  position: number
+  title: string
+  assignee_rule: string | null
+  assignee_id: string | null
+  offset_days: number | null
+}
 
 export default async function TaskTemplatesPage() {
   const supabase = await createClient()
@@ -20,10 +27,35 @@ export default async function TaskTemplatesPage() {
   if (!isAgencyStaff(user)) redirect('/admin/dashboard')
 
   const supa = createAdminClient()
-  const [{ data: templates }, { data: steps }] = await Promise.all([
+  const [{ data: templates }, { data: steps }, { data: staff }] = await Promise.all([
     supa.from('task_templates').select('id, name, kind').order('name').returns<Template[]>(),
-    supa.from('task_template_steps').select('template_id, position, title').order('position').returns<Step[]>(),
+    supa
+      .from('task_template_steps')
+      .select('template_id, position, title, assignee_rule, assignee_id, offset_days')
+      .order('position')
+      .returns<Step[]>(),
+    supa
+      .from('profiles')
+      .select('id, full_name')
+      .in('role', ['agency_staff', 'super_admin'])
+      .eq('is_active', true)
+      .order('full_name')
+      .returns<{ id: string; full_name: string | null }[]>(),
   ])
+
+  const staffList = (staff ?? [])
+    .filter((p) => p.full_name)
+    .map((p) => ({ id: p.id, name: p.full_name as string }))
+  const nameById = new Map(staffList.map((p) => [p.id, p.name]))
+
+  const ruleLabel = (s: Step): string | null => {
+    switch (s.assignee_rule) {
+      case 'parent_assignee': return "parent's assignee"
+      case 'department_lead': return 'department lead'
+      case 'specific': return s.assignee_id ? nameById.get(s.assignee_id) ?? 'specific person' : null
+      default: return null
+    }
+  }
 
   const stepsByTemplate = new Map<string, Step[]>()
   for (const s of steps ?? []) {
@@ -50,7 +82,7 @@ export default async function TaskTemplatesPage() {
           <CardTitle className="text-base">New template</CardTitle>
         </CardHeader>
         <CardContent>
-          <TemplateCreateForm />
+          <TemplateCreateForm staff={staffList} />
         </CardContent>
       </Card>
 
@@ -69,9 +101,22 @@ export default async function TaskTemplatesPage() {
               </CardHeader>
               <CardContent>
                 <ol className="list-decimal space-y-1 pl-5 text-sm text-body">
-                  {(stepsByTemplate.get(t.id) ?? []).map((s) => (
-                    <li key={`${t.id}-${s.position}`}>{s.title}</li>
-                  ))}
+                  {(stepsByTemplate.get(t.id) ?? []).map((s) => {
+                    const who = ruleLabel(s)
+                    return (
+                      <li key={`${t.id}-${s.position}`}>
+                        {s.title}
+                        {(who || s.offset_days != null) && (
+                          <span className="text-xs text-body-subtle">
+                            {' '}
+                            ({[who, s.offset_days != null ? `due +${s.offset_days}d` : null]
+                              .filter(Boolean)
+                              .join(' · ')})
+                          </span>
+                        )}
+                      </li>
+                    )
+                  })}
                 </ol>
               </CardContent>
             </Card>

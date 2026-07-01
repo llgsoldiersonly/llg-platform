@@ -17,6 +17,7 @@ type RawTask = {
   priority: string
   assigned_to: string | null
   block_reason: string | null
+  parent_task_id: string | null
   client: { id: string; firm_name: string } | null
 }
 type RawDeliverable = {
@@ -75,7 +76,7 @@ export default async function DepartmentBoardPage() {
   const [{ data: rawTasks }, { data: rawDeliv }, { data: staff }, { data: firms }] = await Promise.all([
     supa
       .from('tasks')
-      .select('id, task_number, title, status, priority, assigned_to, block_reason, client:clients(id, firm_name)')
+      .select('id, task_number, title, status, priority, assigned_to, block_reason, parent_task_id, client:clients(id, firm_name)')
       .eq('department_id', scope.departmentId)
       .neq('status', 'cancelled')
       .order('created_at', { ascending: false })
@@ -117,6 +118,7 @@ export default async function DepartmentBoardPage() {
       assigneeName: t.assigned_to ? nameById.get(t.assigned_to) ?? null : null,
       assigneeId: t.assigned_to,
       blockReason: t.block_reason,
+      isSubtask: !!t.parent_task_id,
     }))
 
   const delivItems: KanbanItem[] = (rawDeliv ?? []).map((d) => ({
