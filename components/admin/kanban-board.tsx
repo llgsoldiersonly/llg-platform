@@ -18,14 +18,15 @@ export type KanbanItem = {
   priority: string | null
   clientId: string | null
   assigneeName?: string | null
+  blockReason?: string | null
 }
 
 const COLUMNS: { key: BoardStatus; label: string }[] = [
   { key: 'todo', label: 'To do' },
   { key: 'in_progress', label: 'In progress' },
   { key: 'in_review', label: 'In review' },
-  { key: 'blocked', label: 'Blocked' },
-  { key: 'done', label: 'Done' },
+  { key: 'blocked', label: 'Paused' },
+  { key: 'done', label: 'Submitted' },
 ]
 
 // Deliverables have no "in_review" state — map the board columns onto their enum.
@@ -72,10 +73,24 @@ export function KanbanBoard({
   function move(item: KanbanItem, target: BoardStatus) {
     if (item.boardStatus === target) return
     setError(null)
+
+    // Submitting a task (→ Submitted) is super-admin only.
+    if (item.kind === 'task' && target === 'done' && !canReopen) {
+      setError('Only a super-admin can submit a task. Move it to In review instead.')
+      return
+    }
+
+    // Pausing a task asks why it's stalled.
+    let reason: string | null = null
+    if (item.kind === 'task' && target === 'blocked') {
+      reason = window.prompt('Why is this paused? (what is it waiting on?)') ?? null
+      if (reason === null) return // cancelled
+    }
+
     startTransition(async () => {
       const res =
         item.kind === 'task'
-          ? await updateTaskStatus(item.id, target)
+          ? await updateTaskStatus(item.id, target, reason)
           : await updateDeliverableStatus(item.id, boardToDeliverableStatus(target), item.clientId ?? '')
       if (!res.ok) setError(res.error.message)
       router.refresh()
@@ -112,8 +127,8 @@ export function KanbanBoard({
               setDragging(null)
               setOverCol(null)
             }}
-            className={`flex min-h-[8rem] flex-col rounded-lg border p-2 transition-colors ${
-              overCol === col.key ? 'border-border-brand bg-brand-soft/40' : 'border-border-default bg-neutral-secondary-soft/40'
+            className={`flex min-h-[8rem] flex-col rounded-lg border-2 p-2 transition-colors ${
+              overCol === col.key ? 'border-border-brand bg-brand-soft/40' : 'border-border-brand/40 bg-neutral-secondary-soft/40'
             }`}
           >
             <div className="mb-2 flex items-center justify-between px-1">
@@ -138,6 +153,11 @@ export function KanbanBoard({
                       {item.kind === 'deliverable' && <Badge variant="secondary">deliv</Badge>}
                     </div>
                     {item.meta && <p className="mt-1 text-xs text-body-subtle">{item.meta}</p>}
+                    {item.boardStatus === 'blocked' && item.blockReason && (
+                      <p className="mt-1 rounded bg-neutral-secondary-soft px-1.5 py-1 text-xs text-body">
+                        ⏸ {item.blockReason}
+                      </p>
+                    )}
                     <div className="mt-1.5 flex items-center gap-2">
                       {hot && <Badge variant="destructive">{item.priority}</Badge>}
                       {item.assigneeName && <span className="text-xs text-body">{item.assigneeName}</span>}

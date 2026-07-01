@@ -81,12 +81,19 @@ export async function createTask(input: CreateTaskInput): Promise<Result<{ id: s
 
 export async function updateTaskStatus(
   id: string,
-  status: 'todo' | 'in_progress' | 'in_review' | 'blocked' | 'done' | 'cancelled'
+  status: 'todo' | 'in_progress' | 'in_review' | 'blocked' | 'done' | 'cancelled',
+  reason?: string | null
 ): Promise<Result<{ id: string }>> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return err('UNAUTHORIZED')
   if (!isAgencyStaff(user)) return err('FORBIDDEN')
+
+  // Submitting (moving a task to done) is the final approval — super-admin only.
+  // Staff take work as far as "in review"; a super-admin submits it.
+  if (status === 'done' && !isSuperAdmin(user)) {
+    return err('FORBIDDEN', 'Only a super-admin can submit a task. Move it to In review instead.')
+  }
 
   const admin = createAdminClient()
 
@@ -102,6 +109,8 @@ export async function updateTaskStatus(
   const updates: Record<string, unknown> = {
     status,
     updated_at: new Date().toISOString(),
+    // Keep the paused reason only while paused; clear it otherwise.
+    block_reason: status === 'blocked' ? (reason?.trim() || null) : null,
   }
   if (status === 'done' || status === 'cancelled') {
     updates.completed_at = new Date().toISOString()
