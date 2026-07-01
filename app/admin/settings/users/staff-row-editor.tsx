@@ -50,7 +50,6 @@ export function StaffRowEditor({
         role: formData.get('role') as 'agency_staff' | 'super_admin',
         department_id: (formData.get('department_id') as string) || null,
         title: (formData.get('title') as string | null)?.trim() || null,
-        is_active: formData.get('is_active') === 'on',
       })
       if (result.ok) {
         setOpen(false)
@@ -77,8 +76,8 @@ export function StaffRowEditor({
         <DialogHeader>
           <DialogTitle>Edit staff member</DialogTitle>
           <DialogDescription>
-            Update department, title, role, or active status. Role changes take effect on their next
-            page load.
+            Update name, department, title, or role. Role changes take effect on their next page
+            load. Use the Deactivate / Delete controls in the row for access.
           </DialogDescription>
         </DialogHeader>
 
@@ -121,16 +120,6 @@ export function StaffRowEditor({
             <Label htmlFor={`title_${profile.id}`}>Title</Label>
             <Input id={`title_${profile.id}`} name="title" defaultValue={profile.title ?? ''} />
           </div>
-
-          <label className="flex items-center gap-2 text-sm text-body">
-            <input
-              type="checkbox"
-              name="is_active"
-              defaultChecked={profile.is_active}
-              className="h-4 w-4 rounded border-border-default"
-            />
-            Active (can access the admin)
-          </label>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
