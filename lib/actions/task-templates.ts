@@ -7,10 +7,21 @@ import { isAgencyStaff } from '@/lib/auth/rbac'
 import { applyTemplateWithAdmin } from '@/lib/tasks/apply-template'
 import { ok, err, type Result } from '@/lib/errors'
 
+export type TemplateStepInput = {
+  title: string
+  // Who does this step when the template is applied. 'specific' uses assignee_id.
+  assignee_rule?: 'unassigned' | 'parent_assignee' | 'department_lead' | 'specific'
+  assignee_id?: string | null
+  // Due date = parent start date (else apply date) + offset_days. Null = none.
+  offset_days?: number | null
+}
+
+const ASSIGNEE_RULES = new Set(['unassigned', 'parent_assignee', 'department_lead', 'specific'])
+
 export async function createTaskTemplate(
   name: string,
   kind: string,
-  steps: string[]
+  steps: TemplateStepInput[]
 ): Promise<Result<{ id: string }>> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -18,8 +29,22 @@ export async function createTaskTemplate(
   if (!isAgencyStaff(user)) return err('FORBIDDEN')
   if (!name?.trim()) return err('VALIDATION_FAILED', 'Template needs a name')
 
-  const cleanSteps = (steps ?? []).map((s) => s.trim()).filter(Boolean)
+  const cleanSteps = (steps ?? [])
+    .map((s) => ({
+      title: s.title?.trim() ?? '',
+      assignee_rule: s.assignee_rule && ASSIGNEE_RULES.has(s.assignee_rule) ? s.assignee_rule : 'unassigned',
+      assignee_id: s.assignee_rule === 'specific' ? s.assignee_id || null : null,
+      offset_days:
+        s.offset_days != null && Number.isFinite(s.offset_days) && s.offset_days >= 0
+          ? Math.floor(s.offset_days)
+          : null,
+    }))
+    .filter((s) => s.title.length > 0)
   if (cleanSteps.length === 0) return err('VALIDATION_FAILED', 'Add at least one step')
+  const badSpecific = cleanSteps.find((s) => s.assignee_rule === 'specific' && !s.assignee_id)
+  if (badSpecific) {
+    return err('VALIDATION_FAILED', `Pick a person for "${badSpecific.title}" or change its assignee rule.`)
+  }
 
   const admin = createAdminClient()
   const { data: tpl, error } = await admin
@@ -29,7 +54,7 @@ export async function createTaskTemplate(
     .single<{ id: string }>()
   if (error || !tpl) return err('INTERNAL', `Failed to create template: ${error?.message ?? 'name already used?'}`)
 
-  const rows = cleanSteps.map((title, i) => ({ template_id: tpl.id, position: i + 1, title }))
+  const rows = cleanSteps.map((s, i) => ({ template_id: tpl.id, position: i + 1, ...s }))
   const { error: stepErr } = await admin.from('task_template_steps').insert(rows)
   if (stepErr) return err('INTERNAL', `Template created but steps failed: ${stepErr.message}`)
 
