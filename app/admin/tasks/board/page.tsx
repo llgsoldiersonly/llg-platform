@@ -64,9 +64,10 @@ export default async function TasksBoardPage() {
             Everyone&apos;s tasks — drag a card to change its status. Filter by assignee to focus one person.
           </p>
         </div>
-        <Link href="/admin/tasks" className="text-sm text-fg-brand hover:underline">
-          List view →
-        </Link>
+        <div className="flex items-center gap-4 text-sm">
+          <Link href="/admin/tasks" className="text-fg-brand hover:underline">List →</Link>
+          <Link href="/admin/tasks/table" className="text-fg-brand hover:underline">Table →</Link>
+        </div>
       </div>
 
       <KanbanBoard items={items} canReopen={canReopen} showAssigneeFilter taskDetailBase="/admin/tasks" />

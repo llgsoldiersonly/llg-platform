@@ -94,7 +94,9 @@ export default async function AdminTasksPage({
         <div>
           <h1 className="text-2xl font-semibold text-heading">Tasks</h1>
           <p className="mt-1 text-sm text-body">
-            {open.length} open · {tasks.length} total
+            {open.length} open · {tasks.length} total ·{' '}
+            <a href="/admin/tasks/board" className="text-fg-brand hover:underline">Board</a> ·{' '}
+            <a href="/admin/tasks/table" className="text-fg-brand hover:underline">Table</a>
           </p>
         </div>
         <CreateTaskButton
