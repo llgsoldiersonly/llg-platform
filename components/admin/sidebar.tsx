@@ -14,6 +14,7 @@ import {
   Upload,
   Columns3,
   FileStack,
+  Table2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { LlgMark } from '@/components/brand/logo'
@@ -32,6 +33,7 @@ const items: NavItem[] = [
   { href: '/admin/submissions', label: 'Submissions', icon: Upload },
   { href: '/admin/tasks', label: 'Tasks', icon: ClipboardList },
   { href: '/admin/tasks/board', label: 'Task board', icon: Columns3 },
+  { href: '/admin/tasks/table', label: 'Work table', icon: Table2 },
   { href: '/admin/content-plans', label: 'Content plans', icon: FileStack },
   { href: '/admin/workload', label: 'Workload', icon: TrendingUp },
   { href: '/admin/ads', label: 'Ads', icon: Megaphone },

@@ -208,6 +208,34 @@ export async function reassignTask(
   return ok({ id })
 }
 
+// Inline timeline edit from the work table. Empty string clears a date.
+export async function setTaskDates(
+  id: string,
+  startDate: string | null,
+  dueDate: string | null
+): Promise<Result<{ id: string }>> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return err('UNAUTHORIZED')
+  if (!isAgencyStaff(user)) return err('FORBIDDEN')
+  if (!id) return err('VALIDATION_FAILED', 'Missing task id')
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('tasks')
+    .update({
+      start_date: startDate || null,
+      due_date: dueDate || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+  if (error) return err('INTERNAL', `Failed to save dates: ${error.message}`)
+
+  revalidatePath('/admin/tasks')
+  revalidatePath('/admin/tasks/table')
+  return ok({ id })
+}
+
 // --- Subtasks ---
 
 // Add a single subtask under a parent. Inherits the parent's client and
