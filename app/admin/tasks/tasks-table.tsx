@@ -1,6 +1,7 @@
 'use client'
 
 import { useTransition, useState, useMemo } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -148,7 +149,12 @@ function Row({ task, canReopen }: { task: Task; canReopen: boolean }) {
       <td className="px-6 py-4">
         <div className="flex items-center gap-2">
           <span className="text-xs text-body">#{task.task_number}</span>
-          <span className={`font-medium text-heading ${closed ? 'line-through' : ''}`}>{task.title}</span>
+          <Link
+            href={`/admin/tasks/${task.id}`}
+            className={`font-medium text-heading hover:text-fg-brand hover:underline ${closed ? 'line-through' : ''}`}
+          >
+            {task.title}
+          </Link>
           {!closed && task.priority === 'urgent' && <Badge variant="destructive">URGENT</Badge>}
           {!closed && task.priority === 'high' && <Badge variant="warning">High</Badge>}
         </div>

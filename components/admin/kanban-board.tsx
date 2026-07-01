@@ -1,7 +1,9 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { ExternalLink } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Select } from '@/components/ui/select'
 import { updateTaskStatus } from '@/lib/actions/tasks'
@@ -44,10 +46,12 @@ export function KanbanBoard({
   items,
   canReopen,
   showAssigneeFilter = false,
+  taskDetailBase,
 }: {
   items: KanbanItem[]
   canReopen: boolean
   showAssigneeFilter?: boolean
+  taskDetailBase?: string
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -150,7 +154,20 @@ export function KanbanBoard({
                   >
                     <div className="flex items-start justify-between gap-2">
                       <p className="font-medium leading-tight text-heading">{item.title}</p>
-                      {item.kind === 'deliverable' && <Badge variant="secondary">deliv</Badge>}
+                      <div className="flex shrink-0 items-center gap-1">
+                        {item.kind === 'deliverable' && <Badge variant="secondary">deliv</Badge>}
+                        {item.kind === 'task' && taskDetailBase && (
+                          <Link
+                            href={`${taskDetailBase}/${item.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            draggable={false}
+                            className="text-body-subtle hover:text-fg-brand"
+                            aria-label="Open task"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </Link>
+                        )}
+                      </div>
                     </div>
                     {item.meta && <p className="mt-1 text-xs text-body-subtle">{item.meta}</p>}
                     {item.boardStatus === 'blocked' && item.blockReason && (

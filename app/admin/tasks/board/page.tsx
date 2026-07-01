@@ -69,7 +69,7 @@ export default async function TasksBoardPage() {
         </Link>
       </div>
 
-      <KanbanBoard items={items} canReopen={canReopen} showAssigneeFilter />
+      <KanbanBoard items={items} canReopen={canReopen} showAssigneeFilter taskDetailBase="/admin/tasks" />
     </div>
   )
 }
