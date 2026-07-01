@@ -60,6 +60,20 @@ const KIND_TO_CODE_PREDICATE: Record<SubmissionKind, (code: string) => boolean> 
   social_channel: (c) => c === 'SOCIAL_LINKING',
 }
 
+// Best-guess submission kind for a deliverable's template code. Used by
+// inline deliverable proof, where staff attach a URL straight to a
+// deliverable card without picking a kind — we infer it from the code.
+// Falls back to 'link' for custom / unmatched deliverables (any http(s)
+// URL is still a valid proof; 'link' just files it under Backlink).
+export function deriveKindFromCode(code: string | null | undefined): SubmissionKind {
+  if (!code) return 'link'
+  for (const k of SUBMISSION_KINDS) {
+    const pred = KIND_TO_CODE_PREDICATE[k.value]
+    if (pred && pred(code)) return k.value
+  }
+  return 'link'
+}
+
 // Returns true if a deliverable with this code is a plausible match for
 // the submission kind. Empty / null codes (custom deliverables that aren't
 // template-backed) always pass through — staff may legitimately want to
