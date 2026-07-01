@@ -10,6 +10,7 @@ import { HardDeleteCard } from '@/components/admin/hard-delete-card'
 import { ClientSitesCard, type ClientSite } from '@/components/admin/client-sites-card'
 import { PullClientDataButton } from '@/components/admin/pull-client-data-button'
 import { EditClientDialog } from './edit-client-dialog'
+import { GoLiveToggle } from './go-live-toggle'
 
 export const dynamic = 'force-dynamic'
 
@@ -82,7 +83,13 @@ export default async function ClientSummaryPage({
     <div className="mx-auto max-w-6xl space-y-6 p-8">
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-lg font-semibold text-heading">Overview</h2>
-        <PullClientDataButton clientId={client.id} />
+        <div className="flex items-center gap-3">
+          <GoLiveToggle
+            clientId={client.id}
+            isLive={!(client.status === 'onboarding' || client.status === 'prospect')}
+          />
+          <PullClientDataButton clientId={client.id} />
+        </div>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         <Card>

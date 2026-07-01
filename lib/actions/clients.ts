@@ -197,6 +197,31 @@ export async function createClientFirm(
   return ok({ client_id: client.id })
 }
 
+// Super-admin: flip a client's site between pre-launch and live. Live view is
+// driven by clients.status (preLaunch === status in onboarding/prospect), so
+// going live sets 'active' and reverting sets 'onboarding'. Deliberately does
+// NOT touch launch dates — that's a separate edit.
+export async function setClientLive(
+  clientId: string,
+  live: boolean
+): Promise<Result<{ status: ClientStatus }>> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return err('UNAUTHORIZED')
+  if (!isSuperAdmin(user)) return err('FORBIDDEN', 'Only super-admins can change launch status')
+  if (!clientId) return err('VALIDATION_FAILED', 'Missing client id')
+
+  const status: ClientStatus = live ? 'active' : 'onboarding'
+  const admin = createAdminClient()
+  const { error } = await admin.from('clients').update({ status }).eq('id', clientId)
+  if (error) return err('INTERNAL', `Failed to update status: ${error.message}`)
+
+  revalidatePath(`/admin/clients/${clientId}`)
+  return ok({ status })
+}
+
 export type UpdateClientInput = {
   client_id: string
   firm_name?: string
