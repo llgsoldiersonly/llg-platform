@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isAgencyStaff } from '@/lib/auth/rbac'
+import { applyTemplateWithAdmin } from '@/lib/tasks/apply-template'
 import { ok, err, type Result } from '@/lib/errors'
 
 type PlanKind = 'blog' | 'seo_page' | 'sitemap'
@@ -20,6 +21,7 @@ export type CreateContentPlanInput = {
   name: string
   kind: PlanKind
   department_id?: string | null
+  template_id?: string | null
   rows: PlanRowInput[]
 }
 
@@ -69,6 +71,7 @@ export async function createContentPlan(
       name: input.name.trim(),
       kind: input.kind,
       department_id: input.department_id || null,
+      template_id: input.template_id || null,
       created_by: user.id,
     })
     .select('id')
@@ -111,9 +114,9 @@ export async function assignPlanItems(
   const planId = items[0].plan_id
   const { data: plan } = await admin
     .from('content_plans')
-    .select('id, name, kind, client_id, department_id')
+    .select('id, name, kind, client_id, department_id, template_id')
     .eq('id', planId)
-    .maybeSingle<{ id: string; name: string; kind: string; client_id: string; department_id: string | null }>()
+    .maybeSingle<{ id: string; name: string; kind: string; client_id: string; department_id: string | null; template_id: string | null }>()
   if (!plan) return err('NOT_FOUND', 'Plan not found.')
 
   let assigned = 0
@@ -144,6 +147,11 @@ export async function assignPlanItems(
         .select('id')
         .single<{ id: string }>()
       taskId = task?.id ?? null
+
+      // First time this row gets a task: lay down the plan's workflow subtasks.
+      if (taskId && plan.template_id) {
+        await applyTemplateWithAdmin(admin, taskId, plan.template_id, user.id)
+      }
     }
 
     await admin

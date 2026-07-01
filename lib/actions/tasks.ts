@@ -208,6 +208,67 @@ export async function reassignTask(
   return ok({ id })
 }
 
+// --- Subtasks ---
+
+// Add a single subtask under a parent. Inherits the parent's client and
+// department so the child slots into the same project context.
+export async function addSubtask(
+  parentTaskId: string,
+  title: string,
+  assignedTo?: string | null
+): Promise<Result<{ id: string }>> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return err('UNAUTHORIZED')
+  if (!isAgencyStaff(user)) return err('FORBIDDEN')
+  if (!parentTaskId) return err('VALIDATION_FAILED', 'Missing parent task')
+  const text = title?.trim()
+  if (!text) return err('VALIDATION_FAILED', 'Subtask needs a title')
+
+  const admin = createAdminClient()
+  const { data: parent } = await admin
+    .from('tasks')
+    .select('client_id, department_id')
+    .eq('id', parentTaskId)
+    .maybeSingle<{ client_id: string | null; department_id: string | null }>()
+  if (!parent) return err('NOT_FOUND', 'Parent task not found')
+
+  const { count } = await admin
+    .from('tasks')
+    .select('id', { count: 'exact', head: true })
+    .eq('parent_task_id', parentTaskId)
+
+  const { data, error } = await admin
+    .from('tasks')
+    .insert({
+      title: text,
+      parent_task_id: parentTaskId,
+      position: count ?? 0,
+      client_id: parent.client_id,
+      department_id: parent.department_id,
+      assigned_to: assignedTo ?? null,
+      status: 'todo',
+      priority: 'medium',
+      created_by: user.id,
+    })
+    .select('id')
+    .single<{ id: string }>()
+  if (error || !data) return err('INTERNAL', `Failed to add subtask: ${error?.message ?? 'unknown'}`)
+
+  if (assignedTo) {
+    await admin.from('notifications').insert({
+      user_id: assignedTo,
+      type: 'task_assigned',
+      subject: `New subtask: ${text}`,
+      link: await taskLink(admin, assignedTo, data.id),
+    })
+  }
+
+  revalidatePath(`/admin/tasks/${parentTaskId}`)
+  revalidatePath(`/staff/tasks/${parentTaskId}`)
+  return ok({ id: data.id })
+}
+
 // --- Task detail: comments + hours ---
 
 export async function addTaskComment(taskId: string, body: string): Promise<Result<{ id: string }>> {

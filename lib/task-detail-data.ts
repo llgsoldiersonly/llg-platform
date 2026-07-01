@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { TaskDetailData, ActivityRow, CommentRow } from '@/components/admin/task-detail'
+import type { TaskDetailData, ActivityRow, CommentRow, SubtaskRow } from '@/components/admin/task-detail'
 
 type RawTask = {
   id: string
@@ -20,9 +20,15 @@ type RawTask = {
 
 export async function loadTaskDetail(
   id: string
-): Promise<{ task: TaskDetailData; activity: ActivityRow[]; comments: CommentRow[] } | null> {
+): Promise<{
+  task: TaskDetailData
+  activity: ActivityRow[]
+  comments: CommentRow[]
+  subtasks: SubtaskRow[]
+  templates: { id: string; name: string }[]
+} | null> {
   const supa = createAdminClient()
-  const [{ data: task }, { data: activity }, { data: comments }] = await Promise.all([
+  const [{ data: task }, { data: activity }, { data: comments }, { data: subtasks }, { data: templates }] = await Promise.all([
     supa
       .from('tasks')
       .select(
@@ -44,6 +50,17 @@ export async function loadTaskDetail(
       .eq('task_id', id)
       .order('created_at', { ascending: true })
       .returns<{ id: string; body: string; created_at: string; author_id: string | null }[]>(),
+    supa
+      .from('tasks')
+      .select('id, task_number, title, status, assigned_to, position')
+      .eq('parent_task_id', id)
+      .order('position', { ascending: true })
+      .returns<{ id: string; task_number: number; title: string; status: string; assigned_to: string | null; position: number | null }[]>(),
+    supa
+      .from('task_templates')
+      .select('id, name')
+      .order('name')
+      .returns<{ id: string; name: string }[]>(),
   ])
 
   if (!task) return null
@@ -52,6 +69,7 @@ export async function loadTaskDetail(
   if (task.assigned_to) ids.add(task.assigned_to)
   for (const a of activity ?? []) if (a.actor_id) ids.add(a.actor_id)
   for (const c of comments ?? []) if (c.author_id) ids.add(c.author_id)
+  for (const s of subtasks ?? []) if (s.assigned_to) ids.add(s.assigned_to)
 
   const { data: profs } = ids.size
     ? await supa.from('profiles').select('id, full_name').in('id', [...ids]).returns<{ id: string; full_name: string | null }[]>()
@@ -87,5 +105,13 @@ export async function loadTaskDetail(
       created_at: c.created_at,
       authorName: c.author_id ? nameById.get(c.author_id) ?? null : null,
     })),
+    subtasks: (subtasks ?? []).map((s) => ({
+      id: s.id,
+      task_number: s.task_number,
+      title: s.title,
+      status: s.status,
+      assigneeName: s.assigned_to ? nameById.get(s.assigned_to) ?? null : null,
+    })),
+    templates: templates ?? [],
   }
 }

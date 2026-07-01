@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { TaskHoursForm, TaskCommentForm } from './task-detail-forms'
+import { TaskHoursForm, TaskCommentForm, AddSubtaskForm, ApplyTemplateForm } from './task-detail-forms'
 
 export type TaskDetailData = {
   id: string
@@ -22,6 +22,7 @@ export type TaskDetailData = {
 }
 export type ActivityRow = { id: string; action: string; created_at: string; actorName: string | null }
 export type CommentRow = { id: string; body: string; created_at: string; authorName: string | null }
+export type SubtaskRow = { id: string; task_number: number; title: string; status: string; assigneeName: string | null }
 
 const statusVariant: Record<string, 'secondary' | 'info' | 'warning' | 'success' | 'destructive'> = {
   todo: 'secondary', in_progress: 'info', in_review: 'info', blocked: 'warning', done: 'success', cancelled: 'secondary',
@@ -43,14 +44,21 @@ export function TaskDetail({
   task,
   activity,
   comments,
+  subtasks,
+  templates,
+  taskBase,
   backHref,
 }: {
   task: TaskDetailData
   activity: ActivityRow[]
   comments: CommentRow[]
+  subtasks: SubtaskRow[]
+  templates: { id: string; name: string }[]
+  taskBase: string
   backHref: string
 }) {
   const hot = task.priority === 'urgent' || task.priority === 'high'
+  const doneSubs = subtasks.filter((s) => s.status === 'done').length
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-8">
       <Link href={backHref} className="inline-flex items-center gap-1 text-sm text-body-subtle hover:text-body">
@@ -79,6 +87,36 @@ export function TaskDetail({
           </Field>
           <Field label="Priority">{task.priority}</Field>
           {task.status === 'blocked' && <Field label="Paused — reason">{task.block_reason ?? '—'}</Field>}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex-row items-center justify-between pb-2">
+          <CardTitle className="text-base">
+            Subtasks {subtasks.length > 0 && <span className="text-body-subtle">({doneSubs}/{subtasks.length})</span>}
+          </CardTitle>
+          <ApplyTemplateForm taskId={task.id} templates={templates} />
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {subtasks.length > 0 && (
+            <ul className="divide-y divide-border-light rounded border border-border-default">
+              {subtasks.map((s) => (
+                <li key={s.id} className="flex items-center justify-between gap-2 px-3 py-2">
+                  <Link
+                    href={`${taskBase}/${s.id}`}
+                    className={`text-sm hover:text-fg-brand hover:underline ${s.status === 'done' ? 'text-body-subtle line-through' : 'text-heading'}`}
+                  >
+                    {s.title}
+                  </Link>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {s.assigneeName && <span className="text-xs text-body">{s.assigneeName}</span>}
+                    <Badge variant={statusVariant[s.status] ?? 'secondary'}>{statusLabel[s.status] ?? s.status}</Badge>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <AddSubtaskForm parentId={task.id} />
         </CardContent>
       </Card>
 

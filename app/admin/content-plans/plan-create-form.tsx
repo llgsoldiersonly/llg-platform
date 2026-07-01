@@ -10,6 +10,7 @@ import { createContentPlan, type PlanRowInput } from '@/lib/actions/content-plan
 
 type Client = { id: string; firm_name: string }
 type Department = { id: string; name: string }
+type Template = { id: string; name: string }
 
 // Parse pasted rows. Accepts tab- or comma-separated columns in the order
 // Keyword · Practice Area · Tier · Target URL (extra columns ignored). A line
@@ -33,9 +34,11 @@ function parseRows(text: string): PlanRowInput[] {
 export function PlanCreateForm({
   clients,
   departments,
+  templates,
 }: {
   clients: Client[]
   departments: Department[]
+  templates: Template[]
 }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -57,6 +60,7 @@ export function PlanCreateForm({
         name: String(formData.get('name') ?? ''),
         kind: formData.get('kind') as 'blog' | 'seo_page' | 'sitemap',
         department_id: (formData.get('department_id') as string) || null,
+        template_id: (formData.get('template_id') as string) || null,
         rows,
       })
       if (!res.ok) {
@@ -97,6 +101,15 @@ export function PlanCreateForm({
             <option value="">— none —</option>
             {departments.map((d) => (
               <option key={d.id} value={d.id}>{d.name}</option>
+            ))}
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="template_id">Workflow per row (optional)</Label>
+          <Select id="template_id" name="template_id" defaultValue="">
+            <option value="">— none —</option>
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
             ))}
           </Select>
         </div>
