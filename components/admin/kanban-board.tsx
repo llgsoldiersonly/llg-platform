@@ -32,6 +32,43 @@ const COLUMNS: { key: BoardStatus; label: string }[] = [
   { key: 'done', label: 'Submitted' },
 ]
 
+// Sentinel filter value for "show only unassigned" (distinct from '' = All).
+const UNASSIGNED = '__unassigned__'
+
+// Per-assignee color coding. Colors are decorative and per-person, so we use
+// raw hex via inline styles rather than Tailwind classes (dynamic class names
+// would be purged). A card gets a left stripe + a name chip in its assignee's
+// color; unassigned cards get a neutral grey dashed stripe so they read as
+// "needs an owner". The color is a deterministic hash of the assignee name, so
+// the same person is always the same color across sessions and boards.
+type AssigneeColor = { stripe: string; soft: string; text: string }
+
+const ASSIGNEE_COLORS: AssigneeColor[] = [
+  { stripe: '#6366f1', soft: '#eef2ff', text: '#3730a3' }, // indigo
+  { stripe: '#0ea5e9', soft: '#e0f2fe', text: '#075985' }, // sky
+  { stripe: '#10b981', soft: '#d1fae5', text: '#065f46' }, // emerald
+  { stripe: '#f59e0b', soft: '#fef3c7', text: '#92400e' }, // amber
+  { stripe: '#ec4899', soft: '#fce7f3', text: '#9d174d' }, // pink
+  { stripe: '#8b5cf6', soft: '#ede9fe', text: '#5b21b6' }, // violet
+  { stripe: '#14b8a6', soft: '#ccfbf1', text: '#115e59' }, // teal
+  { stripe: '#f97316', soft: '#ffedd5', text: '#9a3412' }, // orange
+  { stripe: '#84cc16', soft: '#ecfccb', text: '#3f6212' }, // lime
+  { stripe: '#06b6d4', soft: '#cffafe', text: '#155e75' }, // cyan
+]
+
+const UNASSIGNED_COLOR: AssigneeColor = { stripe: '#cbd5e1', soft: '#f1f5f9', text: '#475569' }
+
+function hashString(s: string): number {
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0
+  return h
+}
+
+function colorForAssignee(name: string | null | undefined): AssigneeColor {
+  if (!name) return UNASSIGNED_COLOR
+  return ASSIGNEE_COLORS[hashString(name) % ASSIGNEE_COLORS.length]
+}
+
 // Deliverables have no "in_review" state — map the board columns onto their enum.
 function boardToDeliverableStatus(s: BoardStatus): 'pending' | 'in_progress' | 'done' | 'blocked' {
   switch (s) {
@@ -65,7 +102,14 @@ export function KanbanBoard({
     () => Array.from(new Set(items.map((i) => i.assigneeName).filter((n): n is string => !!n))).sort(),
     [items]
   )
-  const shown = assignee ? items.filter((i) => i.assigneeName === assignee) : items
+  const hasUnassigned = useMemo(() => items.some((i) => !i.assigneeName), [items])
+
+  const shown =
+    assignee === UNASSIGNED
+      ? items.filter((i) => !i.assigneeName)
+      : assignee
+        ? items.filter((i) => i.assigneeName === assignee)
+        : items
 
   const byCol = useMemo(() => {
     const map: Record<BoardStatus, KanbanItem[]> = {
@@ -121,14 +165,43 @@ export function KanbanBoard({
   return (
     <div className="space-y-3">
       {(showAssigneeFilter || error) && (
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           {showAssigneeFilter && (
-            <Select value={assignee} onChange={(e) => setAssignee(e.target.value)} className="w-56 text-sm">
-              <option value="">All assignees</option>
-              {assignees.map((a) => (
-                <option key={a} value={a}>{a}</option>
-              ))}
-            </Select>
+            <>
+              <Select value={assignee} onChange={(e) => setAssignee(e.target.value)} className="w-56 text-sm">
+                <option value="">All (assigned + unassigned)</option>
+                {hasUnassigned && <option value={UNASSIGNED}>Unassigned</option>}
+                {assignees.length > 0 && <option disabled>──────────</option>}
+                {assignees.map((a) => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </Select>
+
+              {/* Color legend */}
+              <div className="flex flex-wrap items-center gap-2">
+                {assignees.map((a) => {
+                  const c = colorForAssignee(a)
+                  return (
+                    <span
+                      key={a}
+                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+                      style={{ backgroundColor: c.soft, color: c.text }}
+                    >
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c.stripe }} />
+                      {a}
+                    </span>
+                  )
+                })}
+                {hasUnassigned && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full border border-dashed px-2 py-0.5 text-xs font-medium"
+                    style={{ backgroundColor: UNASSIGNED_COLOR.soft, color: UNASSIGNED_COLOR.text, borderColor: UNASSIGNED_COLOR.stripe }}
+                  >
+                    Unassigned
+                  </span>
+                )}
+              </div>
+            </>
           )}
           {error && <p className="text-sm text-red-600">{error}</p>}
         </div>
@@ -159,14 +232,21 @@ export function KanbanBoard({
             <div className="flex flex-1 flex-col gap-2">
               {byCol[col.key].map((item) => {
                 const hot = item.priority === 'urgent' || item.priority === 'high'
+                const color = colorForAssignee(item.assigneeName)
+                const unassigned = !item.assigneeName
                 return (
                   <div
                     key={`${item.kind}-${item.id}`}
                     draggable={!pending}
                     onDragStart={() => setDragging(item)}
                     onDragEnd={() => setDragging(null)}
+                    style={
+                      showAssigneeFilter
+                        ? { borderLeft: `4px ${unassigned ? 'dashed' : 'solid'} ${color.stripe}` }
+                        : undefined
+                    }
                     className={`cursor-grab rounded-md border p-2.5 text-sm shadow-xs active:cursor-grabbing ${
-                      hot ? 'border-l-4 border-l-fg-danger border-border-danger-subtle bg-danger-soft/40' : 'border-border-default bg-bg-default'
+                      hot ? 'border-border-danger-subtle bg-danger-soft/40' : 'border-border-default bg-bg-default'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -209,7 +289,25 @@ export function KanbanBoard({
                     )}
                     <div className="mt-1.5 flex items-center gap-2">
                       {hot && <Badge variant="destructive">{item.priority}</Badge>}
-                      {item.assigneeName && <span className="text-xs text-body">{item.assigneeName}</span>}
+                      {showAssigneeFilter ? (
+                        item.assigneeName ? (
+                          <span
+                            className="rounded px-1.5 py-0.5 text-xs font-medium"
+                            style={{ backgroundColor: color.soft, color: color.text }}
+                          >
+                            {item.assigneeName}
+                          </span>
+                        ) : (
+                          <span
+                            className="rounded border border-dashed px-1.5 py-0.5 text-xs font-medium"
+                            style={{ backgroundColor: UNASSIGNED_COLOR.soft, color: UNASSIGNED_COLOR.text, borderColor: UNASSIGNED_COLOR.stripe }}
+                          >
+                            Unassigned
+                          </span>
+                        )
+                      ) : (
+                        item.assigneeName && <span className="text-xs text-body">{item.assigneeName}</span>
+                      )}
                     </div>
                   </div>
                 )
