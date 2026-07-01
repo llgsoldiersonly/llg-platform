@@ -16,6 +16,7 @@ export default async function StaffTaskDetailPage({ params }: { params: Promise<
       subtasks={d.subtasks}
       templates={d.templates}
       files={d.files}
+      mentionables={d.mentionables}
       taskBase="/staff/tasks"
       backHref="/staff/board"
     />

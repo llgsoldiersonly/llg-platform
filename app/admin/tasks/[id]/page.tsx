@@ -16,6 +16,7 @@ export default async function AdminTaskDetailPage({ params }: { params: Promise<
       subtasks={d.subtasks}
       templates={d.templates}
       files={d.files}
+      mentionables={d.mentionables}
       taskBase="/admin/tasks"
       backHref="/admin/tasks/board"
     />

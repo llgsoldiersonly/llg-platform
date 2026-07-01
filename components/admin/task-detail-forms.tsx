@@ -278,20 +278,66 @@ export function TaskFiles({ taskId, files }: { taskId: string; files: TaskFile[]
   )
 }
 
-export function TaskCommentForm({ taskId }: { taskId: string }) {
+type Mentionable = { id: string; name: string }
+
+export function TaskCommentForm({
+  taskId,
+  mentionables = [],
+}: {
+  taskId: string
+  mentionables?: Mentionable[]
+}) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [body, setBody] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [query, setQuery] = useState<string | null>(null) // active @… token, or null
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Detect an in-progress "@token" immediately before the caret.
+  function onChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const val = e.target.value
+    setBody(val)
+    const caret = e.target.selectionStart ?? val.length
+    const before = val.slice(0, caret)
+    const m = before.match(/(?:^|\s)@([\w-]*)$/)
+    setQuery(m ? m[1].toLowerCase() : null)
+  }
+
+  const matches =
+    query === null
+      ? []
+      : mentionables.filter((p) => p.name.toLowerCase().includes(query)).slice(0, 6)
+
+  function pick(p: Mentionable) {
+    const el = textareaRef.current
+    const caret = el?.selectionStart ?? body.length
+    const before = body.slice(0, caret)
+    const after = body.slice(caret)
+    // Replace the trailing "@token" with "@Full Name ".
+    const replaced = before.replace(/@([\w-]*)$/, `@${p.name} `)
+    const next = replaced + after
+    setBody(next)
+    setQuery(null)
+    // Return focus after React updates.
+    requestAnimationFrame(() => el?.focus())
+  }
+
+  // Resolve which mentionables are actually referenced in the final text.
+  function resolveMentions(text: string): string[] {
+    return mentionables.filter((p) => text.includes(`@${p.name}`)).map((p) => p.id)
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
     if (!body.trim()) return
     setError(null)
+    const mentions = resolveMentions(body)
     startTransition(async () => {
-      const res = await addTaskComment(taskId, body)
+      const res = await addTaskComment(taskId, body, mentions)
       if (res.ok) {
         setBody('')
+        setQuery(null)
         router.refresh()
       } else setError(res.error.message)
     })
@@ -299,12 +345,30 @@ export function TaskCommentForm({ taskId }: { taskId: string }) {
 
   return (
     <form onSubmit={submit} className="space-y-2">
-      <Textarea
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        placeholder="Add a comment…"
-        rows={2}
-      />
+      <div className="relative">
+        <Textarea
+          ref={textareaRef}
+          value={body}
+          onChange={onChange}
+          placeholder="Add a comment… use @ to mention someone"
+          rows={2}
+        />
+        {matches.length > 0 && (
+          <ul className="absolute z-10 mt-1 w-56 overflow-hidden rounded-md border border-border-default bg-bg-default shadow-md">
+            {matches.map((p) => (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  onClick={() => pick(p)}
+                  className="block w-full px-3 py-1.5 text-left text-sm text-heading hover:bg-neutral-secondary-soft"
+                >
+                  @{p.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
       <div className="flex items-center gap-3">
         <Button type="submit" size="sm" disabled={pending || !body.trim()}>
           {pending ? 'Posting…' : 'Comment'}

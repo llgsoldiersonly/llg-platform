@@ -27,9 +27,10 @@ export async function loadTaskDetail(
   subtasks: SubtaskRow[]
   templates: { id: string; name: string }[]
   files: TaskFileRow[]
+  mentionables: { id: string; name: string }[]
 } | null> {
   const supa = createAdminClient()
-  const [{ data: task }, { data: activity }, { data: comments }, { data: subtasks }, { data: templates }, { data: files }] = await Promise.all([
+  const [{ data: task }, { data: activity }, { data: comments }, { data: subtasks }, { data: templates }, { data: files }, { data: staff }] = await Promise.all([
     supa
       .from('tasks')
       .select(
@@ -68,6 +69,13 @@ export async function loadTaskDetail(
       .eq('task_id', id)
       .order('created_at', { ascending: true })
       .returns<{ id: string; file_name: string; content_type: string | null; size_bytes: number | null; created_at: string }[]>(),
+    supa
+      .from('profiles')
+      .select('id, full_name')
+      .in('role', ['agency_staff', 'super_admin'])
+      .eq('is_active', true)
+      .order('full_name')
+      .returns<{ id: string; full_name: string | null }[]>(),
   ])
 
   if (!task) return null
@@ -127,5 +135,8 @@ export async function loadTaskDetail(
       size_bytes: f.size_bytes,
       created_at: f.created_at,
     })),
+    mentionables: (staff ?? [])
+      .filter((p) => p.full_name)
+      .map((p) => ({ id: p.id, name: p.full_name as string })),
   }
 }

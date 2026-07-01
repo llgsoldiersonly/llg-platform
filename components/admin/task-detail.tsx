@@ -32,6 +32,30 @@ const statusLabel: Record<string, string> = {
   todo: 'To do', in_progress: 'In progress', in_review: 'In review', blocked: 'Paused', done: 'Submitted', cancelled: 'Cancelled',
 }
 
+// Highlight @Name tokens that match a known staff name.
+function renderWithMentions(text: string, names: string[]): React.ReactNode {
+  if (names.length === 0) return text
+  const escaped = [...names]
+    .sort((a, b) => b.length - a.length)
+    .map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const re = new RegExp(`@(?:${escaped.join('|')})`, 'g')
+  const out: React.ReactNode[] = []
+  let last = 0
+  let key = 0
+  let m: RegExpExecArray | null
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) out.push(text.slice(last, m.index))
+    out.push(
+      <span key={key++} className="font-medium text-fg-brand">
+        {m[0]}
+      </span>
+    )
+    last = m.index + m[0].length
+  }
+  if (last < text.length) out.push(text.slice(last))
+  return out
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
@@ -48,6 +72,7 @@ export function TaskDetail({
   subtasks,
   templates,
   files,
+  mentionables,
   taskBase,
   backHref,
 }: {
@@ -57,6 +82,7 @@ export function TaskDetail({
   subtasks: SubtaskRow[]
   templates: { id: string; name: string }[]
   files: TaskFileRow[]
+  mentionables: { id: string; name: string }[]
   taskBase: string
   backHref: string
 }) {
@@ -148,7 +174,7 @@ export function TaskDetail({
           <CardTitle className="text-base">Comments ({comments.length})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <TaskCommentForm taskId={task.id} />
+          <TaskCommentForm taskId={task.id} mentionables={mentionables} />
           {comments.length > 0 && (
             <ul className="space-y-3">
               {comments.map((c) => (
@@ -157,7 +183,9 @@ export function TaskDetail({
                     <span className="text-sm font-medium text-heading">{c.authorName ?? 'Staff'}</span>
                     <span className="text-xs text-body-subtle">{new Date(c.created_at).toLocaleString()}</span>
                   </div>
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-body">{c.body}</p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-body">
+                    {renderWithMentions(c.body, mentionables.map((m) => m.name))}
+                  </p>
                 </li>
               ))}
             </ul>
