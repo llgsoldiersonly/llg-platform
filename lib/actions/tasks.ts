@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { isAgencyStaff } from '@/lib/auth/rbac'
+import { isAgencyStaff, isSuperAdmin } from '@/lib/auth/rbac'
 import { ok, err, type Result } from '@/lib/errors'
 
 export type CreateTaskInput = {
@@ -14,6 +14,7 @@ export type CreateTaskInput = {
   department_id?: string | null
   assigned_to?: string | null
   priority?: 'low' | 'medium' | 'high' | 'urgent'
+  start_date?: string | null
   due_date?: string | null
   estimated_hours?: number | null
   tags?: string[] | null
@@ -38,6 +39,7 @@ export async function createTask(input: CreateTaskInput): Promise<Result<{ id: s
       department_id: input.department_id ?? null,
       assigned_to: input.assigned_to ?? null,
       priority: input.priority ?? 'medium',
+      start_date: input.start_date ?? null,
       due_date: input.due_date ?? null,
       estimated_hours: input.estimated_hours ?? null,
       tags: input.tags ?? null,
@@ -87,12 +89,24 @@ export async function updateTaskStatus(
   if (!isAgencyStaff(user)) return err('FORBIDDEN')
 
   const admin = createAdminClient()
+
+  // Reopening a completed/cancelled task is super-admin only — staff can't
+  // quietly walk back a finished task.
+  const { data: current } = await admin.from('tasks').select('status').eq('id', id).maybeSingle()
+  const wasClosed = current?.status === 'done' || current?.status === 'cancelled'
+  const reopening = wasClosed && status !== 'done' && status !== 'cancelled'
+  if (reopening && !isSuperAdmin(user)) {
+    return err('FORBIDDEN', 'Only a super-admin can reopen a completed task.')
+  }
+
   const updates: Record<string, unknown> = {
     status,
     updated_at: new Date().toISOString(),
   }
   if (status === 'done' || status === 'cancelled') {
     updates.completed_at = new Date().toISOString()
+  } else if (reopening) {
+    updates.completed_at = null
   }
 
   const { error } = await admin.from('tasks').update(updates).eq('id', id)

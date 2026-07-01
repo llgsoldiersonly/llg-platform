@@ -55,6 +55,7 @@ export function CreateTaskButton({
         department_id: (formData.get('department_id') as string) || null,
         assigned_to: (formData.get('assigned_to') as string) || null,
         priority: (formData.get('priority') as 'low' | 'medium' | 'high' | 'urgent') ?? 'medium',
+        start_date: (formData.get('start_date') as string) || null,
         due_date: (formData.get('due_date') as string) || null,
       })
       if (result.ok) {
@@ -137,9 +138,15 @@ export function CreateTaskButton({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="due_date">Due date</Label>
-            <Input id="due_date" name="due_date" type="date" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="start_date">Start date</Label>
+              <Input id="start_date" name="start_date" type="date" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="due_date">Due date</Label>
+              <Input id="due_date" name="due_date" type="date" />
+            </div>
           </div>
 
           {error && (

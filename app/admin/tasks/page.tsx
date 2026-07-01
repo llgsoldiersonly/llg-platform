@@ -1,4 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
+import { isSuperAdmin } from '@/lib/auth/rbac'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TasksTable } from './tasks-table'
 import { CreateTaskButton } from './create-task-button'
@@ -11,6 +13,7 @@ type RawTask = {
   title: string
   status: string
   priority: string
+  start_date: string | null
   due_date: string | null
   created_at: string
   assigned_to: string | null
@@ -29,6 +32,10 @@ export default async function AdminTasksPage({
   const filterStatus = typeof params.status === 'string' ? params.status : null
   const filterAssignee = typeof params.assignee === 'string' ? params.assignee : null
 
+  const supabaseAuth = await createClient()
+  const { data: { user } } = await supabaseAuth.auth.getUser()
+  const canReopen = isSuperAdmin(user)
+
   const supa = createAdminClient()
 
   // Tasks → assignee join can't be expressed as a FK relationship in PostgREST
@@ -37,7 +44,7 @@ export default async function AdminTasksPage({
   let query = supa
     .from('tasks')
     .select(`
-      id, task_number, title, status, priority, due_date, created_at, assigned_to,
+      id, task_number, title, status, priority, start_date, due_date, created_at, assigned_to,
       client:clients(id, firm_name),
       department:departments(name, slug)
     `)
@@ -71,6 +78,7 @@ export default async function AdminTasksPage({
     title: t.title,
     status: t.status,
     priority: t.priority,
+    start_date: t.start_date,
     due_date: t.due_date,
     created_at: t.created_at,
     client: t.client,
@@ -127,7 +135,7 @@ export default async function AdminTasksPage({
         </CardContent>
       </Card>
 
-      <TasksTable tasks={tasks} />
+      <TasksTable tasks={tasks} canReopen={canReopen} />
     </div>
   )
 }
