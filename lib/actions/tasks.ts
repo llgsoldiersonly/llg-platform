@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isAgencyStaff, isSuperAdmin } from '@/lib/auth/rbac'
+import { getLeadScope, canManageDept } from '@/lib/auth/department'
 import { ok, err, type Result } from '@/lib/errors'
 
 export type CreateTaskInput = {
@@ -99,17 +100,26 @@ export async function updateTaskStatus(
   if (!user) return err('UNAUTHORIZED')
   if (!isAgencyStaff(user)) return err('FORBIDDEN')
 
-  // Submitting (moving a task to done) is the final approval — super-admin only.
-  // Staff take work as far as "in review"; a super-admin submits it.
-  if (status === 'done' && !isSuperAdmin(user)) {
-    return err('FORBIDDEN', 'Only a super-admin can submit a task. Move it to In review instead.')
-  }
-
   const admin = createAdminClient()
+
+  const { data: current } = await admin
+    .from('tasks')
+    .select('status, department_id')
+    .eq('id', id)
+    .maybeSingle<{ status: string; department_id: string | null }>()
+
+  // Submitting (moving a task to done) is the final approval. Staff take work
+  // as far as "in review"; a super-admin submits it — OR the department lead
+  // for the task's own department (they own their team's output).
+  if (status === 'done' && !isSuperAdmin(user)) {
+    const scope = await getLeadScope(admin, user.id)
+    if (!canManageDept(scope, current?.department_id ?? null)) {
+      return err('FORBIDDEN', 'Only a super-admin or the department lead can submit this task. Move it to In review instead.')
+    }
+  }
 
   // Reopening a completed/cancelled task is super-admin only — staff can't
   // quietly walk back a finished task.
-  const { data: current } = await admin.from('tasks').select('status').eq('id', id).maybeSingle()
   const wasClosed = current?.status === 'done' || current?.status === 'cancelled'
   const reopening = wasClosed && status !== 'done' && status !== 'cancelled'
   if (reopening && !isSuperAdmin(user)) {

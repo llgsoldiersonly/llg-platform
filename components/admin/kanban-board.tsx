@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ExternalLink, Paperclip } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Select } from '@/components/ui/select'
-import { updateTaskStatus } from '@/lib/actions/tasks'
+import { updateTaskStatus, reassignTask } from '@/lib/actions/tasks'
 import { updateDeliverableStatus } from '@/lib/actions/deliverables'
 import { submitDeliverableProof } from '@/lib/actions/submissions'
 
@@ -21,6 +21,7 @@ export type KanbanItem = {
   priority: string | null
   clientId: string | null
   assigneeName?: string | null
+  assigneeId?: string | null
   blockReason?: string | null
 }
 
@@ -83,13 +84,22 @@ function boardToDeliverableStatus(s: BoardStatus): 'pending' | 'in_progress' | '
 export function KanbanBoard({
   items,
   canReopen,
+  canSubmit = false,
   showAssigneeFilter = false,
   taskDetailBase,
+  assignableStaff,
 }: {
   items: KanbanItem[]
   canReopen: boolean
+  // Allow moving a task into Submitted without full reopen rights. Super-admins
+  // (canReopen) always can; department leads get this for their own department.
+  // The server still authorizes the specific task, so this only relaxes the UI.
+  canSubmit?: boolean
   showAssigneeFilter?: boolean
   taskDetailBase?: string
+  // When provided, task cards show a reassign dropdown (used by the department
+  // board so a lead can reassign within their team). The server re-authorizes.
+  assignableStaff?: { id: string; name: string }[]
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -123,9 +133,10 @@ export function KanbanBoard({
     if (item.boardStatus === target) return
     setError(null)
 
-    // Submitting a task (→ Submitted) is super-admin only.
-    if (item.kind === 'task' && target === 'done' && !canReopen) {
-      setError('Only a super-admin can submit a task. Move it to In review instead.')
+    // Submitting a task (→ Submitted) needs submit rights (super-admin, or a
+    // department lead on their own board). The server re-checks per task.
+    if (item.kind === 'task' && target === 'done' && !canReopen && !canSubmit) {
+      setError('Only a super-admin or department lead can submit a task. Move it to In review instead.')
       return
     }
 
@@ -141,6 +152,16 @@ export function KanbanBoard({
         item.kind === 'task'
           ? await updateTaskStatus(item.id, target, reason)
           : await updateDeliverableStatus(item.id, boardToDeliverableStatus(target), item.clientId ?? '')
+      if (!res.ok) setError(res.error.message)
+      router.refresh()
+    })
+  }
+
+  function reassign(item: KanbanItem, userId: string) {
+    if (item.kind !== 'task') return
+    setError(null)
+    startTransition(async () => {
+      const res = await reassignTask(item.id, userId || null)
       if (!res.ok) setError(res.error.message)
       router.refresh()
     })
@@ -309,6 +330,22 @@ export function KanbanBoard({
                         item.assigneeName && <span className="text-xs text-body">{item.assigneeName}</span>
                       )}
                     </div>
+                    {assignableStaff && item.kind === 'task' && (
+                      <Select
+                        value={item.assigneeId ?? ''}
+                        onChange={(e) => reassign(item, e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        draggable={false}
+                        disabled={pending}
+                        className="mt-2 w-full text-xs"
+                        aria-label="Reassign task"
+                      >
+                        <option value="">Unassigned</option>
+                        {assignableStaff.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </Select>
+                    )}
                   </div>
                 )
               })}

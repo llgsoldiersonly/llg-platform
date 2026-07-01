@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { isAgencyStaff } from '@/lib/auth/rbac'
 import { Button } from '@/components/ui/button'
 import { LlgWordmark } from '@/components/brand/logo'
@@ -19,6 +20,15 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login?next=/staff')
   if (!isAgencyStaff(user)) redirect('/login?error=forbidden')
+
+  // Department leads get an extra "Department" nav entry for their team board.
+  const admin = createAdminClient()
+  const { data: prof } = await admin
+    .from('profiles')
+    .select('is_department_lead')
+    .eq('id', user.id)
+    .maybeSingle<{ is_department_lead: boolean }>()
+  const isDepartmentLead = !!prof?.is_department_lead
 
   return (
     <div className="min-h-screen bg-neutral-secondary-soft">
@@ -43,6 +53,14 @@ export default async function StaffLayout({ children }: { children: React.ReactN
             >
               My Work
             </Link>
+            {isDepartmentLead && (
+              <Link
+                href="/staff/department"
+                className="text-sm font-medium text-body hover:text-heading"
+              >
+                Department
+              </Link>
+            )}
             <Link
               href="/staff/recent"
               className="text-sm font-medium text-body hover:text-heading"

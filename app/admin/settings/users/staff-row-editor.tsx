@@ -27,6 +27,7 @@ type StaffProfile = {
   title: string | null
   is_active: boolean
   department_id: string | null
+  is_department_lead: boolean
 }
 
 export function StaffRowEditor({
@@ -50,6 +51,7 @@ export function StaffRowEditor({
         role: formData.get('role') as 'agency_staff' | 'super_admin',
         department_id: (formData.get('department_id') as string) || null,
         title: (formData.get('title') as string | null)?.trim() || null,
+        is_department_lead: formData.get('is_department_lead') === 'on',
       })
       if (result.ok) {
         setOpen(false)
@@ -120,6 +122,22 @@ export function StaffRowEditor({
             <Label htmlFor={`title_${profile.id}`}>Title</Label>
             <Input id={`title_${profile.id}`} name="title" defaultValue={profile.title ?? ''} />
           </div>
+
+          <label className="flex items-start gap-2 text-sm text-body">
+            <input
+              type="checkbox"
+              name="is_department_lead"
+              defaultChecked={profile.is_department_lead}
+              className="mt-0.5 h-4 w-4 rounded border-border-default"
+            />
+            <span>
+              Department lead
+              <span className="block text-xs text-body-subtle">
+                Can see &amp; manage all work in their department (across clients). Set their
+                department above.
+              </span>
+            </span>
+          </label>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
