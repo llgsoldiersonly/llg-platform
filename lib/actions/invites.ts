@@ -77,6 +77,7 @@ export type UpdateStaffInput = {
   department_id?: string | null
   title?: string | null
   is_active?: boolean
+  is_department_lead?: boolean
 }
 
 // Edits an existing staff member (department / title / role / active). A role
@@ -106,6 +107,7 @@ export async function updateStaffMember(input: UpdateStaffInput): Promise<Result
   if (input.role !== undefined) patch.role = input.role
   if (input.department_id !== undefined) patch.department_id = input.department_id || null
   if (input.title !== undefined) patch.title = input.title?.trim() || null
+  if (input.is_department_lead !== undefined) patch.is_department_lead = input.is_department_lead
 
   if (Object.keys(patch).length > 0) {
     const { error: profileErr } = await admin.from('profiles').update(patch).eq('id', input.user_id)

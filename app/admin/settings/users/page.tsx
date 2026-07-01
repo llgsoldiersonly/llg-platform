@@ -18,6 +18,7 @@ type Profile = {
   title: string | null
   is_active: boolean
   department_id: string | null
+  is_department_lead: boolean
   department: { name: string; slug: string } | null
 }
 
@@ -43,7 +44,7 @@ export default async function AdminUsersPage({
   const [profilesRes, departmentsRes, settingsRes] = await Promise.all([
     supa
       .from('profiles')
-      .select('id, full_name, role, title, is_active, department_id, department:departments(name, slug)')
+      .select('id, full_name, role, title, is_active, department_id, is_department_lead, department:departments(name, slug)')
       .in('role', ['agency_staff', 'super_admin'])
       .order('full_name')
       .returns<Profile[]>(),
@@ -103,7 +104,12 @@ export default async function AdminUsersPage({
                       {p.role}
                     </Badge>
                   </td>
-                  <td className="px-6 py-3 text-body">{p.department?.name ?? '—'}</td>
+                  <td className="px-6 py-3 text-body">
+                    <span className="inline-flex items-center gap-1.5">
+                      {p.department?.name ?? '—'}
+                      {p.is_department_lead && p.department && <Badge variant="warning">Lead</Badge>}
+                    </span>
+                  </td>
                   <td className="px-6 py-3 text-body">{p.title ?? '—'}</td>
                   <td className="px-6 py-3">
                     {p.is_active ? (
