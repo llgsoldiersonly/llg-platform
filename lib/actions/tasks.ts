@@ -20,6 +20,16 @@ export type CreateTaskInput = {
   tags?: string[] | null
 }
 
+// Role-aware deep link to a task (staff and super-admin live in separate portals).
+async function taskLink(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  taskId: string
+): Promise<string> {
+  const { data } = await admin.from('profiles').select('role').eq('id', userId).maybeSingle<{ role: string | null }>()
+  return data?.role === 'agency_staff' ? `/staff/tasks/${taskId}` : `/admin/tasks/${taskId}`
+}
+
 export async function createTask(input: CreateTaskInput): Promise<Result<{ id: string; task_number: number }>> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -68,7 +78,7 @@ export async function createTask(input: CreateTaskInput): Promise<Result<{ id: s
       type: 'task_assigned',
       subject: `New task: ${input.title}`,
       body: input.description ?? null,
-      link: `/admin/tasks/${data.id}`,
+      link: await taskLink(admin, input.assigned_to, data.id),
     })
   }
 
@@ -169,13 +179,64 @@ export async function reassignTask(
       user_id: assigneeUserId,
       type: 'task_assigned',
       subject: `Task reassigned: ${task.title}`,
-      link: `/admin/tasks/${id}`,
+      link: await taskLink(admin, assigneeUserId, id),
     })
   }
 
   revalidatePath('/admin/tasks')
   revalidatePath('/admin/workload')
   return ok({ id })
+}
+
+// --- Task detail: comments + hours ---
+
+export async function addTaskComment(taskId: string, body: string): Promise<Result<{ id: string }>> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return err('UNAUTHORIZED')
+  if (!isAgencyStaff(user)) return err('FORBIDDEN')
+  if (!taskId) return err('VALIDATION_FAILED', 'Missing task id')
+  const text = body?.trim()
+  if (!text) return err('VALIDATION_FAILED', 'Comment cannot be empty')
+
+  const admin = createAdminClient()
+  const { data, error } = await admin
+    .from('task_comments')
+    .insert({ task_id: taskId, author_id: user.id, body: text })
+    .select('id')
+    .single()
+  if (error || !data) return err('INTERNAL', `Failed to comment: ${error?.message ?? 'no row'}`)
+
+  revalidatePath(`/admin/tasks/${taskId}`)
+  revalidatePath(`/staff/tasks/${taskId}`)
+  return ok({ id: data.id })
+}
+
+export async function setTaskHours(
+  taskId: string,
+  estimated: number | null,
+  actual: number | null
+): Promise<Result<{ id: string }>> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return err('UNAUTHORIZED')
+  if (!isAgencyStaff(user)) return err('FORBIDDEN')
+  if (!taskId) return err('VALIDATION_FAILED', 'Missing task id')
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('tasks')
+    .update({
+      estimated_hours: estimated != null && Number.isFinite(estimated) ? estimated : null,
+      actual_hours: actual != null && Number.isFinite(actual) ? actual : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', taskId)
+  if (error) return err('INTERNAL', `Failed to save hours: ${error.message}`)
+
+  revalidatePath(`/admin/tasks/${taskId}`)
+  revalidatePath(`/staff/tasks/${taskId}`)
+  return ok({ id: taskId })
 }
 
 export async function deleteTask(id: string): Promise<Result<{ id: string }>> {

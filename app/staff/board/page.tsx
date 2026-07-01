@@ -94,7 +94,7 @@ export default async function MyWorkBoardPage() {
           Your tasks and deliverables — drag a card between columns to update it.
         </p>
       </div>
-      <KanbanBoard items={items} canReopen={isSuperAdmin(user)} />
+      <KanbanBoard items={items} canReopen={isSuperAdmin(user)} taskDetailBase="/staff/tasks" />
     </div>
   )
 }

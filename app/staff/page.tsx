@@ -45,6 +45,7 @@ type WorkItem = {
   priority: string | null
   due: string | null
   blockReason?: string | null
+  href?: string
 }
 
 export default async function StaffHomePage() {
@@ -87,6 +88,7 @@ export default async function StaffHomePage() {
     priority: t.priority,
     due: t.due_date,
     blockReason: t.status === 'blocked' ? t.block_reason : null,
+    href: `/staff/tasks/${t.id}`,
   }))
   const taskStatus = new Map((myTasks ?? []).map((t) => [`t-${t.id}`, t.status]))
 
@@ -165,23 +167,38 @@ function Bucket({
         {items.length === 0 ? (
           <p className="text-sm text-body-subtle">{empty}</p>
         ) : (
-          items.map((i) => (
-            <div key={i.key} className="rounded border border-border-default p-2.5">
-              <div className="flex items-start justify-between gap-2">
-                <p className="font-medium leading-tight text-heading">{i.title}</p>
-                {(i.priority === 'urgent' || i.priority === 'high') && (
-                  <Badge variant="destructive">{i.priority}</Badge>
+          items.map((i) => {
+            const inner = (
+              <>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-medium leading-tight text-heading">{i.title}</p>
+                  {(i.priority === 'urgent' || i.priority === 'high') && (
+                    <Badge variant="destructive">{i.priority}</Badge>
+                  )}
+                </div>
+                <p className="text-xs text-body-subtle">
+                  {i.sub}
+                  {i.due && <> · due {i.due}</>}
+                </p>
+                {showReason && i.blockReason && (
+                  <p className="mt-1 text-xs text-body">⏸ {i.blockReason}</p>
                 )}
+              </>
+            )
+            return i.href ? (
+              <Link
+                key={i.key}
+                href={i.href}
+                className="block rounded border border-border-default p-2.5 hover:border-border-brand"
+              >
+                {inner}
+              </Link>
+            ) : (
+              <div key={i.key} className="rounded border border-border-default p-2.5">
+                {inner}
               </div>
-              <p className="text-xs text-body-subtle">
-                {i.sub}
-                {i.due && <> · due {i.due}</>}
-              </p>
-              {showReason && i.blockReason && (
-                <p className="mt-1 text-xs text-body">⏸ {i.blockReason}</p>
-              )}
-            </div>
-          ))
+            )
+          })
         )}
       </CardContent>
     </Card>
