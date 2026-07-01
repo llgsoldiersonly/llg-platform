@@ -39,11 +39,14 @@ export async function getCurrentMonthNewLostCounts(inputDomain: string, opts: Ca
   const target = normalizeDomain(inputDomain)
   const monthStart = utcMonthStart()
   const tag = `new-lost-mtd:${target}:${monthStart}`
+  // NOTE: /backlinks/bulk_new_lost_backlinks/live does NOT accept a `date_from`
+  // field — sending it returns "Invalid Field: 'date_from'". The endpoint
+  // returns new/lost counts over its own recent window; we scope by month at
+  // the detail-row level (getNewBacklinkRowsForMonth) instead.
   const response = await dataForSeoPost<{ items?: Array<Record<string, unknown>> }>(
     '/backlinks/bulk_new_lost_backlinks/live',
     {
       targets: [target],
-      date_from: monthStart,
       tag,
     },
     { client_id: opts.client_id, request_tag: tag }
