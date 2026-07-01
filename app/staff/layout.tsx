@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { isAgencyStaff } from '@/lib/auth/rbac'
 import { Button } from '@/components/ui/button'
 import { LlgWordmark } from '@/components/brand/logo'
+import { NotificationsBell } from '@/components/notifications-bell'
 import { signOutAction } from '@/lib/actions/auth'
 
 // The agency-staff portal. Hard-gated to users with role='agency_staff' or
@@ -50,6 +51,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
             </Link>
           </nav>
           <div className="flex items-center gap-3">
+            <NotificationsBell />
             <span className="hidden text-sm text-body md:inline">
               {user.email}
             </span>
