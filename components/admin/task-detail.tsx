@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { TaskHoursForm, TaskCommentForm, AddSubtaskForm, ApplyTemplateForm } from './task-detail-forms'
+import { TaskHoursForm, TaskCommentForm, AddSubtaskForm, ApplyTemplateForm, TaskFiles } from './task-detail-forms'
 
 export type TaskDetailData = {
   id: string
@@ -23,6 +23,7 @@ export type TaskDetailData = {
 export type ActivityRow = { id: string; action: string; created_at: string; actorName: string | null }
 export type CommentRow = { id: string; body: string; created_at: string; authorName: string | null }
 export type SubtaskRow = { id: string; task_number: number; title: string; status: string; assigneeName: string | null }
+export type TaskFileRow = { id: string; file_name: string; content_type: string | null; size_bytes: number | null; created_at: string }
 
 const statusVariant: Record<string, 'secondary' | 'info' | 'warning' | 'success' | 'destructive'> = {
   todo: 'secondary', in_progress: 'info', in_review: 'info', blocked: 'warning', done: 'success', cancelled: 'secondary',
@@ -46,6 +47,7 @@ export function TaskDetail({
   comments,
   subtasks,
   templates,
+  files,
   taskBase,
   backHref,
 }: {
@@ -54,6 +56,7 @@ export function TaskDetail({
   comments: CommentRow[]
   subtasks: SubtaskRow[]
   templates: { id: string; name: string }[]
+  files: TaskFileRow[]
   taskBase: string
   backHref: string
 }) {
@@ -117,6 +120,17 @@ export function TaskDetail({
             </ul>
           )}
           <AddSubtaskForm parentId={task.id} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">
+            Files {files.length > 0 && <span className="text-body-subtle">({files.length})</span>}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TaskFiles taskId={task.id} files={files} />
         </CardContent>
       </Card>
 
