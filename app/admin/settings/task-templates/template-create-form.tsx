@@ -13,12 +13,13 @@ type Staff = { id: string; name: string }
 
 type StepDraft = {
   title: string
+  description: string
   assignee_rule: 'unassigned' | 'parent_assignee' | 'department_lead' | 'specific'
   assignee_id: string
   offset_days: string
 }
 
-const EMPTY_STEP: StepDraft = { title: '', assignee_rule: 'unassigned', assignee_id: '', offset_days: '' }
+const EMPTY_STEP: StepDraft = { title: '', description: '', assignee_rule: 'unassigned', assignee_id: '', offset_days: '' }
 
 export function TemplateCreateForm({ staff }: { staff: Staff[] }) {
   const router = useRouter()
@@ -36,6 +37,7 @@ export function TemplateCreateForm({ staff }: { staff: Staff[] }) {
       .filter((s) => s.title.trim())
       .map((s) => ({
         title: s.title,
+        description: s.description.trim() || null,
         assignee_rule: s.assignee_rule,
         assignee_id: s.assignee_rule === 'specific' ? s.assignee_id || null : null,
         offset_days: s.offset_days.trim() === '' ? null : Number(s.offset_days),
@@ -79,7 +81,8 @@ export function TemplateCreateForm({ staff }: { staff: Staff[] }) {
         <Label>Steps — in order</Label>
         <div className="space-y-2">
           {steps.map((s, i) => (
-            <div key={i} className="flex flex-wrap items-center gap-2 rounded-md border border-border-default p-2">
+            <div key={i} className="space-y-2 rounded-md border border-border-default p-2">
+              <div className="flex flex-wrap items-center gap-2">
               <span className="w-6 shrink-0 text-center text-xs text-body-subtle">{i + 1}</span>
               <Input
                 value={s.title}
@@ -132,6 +135,14 @@ export function TemplateCreateForm({ staff }: { staff: Staff[] }) {
               >
                 <Trash2 className="h-4 w-4" />
               </button>
+              </div>
+              <textarea
+                value={s.description}
+                onChange={(e) => setStep(i, { description: e.target.value })}
+                rows={2}
+                placeholder="Instructions (optional) — what does “done” look like for this step? Copied into every task created from it."
+                className="w-full rounded-md border border-border-default bg-bg-default p-2 text-xs text-heading"
+              />
             </div>
           ))}
         </div>

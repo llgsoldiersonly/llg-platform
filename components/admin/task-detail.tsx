@@ -24,6 +24,11 @@ export type ActivityRow = { id: string; action: string; created_at: string; acto
 export type CommentRow = { id: string; body: string; created_at: string; authorName: string | null }
 export type SubtaskRow = { id: string; task_number: number; title: string; status: string; assigneeName: string | null }
 export type TaskFileRow = { id: string; file_name: string; content_type: string | null; size_bytes: number | null; created_at: string }
+export type ClientContext = {
+  firmName: string
+  sites: { domain: string; label: string | null; is_primary: boolean }[]
+  recentSubmissions: { kind: string; title: string | null; link_url: string | null; created_at: string }[]
+}
 
 const statusVariant: Record<string, 'secondary' | 'info' | 'warning' | 'success' | 'destructive'> = {
   todo: 'secondary', in_progress: 'info', in_review: 'info', blocked: 'warning', done: 'success', cancelled: 'secondary',
@@ -73,6 +78,7 @@ export function TaskDetail({
   templates,
   files,
   mentionables,
+  clientContext,
   taskBase,
   backHref,
 }: {
@@ -83,6 +89,7 @@ export function TaskDetail({
   templates: { id: string; name: string }[]
   files: TaskFileRow[]
   mentionables: { id: string; name: string }[]
+  clientContext: ClientContext | null
   taskBase: string
   backHref: string
 }) {
@@ -118,6 +125,62 @@ export function TaskDetail({
           {task.status === 'blocked' && <Field label="Paused — reason">{task.block_reason ?? '—'}</Field>}
         </CardContent>
       </Card>
+
+      {clientContext && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Client context — {clientContext.firmName}</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-body-subtle">Websites</p>
+              {clientContext.sites.length === 0 ? (
+                <p className="mt-1 text-sm text-body-subtle">No tracked sites.</p>
+              ) : (
+                <ul className="mt-1 space-y-1 text-sm">
+                  {clientContext.sites.map((s) => (
+                    <li key={s.domain}>
+                      <a
+                        href={`https://${s.domain}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-fg-brand hover:underline"
+                      >
+                        {s.domain}
+                      </a>
+                      <span className="text-xs text-body-subtle">
+                        {s.is_primary ? ' · primary' : ''}
+                        {s.label ? ` · ${s.label}` : ''}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-body-subtle">Recent work for this client</p>
+              {clientContext.recentSubmissions.length === 0 ? (
+                <p className="mt-1 text-sm text-body-subtle">No submissions yet.</p>
+              ) : (
+                <ul className="mt-1 space-y-1 text-sm">
+                  {clientContext.recentSubmissions.map((s, i) => (
+                    <li key={i} className="truncate">
+                      {s.link_url ? (
+                        <a href={s.link_url} target="_blank" rel="noreferrer" className="text-fg-brand hover:underline">
+                          {s.title || s.link_url}
+                        </a>
+                      ) : (
+                        <span className="text-heading">{s.title ?? s.kind}</span>
+                      )}
+                      <span className="text-xs text-body-subtle"> · {s.kind} · {s.created_at.slice(0, 10)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="flex-row items-center justify-between pb-2">

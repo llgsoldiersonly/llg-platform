@@ -1,5 +1,12 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { TaskDetailData, ActivityRow, CommentRow, SubtaskRow, TaskFileRow } from '@/components/admin/task-detail'
+import type {
+  TaskDetailData,
+  ActivityRow,
+  CommentRow,
+  SubtaskRow,
+  TaskFileRow,
+  ClientContext,
+} from '@/components/admin/task-detail'
 
 type RawTask = {
   id: string
@@ -14,6 +21,7 @@ type RawTask = {
   estimated_hours: number | null
   actual_hours: number | null
   assigned_to: string | null
+  client_id: string | null
   client: { firm_name: string } | null
   department: { name: string } | null
 }
@@ -28,13 +36,14 @@ export async function loadTaskDetail(
   templates: { id: string; name: string }[]
   files: TaskFileRow[]
   mentionables: { id: string; name: string }[]
+  clientContext: ClientContext | null
 } | null> {
   const supa = createAdminClient()
   const [{ data: task }, { data: activity }, { data: comments }, { data: subtasks }, { data: templates }, { data: files }, { data: staff }] = await Promise.all([
     supa
       .from('tasks')
       .select(
-        'id, task_number, title, description, status, priority, start_date, due_date, block_reason, estimated_hours, actual_hours, assigned_to, client:clients(firm_name), department:departments(name)'
+        'id, task_number, title, description, status, priority, start_date, due_date, block_reason, estimated_hours, actual_hours, assigned_to, client_id, client:clients(firm_name), department:departments(name)'
       )
       .eq('id', id)
       .maybeSingle<RawTask>(),
@@ -79,6 +88,35 @@ export async function loadTaskDetail(
   ])
 
   if (!task) return null
+
+  // Client context: the client's tracked sites + their most recent submissions,
+  // so the person doing the work has domains and style references on the task
+  // itself instead of hunting for them.
+  let clientContext: ClientContext | null = null
+  if (task.client_id) {
+    const [{ data: sites }, { data: recentSubs }] = await Promise.all([
+      supa
+        .from('client_sites')
+        .select('domain, label, is_primary')
+        .eq('client_id', task.client_id)
+        .eq('is_active', true)
+        .order('is_primary', { ascending: false })
+        .returns<{ domain: string; label: string | null; is_primary: boolean }[]>(),
+      supa
+        .from('deliverable_submissions')
+        .select('kind, title, link_url, created_at')
+        .eq('client_id', task.client_id)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
+        .limit(5)
+        .returns<{ kind: string; title: string | null; link_url: string | null; created_at: string }[]>(),
+    ])
+    clientContext = {
+      firmName: task.client?.firm_name ?? 'Client',
+      sites: sites ?? [],
+      recentSubmissions: recentSubs ?? [],
+    }
+  }
 
   const ids = new Set<string>()
   if (task.assigned_to) ids.add(task.assigned_to)
@@ -138,5 +176,6 @@ export async function loadTaskDetail(
     mentionables: (staff ?? [])
       .filter((p) => p.full_name)
       .map((p) => ({ id: p.id, name: p.full_name as string })),
+    clientContext,
   }
 }
