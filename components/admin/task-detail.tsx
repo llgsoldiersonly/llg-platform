@@ -79,6 +79,7 @@ export function TaskDetail({
   files,
   mentionables,
   clientContext,
+  submitPrefill,
   taskBase,
   backHref,
 }: {
@@ -90,11 +91,19 @@ export function TaskDetail({
   files: TaskFileRow[]
   mentionables: { id: string; name: string }[]
   clientContext: ClientContext | null
+  submitPrefill?: { clientId: string; kind: string | null; deliverableId: string | null } | null
   taskBase: string
   backHref: string
 }) {
   const hot = task.priority === 'urgent' || task.priority === 'high'
   const doneSubs = subtasks.filter((s) => s.status === 'done').length
+
+  // Staff portal only: deep-link into the prefilled submit form. Admins have
+  // their own submissions surface.
+  const submitHref =
+    taskBase.startsWith('/staff') && submitPrefill
+      ? `/staff?client=${submitPrefill.clientId}${submitPrefill.kind ? `&kind=${submitPrefill.kind}` : ''}${submitPrefill.deliverableId ? `&deliverable=${submitPrefill.deliverableId}` : ''}#submit`
+      : null
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-8">
       <Link href={backHref} className="inline-flex items-center gap-1 text-sm text-body-subtle hover:text-body">
@@ -109,6 +118,14 @@ export function TaskDetail({
         </div>
         <h1 className="mt-1 text-2xl font-semibold text-heading">{task.title}</h1>
         {task.description && <p className="mt-2 whitespace-pre-wrap text-sm text-body">{task.description}</p>}
+        {submitHref && (
+          <Link
+            href={submitHref}
+            className="mt-3 inline-flex items-center rounded-md border border-border-brand px-3 py-1.5 text-sm font-medium text-fg-brand hover:bg-brand-soft/40"
+          >
+            Submit work for this task →
+          </Link>
+        )}
       </div>
 
       <Card>

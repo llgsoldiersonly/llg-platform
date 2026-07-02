@@ -38,16 +38,23 @@ type Mode = 'single' | 'bulk'
 export function StaffSubmitForm({
   firms,
   deliverables,
+  initialClientId,
+  initialKind,
+  initialDeliverableId,
 }: {
   firms: FirmRow[]
   deliverables: DeliverableRow[]
+  // Prefills for the deep-linked "Submit work" flow from a task.
+  initialClientId?: string
+  initialKind?: SubmissionKind
+  initialDeliverableId?: string
 }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [mode, setMode] = useState<Mode>('single')
-  const [clientId, setClientId] = useState<string>('')
-  const [kind, setKind] = useState<SubmissionKind>('blog')
-  const [deliverableId, setDeliverableId] = useState<string>('')
+  const [clientId, setClientId] = useState<string>(initialClientId ?? '')
+  const [kind, setKind] = useState<SubmissionKind>(initialKind ?? 'blog')
+  const [deliverableId, setDeliverableId] = useState<string>(initialDeliverableId ?? '')
   const [markComplete, setMarkComplete] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
