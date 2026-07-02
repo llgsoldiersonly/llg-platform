@@ -19,6 +19,7 @@ type Profile = {
   is_active: boolean
   department_id: string | null
   is_department_lead: boolean
+  weekly_capacity_hours: number | null
   department: { name: string; slug: string } | null
 }
 
@@ -44,7 +45,7 @@ export default async function AdminUsersPage({
   const [profilesRes, departmentsRes, settingsRes] = await Promise.all([
     supa
       .from('profiles')
-      .select('id, full_name, role, title, is_active, department_id, is_department_lead, department:departments(name, slug)')
+      .select('id, full_name, role, title, is_active, department_id, is_department_lead, weekly_capacity_hours, department:departments(name, slug)')
       .in('role', ['agency_staff', 'super_admin'])
       .order('full_name')
       .returns<Profile[]>(),

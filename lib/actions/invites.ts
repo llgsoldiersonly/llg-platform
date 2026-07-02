@@ -78,6 +78,7 @@ export type UpdateStaffInput = {
   title?: string | null
   is_active?: boolean
   is_department_lead?: boolean
+  weekly_capacity_hours?: number | null
 }
 
 // Edits an existing staff member (department / title / role / active). A role
@@ -108,6 +109,14 @@ export async function updateStaffMember(input: UpdateStaffInput): Promise<Result
   if (input.department_id !== undefined) patch.department_id = input.department_id || null
   if (input.title !== undefined) patch.title = input.title?.trim() || null
   if (input.is_department_lead !== undefined) patch.is_department_lead = input.is_department_lead
+  if (input.weekly_capacity_hours !== undefined) {
+    patch.weekly_capacity_hours =
+      input.weekly_capacity_hours != null &&
+      Number.isFinite(input.weekly_capacity_hours) &&
+      input.weekly_capacity_hours > 0
+        ? input.weekly_capacity_hours
+        : 40
+  }
 
   if (Object.keys(patch).length > 0) {
     const { error: profileErr } = await admin.from('profiles').update(patch).eq('id', input.user_id)

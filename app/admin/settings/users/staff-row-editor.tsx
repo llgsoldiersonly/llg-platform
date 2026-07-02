@@ -28,6 +28,7 @@ type StaffProfile = {
   is_active: boolean
   department_id: string | null
   is_department_lead: boolean
+  weekly_capacity_hours: number | null
 }
 
 export function StaffRowEditor({
@@ -52,6 +53,7 @@ export function StaffRowEditor({
         department_id: (formData.get('department_id') as string) || null,
         title: (formData.get('title') as string | null)?.trim() || null,
         is_department_lead: formData.get('is_department_lead') === 'on',
+        weekly_capacity_hours: Number(formData.get('weekly_capacity_hours')) || null,
       })
       if (result.ok) {
         setOpen(false)
@@ -118,9 +120,22 @@ export function StaffRowEditor({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor={`title_${profile.id}`}>Title</Label>
-            <Input id={`title_${profile.id}`} name="title" defaultValue={profile.title ?? ''} />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor={`title_${profile.id}`}>Title</Label>
+              <Input id={`title_${profile.id}`} name="title" defaultValue={profile.title ?? ''} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`capacity_${profile.id}`}>Weekly capacity (hrs)</Label>
+              <Input
+                id={`capacity_${profile.id}`}
+                name="weekly_capacity_hours"
+                type="number"
+                min="1"
+                step="1"
+                defaultValue={profile.weekly_capacity_hours ?? 40}
+              />
+            </div>
           </div>
 
           <label className="flex items-start gap-2 text-sm text-body">
