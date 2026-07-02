@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { deriveKindFromCode } from '@/lib/submissions/kinds'
 import type {
   TaskDetailData,
   ActivityRow,
@@ -22,6 +23,8 @@ type RawTask = {
   actual_hours: number | null
   assigned_to: string | null
   client_id: string | null
+  deliverable_id: string | null
+  tags: string[] | null
   client: { firm_name: string } | null
   department: { name: string } | null
 }
@@ -37,13 +40,14 @@ export async function loadTaskDetail(
   files: TaskFileRow[]
   mentionables: { id: string; name: string }[]
   clientContext: ClientContext | null
+  submitPrefill: { clientId: string; kind: string | null; deliverableId: string | null } | null
 } | null> {
   const supa = createAdminClient()
   const [{ data: task }, { data: activity }, { data: comments }, { data: subtasks }, { data: templates }, { data: files }, { data: staff }] = await Promise.all([
     supa
       .from('tasks')
       .select(
-        'id, task_number, title, description, status, priority, start_date, due_date, block_reason, estimated_hours, actual_hours, assigned_to, client_id, client:clients(firm_name), department:departments(name)'
+        'id, task_number, title, description, status, priority, start_date, due_date, block_reason, estimated_hours, actual_hours, assigned_to, client_id, deliverable_id, tags, client:clients(firm_name), department:departments(name)'
       )
       .eq('id', id)
       .maybeSingle<RawTask>(),
@@ -118,6 +122,27 @@ export async function loadTaskDetail(
     }
   }
 
+  // "Submit work" prefill: point the staff submit form at this task's client,
+  // with the kind inferred from the linked deliverable's code, or (for
+  // content-plan tasks) from the plan-kind tag.
+  let submitPrefill: { clientId: string; kind: string | null; deliverableId: string | null } | null = null
+  if (task.client_id) {
+    let kind: string | null = null
+    if (task.deliverable_id) {
+      const { data: deliv } = await supa
+        .from('deliverables_display')
+        .select('code')
+        .eq('id', task.deliverable_id)
+        .maybeSingle<{ code: string | null }>()
+      kind = deriveKindFromCode(deliv?.code)
+    } else if (task.tags?.includes('content-plan')) {
+      if (task.tags.includes('blog')) kind = 'blog'
+      else if (task.tags.includes('seo_page')) kind = 'child_page'
+      else if (task.tags.includes('sitemap')) kind = 'parent_page'
+    }
+    submitPrefill = { clientId: task.client_id, kind, deliverableId: task.deliverable_id }
+  }
+
   const ids = new Set<string>()
   if (task.assigned_to) ids.add(task.assigned_to)
   for (const a of activity ?? []) if (a.actor_id) ids.add(a.actor_id)
@@ -177,5 +202,6 @@ export async function loadTaskDetail(
       .filter((p) => p.full_name)
       .map((p) => ({ id: p.id, name: p.full_name as string })),
     clientContext,
+    submitPrefill,
   }
 }
