@@ -67,6 +67,18 @@ export default async function StaffLayout({ children }: { children: React.ReactN
             >
               My Recent
             </Link>
+            <Link
+              href="/staff/search"
+              className="text-sm font-medium text-body hover:text-heading"
+            >
+              Search
+            </Link>
+            <Link
+              href="/staff/help"
+              className="text-sm font-medium text-body hover:text-heading"
+            >
+              Help
+            </Link>
           </nav>
           <div className="flex items-center gap-3">
             <NotificationsBell />

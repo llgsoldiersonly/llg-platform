@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { StaffSubmitForm } from './staff-submit-form'
 import { WorkItemQuickActions } from './work-item-quick-actions'
+import { HelpIntroCard } from './help-intro-card'
 import { isValidSubmissionKind } from '@/lib/submissions/kinds'
 
 export const dynamic = 'force-dynamic'
@@ -157,6 +158,8 @@ export default async function StaffHomePage({
           Open My Work board →
         </Link>
       </div>
+
+      <HelpIntroCard />
 
       {nextUp.length > 0 && (
         <Card className="border-border-brand/60">
