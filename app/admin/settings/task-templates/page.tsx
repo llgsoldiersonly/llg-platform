@@ -15,6 +15,7 @@ type Step = {
   template_id: string
   position: number
   title: string
+  description: string | null
   assignee_rule: string | null
   assignee_id: string | null
   offset_days: number | null
@@ -31,7 +32,7 @@ export default async function TaskTemplatesPage() {
     supa.from('task_templates').select('id, name, kind').order('name').returns<Template[]>(),
     supa
       .from('task_template_steps')
-      .select('template_id, position, title, assignee_rule, assignee_id, offset_days')
+      .select('template_id, position, title, description, assignee_rule, assignee_id, offset_days')
       .order('position')
       .returns<Step[]>(),
     supa
@@ -113,6 +114,9 @@ export default async function TaskTemplatesPage() {
                               .filter(Boolean)
                               .join(' · ')})
                           </span>
+                        )}
+                        {s.description && (
+                          <p className="mt-0.5 whitespace-pre-wrap text-xs text-body-subtle">{s.description}</p>
                         )}
                       </li>
                     )

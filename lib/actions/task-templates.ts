@@ -9,6 +9,8 @@ import { ok, err, type Result } from '@/lib/errors'
 
 export type TemplateStepInput = {
   title: string
+  // Instructions / definition-of-done, copied into every spawned subtask.
+  description?: string | null
   // Who does this step when the template is applied. 'specific' uses assignee_id.
   assignee_rule?: 'unassigned' | 'parent_assignee' | 'department_lead' | 'specific'
   assignee_id?: string | null
@@ -32,6 +34,7 @@ export async function createTaskTemplate(
   const cleanSteps = (steps ?? [])
     .map((s) => ({
       title: s.title?.trim() ?? '',
+      description: s.description?.trim() || null,
       assignee_rule: s.assignee_rule && ASSIGNEE_RULES.has(s.assignee_rule) ? s.assignee_rule : 'unassigned',
       assignee_id: s.assignee_rule === 'specific' ? s.assignee_id || null : null,
       offset_days:

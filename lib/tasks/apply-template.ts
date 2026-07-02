@@ -31,12 +31,13 @@ export async function applyTemplateWithAdmin(
       }>(),
     admin
       .from('task_template_steps')
-      .select('position, title, department_id, assignee_rule, assignee_id, offset_days')
+      .select('position, title, description, department_id, assignee_rule, assignee_id, offset_days')
       .eq('template_id', templateId)
       .order('position')
       .returns<{
         position: number
         title: string
+        description: string | null
         department_id: string | null
         assignee_rule: string | null
         assignee_id: string | null
@@ -89,6 +90,7 @@ export async function applyTemplateWithAdmin(
 
   const rows = steps.map((s) => ({
     title: s.title,
+    description: s.description ?? null,
     parent_task_id: taskId,
     position: s.position,
     client_id: parent.client_id,

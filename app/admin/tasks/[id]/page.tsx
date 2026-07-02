@@ -17,6 +17,7 @@ export default async function AdminTaskDetailPage({ params }: { params: Promise<
       templates={d.templates}
       files={d.files}
       mentionables={d.mentionables}
+      clientContext={d.clientContext}
       taskBase="/admin/tasks"
       backHref="/admin/tasks/board"
     />

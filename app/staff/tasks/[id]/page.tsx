@@ -17,6 +17,7 @@ export default async function StaffTaskDetailPage({ params }: { params: Promise<
       templates={d.templates}
       files={d.files}
       mentionables={d.mentionables}
+      clientContext={d.clientContext}
       taskBase="/staff/tasks"
       backHref="/staff/board"
     />
