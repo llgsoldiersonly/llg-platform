@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { isSuperAdmin } from '@/lib/auth/rbac'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { InfoTip } from '@/components/ui/infotip'
 import { InviteStaffForm } from './invite-form'
 import { StaffRowEditor } from './staff-row-editor'
 import { StaffRowActions } from './staff-row-actions'
@@ -108,7 +109,11 @@ export default async function AdminUsersPage({
                   <td className="px-6 py-3 text-body">
                     <span className="inline-flex items-center gap-1.5">
                       {p.department?.name ?? '—'}
-                      {p.is_department_lead && p.department && <Badge variant="warning">Lead</Badge>}
+                      {p.is_department_lead && p.department && (
+                        <InfoTip text="Department lead — sees and manages every task and deliverable in their department (reassign + submit), via the Department board in the staff portal.">
+                          <Badge variant="warning">Lead</Badge>
+                        </InfoTip>
+                      )}
                     </span>
                   </td>
                   <td className="px-6 py-3 text-body">{p.title ?? '—'}</td>

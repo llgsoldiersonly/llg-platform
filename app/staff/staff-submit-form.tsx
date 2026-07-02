@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { InfoTip } from '@/components/ui/infotip'
 import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
@@ -171,7 +172,10 @@ export function StaffSubmitForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="kind">Kind *</Label>
+          <Label htmlFor="kind" className="inline-flex items-center gap-1.5">
+            Kind *
+            <InfoTip text="What type of work this is. It filters the deliverable list below and controls where the work shows up on the client's dashboard." />
+          </Label>
           <Select
             id="kind"
             value={kind}
@@ -191,7 +195,10 @@ export function StaffSubmitForm({
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="deliverable_id">Counts toward (optional)</Label>
+          <Label htmlFor="deliverable_id" className="inline-flex items-center gap-1.5">
+            Counts toward (optional)
+            <InfoTip text="Connects this submission to the client's monthly package item (e.g. '4 blog posts'), so your work is counted toward the target. Pick it whenever one applies." />
+          </Label>
           <Select
             id="deliverable_id"
             value={deliverableId}
