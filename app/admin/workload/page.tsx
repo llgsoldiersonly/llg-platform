@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { InfoTip } from '@/components/ui/infotip'
 
 export const dynamic = 'force-dynamic'
 
@@ -117,9 +118,11 @@ export default async function WorkloadPage() {
                       {s.role === 'super_admin' && ' · super admin'}
                     </p>
                   </div>
-                  <Badge variant={over ? 'destructive' : pct >= 80 ? 'warning' : 'success'}>
-                    {pct}%
-                  </Badge>
+                  <InfoTip text="Estimated hours on their tasks due in the next 7 days (or overdue), divided by their weekly capacity. Amber from 80%, red over 100%.">
+                    <Badge variant={over ? 'destructive' : pct >= 80 ? 'warning' : 'success'}>
+                      {pct}%
+                    </Badge>
+                  </InfoTip>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">

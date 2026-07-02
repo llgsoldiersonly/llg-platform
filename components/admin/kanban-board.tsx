@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ExternalLink, Paperclip } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Select } from '@/components/ui/select'
+import { InfoTip } from '@/components/ui/infotip'
 import { updateTaskStatus, reassignTask } from '@/lib/actions/tasks'
 import { updateDeliverableStatus } from '@/lib/actions/deliverables'
 import { submitDeliverableProof } from '@/lib/actions/submissions'
@@ -28,12 +29,24 @@ export type KanbanItem = {
   isSubtask?: boolean
 }
 
-const COLUMNS: { key: BoardStatus; label: string }[] = [
-  { key: 'todo', label: 'To do' },
-  { key: 'in_progress', label: 'In progress' },
-  { key: 'in_review', label: 'In review' },
-  { key: 'blocked', label: 'Paused' },
-  { key: 'done', label: 'Submitted' },
+const COLUMNS: { key: BoardStatus; label: string; tip: string }[] = [
+  { key: 'todo', label: 'To do', tip: 'Not started yet. Drag a card here to reset it.' },
+  { key: 'in_progress', label: 'In progress', tip: "You're actively working on it." },
+  {
+    key: 'in_review',
+    label: 'In review',
+    tip: "You're finished — a department lead or super-admin checks it from here. This is as far as staff take a task.",
+  },
+  {
+    key: 'blocked',
+    label: 'Paused',
+    tip: "Stuck waiting on something. Moving a card here asks what it's waiting on, so nobody has to chase you.",
+  },
+  {
+    key: 'done',
+    label: 'Submitted',
+    tip: 'Final sign-off — only a super-admin or department lead can move a task here. Exception: you can finish your own workflow steps.',
+  },
 ]
 
 // Sentinel filter value for "show only unassigned" (distinct from '' = All).
@@ -251,7 +264,10 @@ export function KanbanBoard({
             }`}
           >
             <div className="mb-2 flex items-center justify-between px-1">
-              <span className="text-xs font-semibold uppercase tracking-wide text-body">{col.label}</span>
+              <span className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-body">
+                {col.label}
+                <InfoTip text={col.tip} side="bottom" />
+              </span>
               <span className="text-xs text-body-subtle">{byCol[col.key].length}</span>
             </div>
             <div className="flex flex-1 flex-col gap-2">
@@ -277,8 +293,16 @@ export function KanbanBoard({
                     <div className="flex items-start justify-between gap-2">
                       <p className="font-medium leading-tight text-heading">{item.title}</p>
                       <div className="flex shrink-0 items-center gap-1">
-                        {item.kind === 'deliverable' && <Badge variant="secondary">deliv</Badge>}
-                        {item.isSubtask && <Badge variant="secondary">step</Badge>}
+                        {item.kind === 'deliverable' && (
+                          <InfoTip text="A monthly package item — work you submit counts toward its target. Use the paperclip to attach proof.">
+                            <Badge variant="secondary">deliv</Badge>
+                          </InfoTip>
+                        )}
+                        {item.isSubtask && (
+                          <InfoTip text="One stage of a task's workflow. Finishing it automatically notifies whoever owns the next step — you can move your own steps to Submitted.">
+                            <Badge variant="secondary">step</Badge>
+                          </InfoTip>
+                        )}
                         {item.kind === 'deliverable' && (
                           <button
                             type="button"
@@ -314,7 +338,11 @@ export function KanbanBoard({
                       </p>
                     )}
                     <div className="mt-1.5 flex items-center gap-2">
-                      {hot && <Badge variant="destructive">{item.priority}</Badge>}
+                      {hot && (
+                        <InfoTip text="Priority set by a super-admin — do these before anything else. It also jumps the item up your Next up queue.">
+                          <Badge variant="destructive">{item.priority}</Badge>
+                        </InfoTip>
+                      )}
                       {showAssigneeFilter ? (
                         item.assigneeName ? (
                           <span

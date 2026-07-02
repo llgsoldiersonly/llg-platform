@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { InfoTip } from '@/components/ui/infotip'
 import { StaffSubmitForm } from './staff-submit-form'
 import { WorkItemQuickActions } from './work-item-quick-actions'
 import { HelpIntroCard } from './help-intro-card'
@@ -164,7 +165,10 @@ export default async function StaffHomePage({
       {nextUp.length > 0 && (
         <Card className="border-border-brand/60">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-fg-brand-strong">Next up</CardTitle>
+            <CardTitle className="inline-flex items-center gap-1.5 text-sm text-fg-brand-strong">
+              Next up
+              <InfoTip text="Your 3 most urgent items: overdue first, then earliest due date, then priority. Paused and in-review work is excluded — it's waiting on something." />
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {nextUp.map((i, idx) => (
@@ -177,8 +181,23 @@ export default async function StaffHomePage({
       <div className="grid gap-4 md:grid-cols-2">
         <Bucket title="Overdue" tone="danger" items={overdue} empty="Nothing overdue 🎉" today={today} />
         <Bucket title="Due today" tone="brand" items={dueToday} empty="Nothing due today." today={today} />
-        <Bucket title="Waiting on you (paused)" tone="muted" items={paused} empty="Nothing paused." showReason today={today} />
-        <Bucket title="In review" tone="muted" items={inReview} empty="Nothing in review." today={today} />
+        <Bucket
+          title="Waiting on you (paused)"
+          tone="muted"
+          items={paused}
+          empty="Nothing paused."
+          showReason
+          today={today}
+          tip="Work you paused because it's stuck. When whatever it was waiting on is resolved, hit Resume."
+        />
+        <Bucket
+          title="In review"
+          tone="muted"
+          items={inReview}
+          empty="Nothing in review."
+          today={today}
+          tip="You're done with these — a department lead or super-admin reviews and submits them. Nothing for you to do unless it comes back."
+        />
       </div>
 
       <div id="submit">
@@ -255,6 +274,7 @@ function Bucket({
   tone,
   showReason,
   today,
+  tip,
 }: {
   title: string
   items: WorkItem[]
@@ -262,14 +282,16 @@ function Bucket({
   tone: 'danger' | 'brand' | 'muted'
   showReason?: boolean
   today: string
+  tip?: string
 }) {
   const headColor =
     tone === 'danger' ? 'text-fg-danger-strong' : tone === 'brand' ? 'text-fg-brand-strong' : 'text-heading'
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className={`text-sm ${headColor}`}>
+        <CardTitle className={`inline-flex items-center gap-1.5 text-sm ${headColor}`}>
           {title} <span className="text-body-subtle">({items.length})</span>
+          {tip && <InfoTip text={tip} />}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">

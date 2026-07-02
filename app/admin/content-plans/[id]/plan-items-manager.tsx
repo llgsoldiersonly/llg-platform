@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { InfoTip } from '@/components/ui/infotip'
 import { assignPlanItems, distributePlanItems } from '@/lib/actions/content-plans'
 
 export type PlanItem = {
@@ -110,9 +111,12 @@ export function PlanItemsManager({
           </Button>
         </div>
         <span className="text-border-default">|</span>
-        <Button size="sm" variant="outline" onClick={distributeAll} disabled={isPending}>
-          Distribute unassigned evenly
-        </Button>
+        <span className="inline-flex items-center gap-1.5">
+          <Button size="sm" variant="outline" onClick={distributeAll} disabled={isPending}>
+            Distribute unassigned evenly
+          </Button>
+          <InfoTip text="Round-robins every currently-unassigned row across the staff list, in row order. Each assigned row becomes a task on that person's board." />
+        </span>
         {error && <p className="text-sm text-fg-danger">{error}</p>}
       </div>
 

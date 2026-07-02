@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
+import { InfoTip } from '@/components/ui/infotip'
 import { createContentPlan, type PlanRowInput } from '@/lib/actions/content-plans'
 
 type Client = { id: string; firm_name: string }
@@ -105,7 +106,10 @@ export function PlanCreateForm({
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="template_id">Workflow per row (optional)</Label>
+          <Label htmlFor="template_id" className="inline-flex items-center gap-1.5">
+            Workflow per row (optional)
+            <InfoTip text="When a row is assigned, its task automatically gets this workflow's steps — pre-assigned and scheduled per the template's rules. Manage workflows via the link above." />
+          </Label>
           <Select id="template_id" name="template_id" defaultValue="">
             <option value="">— none —</option>
             {templates.map((t) => (

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { InfoTip } from '@/components/ui/infotip'
 import { TaskHoursForm, TaskCommentForm, AddSubtaskForm, ApplyTemplateForm, TaskFiles } from './task-detail-forms'
 
 export type TaskDetailData = {
@@ -201,8 +202,9 @@ export function TaskDetail({
 
       <Card>
         <CardHeader className="flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base">
+          <CardTitle className="inline-flex items-center gap-1.5 text-base">
             Subtasks {subtasks.length > 0 && <span className="text-body-subtle">({doneSubs}/{subtasks.length})</span>}
+            <InfoTip text="The task's workflow steps. Applying a workflow spawns one subtask per step — each step's assignee is notified automatically when the previous one is finished." />
           </CardTitle>
           <ApplyTemplateForm taskId={task.id} templates={templates} />
         </CardHeader>
@@ -242,7 +244,10 @@ export function TaskDetail({
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Hours</CardTitle>
+          <CardTitle className="inline-flex items-center gap-1.5 text-base">
+            Hours
+            <InfoTip text="Estimated = how long you expect it to take (this drives the Workload capacity bars). Actual = what it really took, filled in as you go or when finished." />
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <TaskHoursForm taskId={task.id} estimated={task.estimated_hours} actual={task.actual_hours} />

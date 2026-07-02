@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
+import { InfoTip } from '@/components/ui/infotip'
 import { createTaskTemplate, type TemplateStepInput } from '@/lib/actions/task-templates'
 
 type Staff = { id: string; name: string }
@@ -78,7 +79,10 @@ export function TemplateCreateForm({ staff }: { staff: Staff[] }) {
       </div>
 
       <div className="space-y-2">
-        <Label>Steps — in order</Label>
+        <Label className="inline-flex items-center gap-1.5">
+          Steps — in order
+          <InfoTip text="Each step becomes a subtask when the workflow is applied. The rule picks who gets it (parent's assignee, the department lead, or a specific person); 'due +N days' schedules it from the parent's start date." />
+        </Label>
         <div className="space-y-2">
           {steps.map((s, i) => (
             <div key={i} className="space-y-2 rounded-md border border-border-default p-2">

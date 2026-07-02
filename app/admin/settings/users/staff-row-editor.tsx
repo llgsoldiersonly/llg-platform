@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Pencil } from 'lucide-react'
+import { InfoTip } from '@/components/ui/infotip'
 import { updateStaffMember } from '@/lib/actions/invites'
 
 type Department = { id: string; name: string; slug: string }
@@ -126,7 +127,10 @@ export function StaffRowEditor({
               <Input id={`title_${profile.id}`} name="title" defaultValue={profile.title ?? ''} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`capacity_${profile.id}`}>Weekly capacity (hrs)</Label>
+              <Label htmlFor={`capacity_${profile.id}`} className="inline-flex items-center gap-1.5">
+                Weekly capacity (hrs)
+                <InfoTip text="Used by the Workload page: estimated hours due in the next 7 days vs. this number. Lower it for part-timers." />
+              </Label>
               <Input
                 id={`capacity_${profile.id}`}
                 name="weekly_capacity_hours"
