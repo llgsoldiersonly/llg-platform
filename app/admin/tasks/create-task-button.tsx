@@ -57,6 +57,8 @@ export function CreateTaskButton({
         priority: (formData.get('priority') as 'low' | 'medium' | 'high' | 'urgent') ?? 'medium',
         start_date: (formData.get('start_date') as string) || null,
         due_date: (formData.get('due_date') as string) || null,
+        recur_every: ((formData.get('recur_every') as string) || null) as
+          | 'daily' | 'weekly' | 'biweekly' | 'monthly' | null,
       })
       if (result.ok) {
         setOpen(false)
@@ -147,6 +149,20 @@ export function CreateTaskButton({
               <Label htmlFor="due_date">Due date</Label>
               <Input id="due_date" name="due_date" type="date" />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="recur_every">Repeats</Label>
+            <Select id="recur_every" name="recur_every" defaultValue="">
+              <option value="">Never (one-off)</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="biweekly">Every 2 weeks</option>
+              <option value="monthly">Monthly</option>
+            </Select>
+            <p className="text-xs text-body-subtle">
+              Submitting a repeating task automatically creates the next one, same assignee, due one interval later.
+            </p>
           </div>
 
           {error && (

@@ -21,6 +21,7 @@ type RawTask = {
   block_reason: string | null
   estimated_hours: number | null
   actual_hours: number | null
+  recur_every: string | null
   assigned_to: string | null
   client_id: string | null
   deliverable_id: string | null
@@ -47,7 +48,7 @@ export async function loadTaskDetail(
     supa
       .from('tasks')
       .select(
-        'id, task_number, title, description, status, priority, start_date, due_date, block_reason, estimated_hours, actual_hours, assigned_to, client_id, deliverable_id, tags, client:clients(firm_name), department:departments(name)'
+        'id, task_number, title, description, status, priority, start_date, due_date, block_reason, estimated_hours, actual_hours, recur_every, assigned_to, client_id, deliverable_id, tags, client:clients(firm_name), department:departments(name)'
       )
       .eq('id', id)
       .maybeSingle<RawTask>(),
@@ -167,6 +168,7 @@ export async function loadTaskDetail(
       block_reason: task.block_reason,
       estimated_hours: task.estimated_hours,
       actual_hours: task.actual_hours,
+      recur_every: task.recur_every,
       client: task.client,
       department: task.department,
       assigneeName: task.assigned_to ? nameById.get(task.assigned_to) ?? null : null,

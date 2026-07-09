@@ -19,7 +19,10 @@ export type CreateTaskInput = {
   due_date?: string | null
   estimated_hours?: number | null
   tags?: string[] | null
+  recur_every?: 'daily' | 'weekly' | 'biweekly' | 'monthly' | null
 }
+
+const RECUR_VALUES = new Set(['daily', 'weekly', 'biweekly', 'monthly'])
 
 // Role-aware deep link to a task (staff and super-admin live in separate portals).
 async function taskLink(
@@ -54,6 +57,7 @@ export async function createTask(input: CreateTaskInput): Promise<Result<{ id: s
       due_date: input.due_date ?? null,
       estimated_hours: input.estimated_hours ?? null,
       tags: input.tags ?? null,
+      recur_every: input.recur_every && RECUR_VALUES.has(input.recur_every) ? input.recur_every : null,
       status: 'todo',
       created_by: user.id,
     })
@@ -104,14 +108,22 @@ export async function updateTaskStatus(
 
   const { data: current } = await admin
     .from('tasks')
-    .select('title, status, department_id, parent_task_id, position')
+    .select('title, description, status, department_id, parent_task_id, position, client_id, assigned_to, priority, due_date, estimated_hours, tags, recur_every')
     .eq('id', id)
     .maybeSingle<{
       title: string
+      description: string | null
       status: string
       department_id: string | null
       parent_task_id: string | null
       position: number | null
+      client_id: string | null
+      assigned_to: string | null
+      priority: string
+      due_date: string | null
+      estimated_hours: number | null
+      tags: string[] | null
+      recur_every: string | null
     }>()
 
   // Submitting (moving a task to done) is the final approval. Staff take work
@@ -177,10 +189,91 @@ export async function updateTaskStatus(
     })
   }
 
+  // Recurrence: submitting a recurring top-level task spawns the next
+  // occurrence. Steps never recur (their parent might). Reopen + re-submit
+  // spawns again — acceptable, since reopening is super-admin-only.
+  if (status === 'done' && current?.recur_every && !current.parent_task_id) {
+    await spawnNextOccurrence(admin, user.id, id, current)
+  }
+
   revalidatePath('/admin/tasks')
   revalidatePath('/admin/workload')
   revalidatePath('/admin/content-plans')
   return ok({ id })
+}
+
+// Advance a date by one recurrence interval (UTC date math on YYYY-MM-DD).
+function advanceDate(from: string, every: string): string {
+  const d = new Date(`${from}T00:00:00Z`)
+  if (every === 'daily') d.setUTCDate(d.getUTCDate() + 1)
+  else if (every === 'weekly') d.setUTCDate(d.getUTCDate() + 7)
+  else if (every === 'biweekly') d.setUTCDate(d.getUTCDate() + 14)
+  else d.setUTCMonth(d.getUTCMonth() + 1)
+  return d.toISOString().slice(0, 10)
+}
+
+// Spawn the next occurrence of a recurring task that was just submitted.
+// The next due date advances from the old one until it lands after today, so
+// a weekly task completed three weeks late isn't born already overdue.
+async function spawnNextOccurrence(
+  admin: ReturnType<typeof createAdminClient>,
+  actorId: string,
+  completedId: string,
+  t: {
+    title: string
+    description: string | null
+    department_id: string | null
+    client_id: string | null
+    assigned_to: string | null
+    priority: string
+    due_date: string | null
+    estimated_hours: number | null
+    tags: string[] | null
+    recur_every: string | null
+  }
+) {
+  const today = new Date().toISOString().slice(0, 10)
+  let nextDue = advanceDate(t.due_date ?? today, t.recur_every!)
+  while (nextDue <= today) nextDue = advanceDate(nextDue, t.recur_every!)
+
+  const { data: next, error } = await admin
+    .from('tasks')
+    .insert({
+      title: t.title,
+      description: t.description,
+      client_id: t.client_id,
+      department_id: t.department_id,
+      assigned_to: t.assigned_to,
+      priority: t.priority,
+      start_date: today,
+      due_date: nextDue,
+      estimated_hours: t.estimated_hours,
+      tags: t.tags,
+      recur_every: t.recur_every,
+      status: 'todo',
+      created_by: actorId,
+    })
+    .select('id')
+    .single()
+  if (error || !next) return
+
+  await admin.from('activity_log').insert({
+    actor_id: actorId,
+    entity_type: 'task',
+    entity_id: next.id,
+    action: 'created',
+    after: { title: t.title, via: 'recurrence', from_task: completedId, due_date: nextDue },
+  })
+
+  if (t.assigned_to) {
+    await admin.from('notifications').insert({
+      user_id: t.assigned_to,
+      type: 'task_assigned',
+      subject: `Recurring task: ${t.title}`,
+      body: `Next occurrence created — due ${nextDue}.`,
+      link: await taskLink(admin, t.assigned_to, next.id),
+    })
+  }
 }
 
 // After a workflow step is completed:
