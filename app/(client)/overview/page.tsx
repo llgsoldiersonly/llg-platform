@@ -23,7 +23,7 @@ import {
   PRE_LAUNCH_STEPS,
   type PreLaunchStepRow,
 } from '@/components/client/cards/pre-launch-checklist'
-import { MonthlyProductionCard } from '@/components/client/cards/monthly-production'
+import { MonthlyProductionCard, type ProductionCategory, type ProductionItem } from '@/components/client/cards/monthly-production'
 import { LeadsCard, type PortalLeadFile } from '@/components/client/cards/leads-card'
 import { LlgUpdatesCard } from '@/components/client/cards/llg-updates'
 import { aggregateProduction, applyPackageVisibility, type RawProductionRow } from '@/lib/post-launch-production'
@@ -305,6 +305,46 @@ export default async function OverviewPage({
   // Period label for the production card — "May 2026" style.
   const periodLabel = format(new Date(), 'MMMM yyyy')
 
+  // This period's approved submissions, grouped into the production card's
+  // buckets, so each category row can expand to show the actual work.
+  // Deliverable periods roll on the 1st, so "this period" = this month.
+  const monthStart = `${today.slice(0, 8)}01`
+  const { data: periodSubs } = await admin
+    .from('deliverable_submissions')
+    .select('kind, title, link_url, reviewed_at, submitted_at')
+    .eq('client_id', ctx.client.id)
+    .eq('status', 'approved')
+    .gte('submitted_at', monthStart)
+    .order('submitted_at', { ascending: false })
+    .limit(200)
+    .returns<{ kind: string; title: string | null; link_url: string; reviewed_at: string | null; submitted_at: string }[]>()
+
+  const KIND_TO_CATEGORY: Record<string, ProductionCategory['key']> = {
+    blog: 'blogs',
+    faq: 'faqs',
+    ai_page: 'ai',
+    social_post: 'social',
+    gmb_post: 'gbp',
+    link: 'links_citations',
+    citation: 'links_citations',
+  }
+  const itemsByCategory = new Map<ProductionCategory['key'], ProductionItem[]>()
+  for (const s of periodSubs ?? []) {
+    const cat = KIND_TO_CATEGORY[s.kind]
+    if (!cat) continue
+    const list = itemsByCategory.get(cat) ?? []
+    list.push({
+      title: s.title || titleFromUrl(s.link_url) || s.kind.replace(/_/g, ' '),
+      url: s.link_url || null,
+      when: (s.reviewed_at ?? s.submitted_at).slice(0, 10),
+    })
+    itemsByCategory.set(cat, list)
+  }
+  const productionCategoriesWithItems = productionCategories.map((c) => ({
+    ...c,
+    items: itemsByCategory.get(c.key) ?? [],
+  }))
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
       <CustomerPortalRocketFlyover />
@@ -341,7 +381,7 @@ export default async function OverviewPage({
           packageColorHex={activeSub?.package?.color_hex ?? null}
           launchDate={ctx.client.onboarded_at}
           nextBillingAt={ctx.client.next_billing_at}
-          productionCategories={productionCategories}
+          productionCategories={productionCategoriesWithItems}
           periodLabel={periodLabel}
           tickets={ticketsRes.data ?? []}
           updates={updates}
@@ -445,7 +485,7 @@ function PostLaunchLayout({
   packageColorHex: string | null
   launchDate: string | null
   nextBillingAt: string | null
-  productionCategories: ReturnType<typeof aggregateProduction>
+  productionCategories: (ReturnType<typeof aggregateProduction>[number] & { items: ProductionItem[] })[]
   periodLabel: string
   tickets: TicketSummary[]
   updates: RecentUpdate[]
