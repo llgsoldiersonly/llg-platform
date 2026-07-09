@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     { "path": "/api/cron/wordpress",          "schedule": "0 2 * * *" },
-    { "path": "/api/cron/callrail",           "schedule": "20 2 * * *" },
+    { "path": "/api/cron/callrail",           "schedule": "20 * * * *" },
     { "path": "/api/cron/metricool",          "schedule": "30 2 * * *" },
     { "path": "/api/cron/reviews",            "schedule": "40 2 * * *" },
     { "path": "/api/cron/auto-close-inactive","schedule": "0 3 * * *" },
