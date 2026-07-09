@@ -144,9 +144,14 @@ export default async function DepartmentBoardPage() {
             Filter by assignee, reassign, and submit within your department.
           </p>
         </div>
-        <Link href="/staff/board" className="text-sm text-fg-brand hover:underline">
-          My Work →
-        </Link>
+        <span className="flex items-center gap-4">
+          <Link href="/staff/department/dashboard" className="text-sm text-fg-brand hover:underline">
+            Manager dashboard →
+          </Link>
+          <Link href="/staff/board" className="text-sm text-fg-brand hover:underline">
+            My Work →
+          </Link>
+        </span>
       </div>
       <KanbanBoard
         items={items}
