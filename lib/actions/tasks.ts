@@ -196,10 +196,87 @@ export async function updateTaskStatus(
     await spawnNextOccurrence(admin, user.id, id, current)
   }
 
+  // Watchers hear about every status move they didn't make themselves.
+  if (current && current.status !== status) {
+    await notifyWatchers(
+      admin,
+      id,
+      new Set([user.id]),
+      `"${current.title}" moved to ${WATCH_STATUS_LABEL[status] ?? status}`,
+      status === 'blocked' && reason?.trim() ? `Paused: ${reason.trim()}` : null
+    )
+  }
+
   revalidatePath('/admin/tasks')
   revalidatePath('/admin/workload')
   revalidatePath('/admin/content-plans')
   return ok({ id })
+}
+
+export async function toggleWatchTask(taskId: string): Promise<Result<{ watching: boolean }>> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return err('UNAUTHORIZED')
+  if (!isAgencyStaff(user)) return err('FORBIDDEN')
+  if (!taskId) return err('VALIDATION_FAILED', 'Missing task id')
+
+  const admin = createAdminClient()
+  const { data: existing } = await admin
+    .from('task_watchers')
+    .select('task_id')
+    .eq('task_id', taskId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (existing) {
+    const { error } = await admin.from('task_watchers').delete().eq('task_id', taskId).eq('user_id', user.id)
+    if (error) return err('INTERNAL', `Failed to unwatch: ${error.message}`)
+  } else {
+    const { error } = await admin.from('task_watchers').insert({ task_id: taskId, user_id: user.id })
+    if (error) return err('INTERNAL', `Failed to watch: ${error.message}`)
+  }
+
+  revalidatePath(`/admin/tasks/${taskId}`)
+  revalidatePath(`/staff/tasks/${taskId}`)
+  return ok({ watching: !existing })
+}
+
+// Notify everyone watching a task, minus the actor and anyone already
+// notified through another channel (assignee, mentions). Tolerates the
+// task_watchers table not existing yet (migration owed) — no watchers, no-op.
+async function notifyWatchers(
+  admin: ReturnType<typeof createAdminClient>,
+  taskId: string,
+  exclude: Set<string>,
+  subject: string,
+  body: string | null
+) {
+  const { data: watchers } = await admin
+    .from('task_watchers')
+    .select('user_id')
+    .eq('task_id', taskId)
+    .returns<{ user_id: string }[]>()
+  const targets = (watchers ?? []).map((w) => w.user_id).filter((id) => !exclude.has(id))
+  if (targets.length === 0) return
+  const rows = await Promise.all(
+    targets.map(async (uid) => ({
+      user_id: uid,
+      type: 'task_watched',
+      subject,
+      body,
+      link: await taskLink(admin, uid, taskId),
+    }))
+  )
+  await admin.from('notifications').insert(rows)
+}
+
+const WATCH_STATUS_LABEL: Record<string, string> = {
+  todo: 'To do',
+  in_progress: 'In progress',
+  in_review: 'In review',
+  blocked: 'Paused',
+  done: 'Submitted',
+  cancelled: 'Cancelled',
 }
 
 // Advance a date by one recurrence interval (UTC date math on YYYY-MM-DD).
@@ -558,6 +635,20 @@ export async function addTaskComment(
       }))
     )
     await admin.from('notifications').insert(rows)
+  }
+
+  // Watchers hear about new comments too — minus the author and anyone who
+  // already got a mention notification for this comment.
+  {
+    const { data: task } = await admin.from('tasks').select('title').eq('id', taskId).maybeSingle<{ title: string }>()
+    const authorName = user.user_metadata?.full_name ?? user.email ?? 'Someone'
+    await notifyWatchers(
+      admin,
+      taskId,
+      new Set([user.id, ...mentioned]),
+      `${authorName} commented on "${task?.title ?? 'a task'}"`,
+      text.slice(0, 240)
+    )
   }
 
   revalidatePath(`/admin/tasks/${taskId}`)

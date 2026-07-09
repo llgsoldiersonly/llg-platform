@@ -42,6 +42,7 @@ export async function loadTaskDetail(
   mentionables: { id: string; name: string }[]
   clientContext: ClientContext | null
   submitPrefill: { clientId: string; kind: string | null; deliverableId: string | null } | null
+  watchers: { id: string; name: string | null }[]
 } | null> {
   const supa = createAdminClient()
   const [{ data: task }, { data: activity }, { data: comments }, { data: subtasks }, { data: templates }, { data: files }, { data: staff }] = await Promise.all([
@@ -144,11 +145,18 @@ export async function loadTaskDetail(
     submitPrefill = { clientId: task.client_id, kind, deliverableId: task.deliverable_id }
   }
 
+  const { data: watcherRows } = await supa
+    .from('task_watchers')
+    .select('user_id')
+    .eq('task_id', task.id)
+    .returns<{ user_id: string }[]>()
+
   const ids = new Set<string>()
   if (task.assigned_to) ids.add(task.assigned_to)
   for (const a of activity ?? []) if (a.actor_id) ids.add(a.actor_id)
   for (const c of comments ?? []) if (c.author_id) ids.add(c.author_id)
   for (const s of subtasks ?? []) if (s.assigned_to) ids.add(s.assigned_to)
+  for (const w of watcherRows ?? []) ids.add(w.user_id)
 
   const { data: profs } = ids.size
     ? await supa.from('profiles').select('id, full_name').in('id', [...ids]).returns<{ id: string; full_name: string | null }[]>()
@@ -205,5 +213,9 @@ export async function loadTaskDetail(
       .map((p) => ({ id: p.id, name: p.full_name as string })),
     clientContext,
     submitPrefill,
+    watchers: (watcherRows ?? []).map((w) => ({
+      id: w.user_id,
+      name: nameById.get(w.user_id) ?? 'Unknown',
+    })),
   }
 }

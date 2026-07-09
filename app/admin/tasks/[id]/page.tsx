@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
 import { loadTaskDetail } from '@/lib/task-detail-data'
 import { TaskDetail } from '@/components/admin/task-detail'
 
@@ -6,7 +7,8 @@ export const dynamic = 'force-dynamic'
 
 export default async function AdminTaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const d = await loadTaskDetail(id)
+  const supabase = await createClient()
+  const [{ data: { user } }, d] = await Promise.all([supabase.auth.getUser(), loadTaskDetail(id)])
   if (!d) notFound()
   return (
     <TaskDetail
@@ -18,6 +20,8 @@ export default async function AdminTaskDetailPage({ params }: { params: Promise<
       files={d.files}
       mentionables={d.mentionables}
       clientContext={d.clientContext}
+      watchers={d.watchers}
+      viewerId={user?.id ?? null}
       taskBase="/admin/tasks"
       backHref="/admin/tasks/board"
     />

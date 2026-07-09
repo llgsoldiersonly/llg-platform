@@ -3,6 +3,7 @@ import { ChevronLeft } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { InfoTip } from '@/components/ui/infotip'
+import { WatchButton } from './watch-button'
 import { titleFromUrl } from '@/lib/title-from-url'
 import { TaskHoursForm, TaskCommentForm, AddSubtaskForm, ApplyTemplateForm, TaskFiles } from './task-detail-forms'
 
@@ -90,6 +91,8 @@ export function TaskDetail({
   mentionables,
   clientContext,
   submitPrefill,
+  watchers = [],
+  viewerId = null,
   taskBase,
   backHref,
 }: {
@@ -102,6 +105,8 @@ export function TaskDetail({
   mentionables: { id: string; name: string }[]
   clientContext: ClientContext | null
   submitPrefill?: { clientId: string; kind: string | null; deliverableId: string | null } | null
+  watchers?: { id: string; name: string | null }[]
+  viewerId?: string | null
   taskBase: string
   backHref: string
 }) {
@@ -125,6 +130,18 @@ export function TaskDetail({
           <span className="text-sm text-body-subtle">#{task.task_number}</span>
           <Badge variant={statusVariant[task.status] ?? 'secondary'}>{statusLabel[task.status] ?? task.status}</Badge>
           {hot && <Badge variant="destructive">{task.priority}</Badge>}
+          {viewerId && (
+            <span className="ml-auto flex items-center gap-2">
+              {watchers.length > 0 && (
+                <InfoTip text={`Watching: ${watchers.map((w) => w.name ?? 'Unknown').join(', ')}`}>
+                  <span className="text-xs text-body-subtle">
+                    {watchers.length} watcher{watchers.length === 1 ? '' : 's'}
+                  </span>
+                </InfoTip>
+              )}
+              <WatchButton taskId={task.id} initialWatching={watchers.some((w) => w.id === viewerId)} />
+            </span>
+          )}
         </div>
         <h1 className="mt-1 text-2xl font-semibold text-heading">{task.title}</h1>
         {task.description && <p className="mt-2 whitespace-pre-wrap text-sm text-body">{task.description}</p>}
