@@ -18,9 +18,17 @@ export type TaskDetailData = {
   block_reason: string | null
   estimated_hours: number | null
   actual_hours: number | null
+  recur_every: string | null
   client: { firm_name: string } | null
   department: { name: string } | null
   assigneeName: string | null
+}
+
+const RECUR_LABEL: Record<string, string> = {
+  daily: 'daily',
+  weekly: 'weekly',
+  biweekly: 'every 2 weeks',
+  monthly: 'monthly',
 }
 export type ActivityRow = { id: string; action: string; created_at: string; actorName: string | null }
 export type CommentRow = { id: string; body: string; created_at: string; authorName: string | null }
@@ -141,6 +149,13 @@ export function TaskDetail({
               : '—'}
           </Field>
           <Field label="Priority">{task.priority}</Field>
+          {task.recur_every && (
+            <Field label="Repeats">
+              <InfoTip text="When this task is Submitted, the next occurrence is created automatically — same assignee, due one interval later (never in the past).">
+                <span>{RECUR_LABEL[task.recur_every] ?? task.recur_every} 🔁</span>
+              </InfoTip>
+            </Field>
+          )}
           {task.status === 'blocked' && <Field label="Paused — reason">{task.block_reason ?? '—'}</Field>}
         </CardContent>
       </Card>
