@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatDistanceToNow } from 'date-fns'
 
 export type GbpSnapshot = {
   rating: number | null
@@ -47,13 +46,10 @@ export function GoogleBusinessProfileCard({
               </span>
             </div>
 
-            {/* Posts logged by staff in the trailing 30 days. This counts when
-                our team filed the work, which can lag the real publish date —
-                say what it is instead of implying live GBP data. */}
-            <div className="text-sm text-body">
-              <span className="font-medium text-heading">{snapshot.posts_30d ?? 0}</span>{' '}
-              GBP {(snapshot.posts_30d ?? 0) === 1 ? 'post' : 'posts'} logged in the last 30 days
-            </div>
+            {/* Work-log line, deliberately number-free: the count comes from
+                when staff filed the work (which can lag real publish dates),
+                so a specific figure invites false-precision complaints. */}
+            <div className="text-sm text-body">GBP posts logged in last 30 days</div>
 
             {/* Latest GBP post preview */}
             {latestPost?.excerpt && (
@@ -64,22 +60,16 @@ export function GoogleBusinessProfileCard({
                 <p className="mt-1 line-clamp-3 text-sm text-heading">
                   {latestPost.excerpt}
                 </p>
-                {latestPost.published_at && (
+                {latestPost.url && (
                   <p className="mt-2 text-xs text-body">
-                    logged {formatDistanceToNow(new Date(latestPost.published_at), { addSuffix: true })}
-                    {latestPost.url && (
-                      <>
-                        {' · '}
-                        <a
-                          href={latestPost.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-brand hover:underline"
-                        >
-                          View on Google
-                        </a>
-                      </>
-                    )}
+                    <a
+                      href={latestPost.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-brand hover:underline"
+                    >
+                      View on Google
+                    </a>
                   </p>
                 )}
               </div>
