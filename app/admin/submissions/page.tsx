@@ -10,6 +10,7 @@ import { getSubmissionKind } from '@/lib/submissions/kinds'
 import { Plus, ExternalLink } from 'lucide-react'
 import { ReplaceSubmissionRow } from './replace-submission-row'
 import { SubmissionsFilterBar, type FirmOption } from './submissions-filter-bar'
+import { titleFromUrl } from '@/lib/title-from-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -146,7 +147,7 @@ export default async function SubmissionsPage({
                     <div className="col-span-7">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium text-heading">
-                          {r.title || meta?.label || r.kind}
+                          {r.title || titleFromUrl(r.link_url) || meta?.label || r.kind}
                         </span>
                         <Badge variant="secondary">{meta?.label ?? r.kind}</Badge>
                         {isReplaced && <Badge variant="warning">Replaced</Badge>}

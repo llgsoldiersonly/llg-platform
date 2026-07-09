@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ExternalLink } from 'lucide-react'
 import { getSubmissionKind } from '@/lib/submissions/kinds'
+import { titleFromUrl } from '@/lib/title-from-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -83,7 +84,7 @@ export default async function StaffRecentPage() {
                     <div className="col-span-8">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium text-heading">
-                          {r.title || meta?.label || r.kind}
+                          {r.title || titleFromUrl(r.link_url) || meta?.label || r.kind}
                         </span>
                         <Badge variant="secondary">{meta?.label ?? r.kind}</Badge>
                         {isReplaced && <Badge variant="warning">Replaced</Badge>}
