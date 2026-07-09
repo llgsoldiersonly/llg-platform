@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { ClientSwitcher } from './client-switcher'
 import { ImpersonatePicker } from './impersonate-picker'
 import { NotificationsBell } from '@/components/notifications-bell'
+import { CommandPalette } from './command-palette'
 import { signOutAction } from '@/lib/actions/auth'
 
 export async function AdminTopbar() {
@@ -36,6 +37,7 @@ export async function AdminTopbar() {
     <header className="flex h-16 items-center justify-between border-b border-border-default bg-neutral-primary-soft px-6">
       <ClientSwitcher clients={clients ?? []} />
       <div className="flex shrink-0 items-center gap-3">
+        <CommandPalette />
         {isSuper && <ImpersonatePicker firms={clients ?? []} />}
         {isSuper && <Badge variant="brand" className="hidden sm:inline-flex">Super admin</Badge>}
         <NotificationsBell />
