@@ -3,6 +3,7 @@ import { ChevronLeft } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { InfoTip } from '@/components/ui/infotip'
+import { titleFromUrl } from '@/lib/title-from-url'
 import { TaskHoursForm, TaskCommentForm, AddSubtaskForm, ApplyTemplateForm, TaskFiles } from './task-detail-forms'
 
 export type TaskDetailData = {
@@ -185,7 +186,7 @@ export function TaskDetail({
                     <li key={i} className="truncate">
                       {s.link_url ? (
                         <a href={s.link_url} target="_blank" rel="noreferrer" className="text-fg-brand hover:underline">
-                          {s.title || s.link_url}
+                          {s.title || titleFromUrl(s.link_url) || s.link_url}
                         </a>
                       ) : (
                         <span className="text-heading">{s.title ?? s.kind}</span>

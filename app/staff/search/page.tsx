@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { titleFromUrl } from '@/lib/title-from-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -174,7 +175,7 @@ export default async function StaffSearchPage({
                   <div key={s.id} className="rounded border border-border-default p-2.5">
                     {s.link_url ? (
                       <a href={s.link_url} target="_blank" rel="noreferrer" className="text-sm font-medium text-fg-brand hover:underline">
-                        {s.title || s.link_url}
+                        {s.title || titleFromUrl(s.link_url) || s.link_url}
                       </a>
                     ) : (
                       <span className="text-sm font-medium text-heading">{s.title ?? s.kind}</span>

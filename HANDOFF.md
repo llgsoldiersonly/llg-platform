@@ -1,7 +1,7 @@
 # LLG Platform — Engineering Handoff
 
-**As of:** 2026-07-01
-**Author:** Rolling handoff — originally written after the May 14–22 sprint, now extended through the May 22 → July 1 work.
+**As of:** 2026-07-09
+**Author:** Rolling handoff — originally written after the May 14–22 sprint, extended through the May 22 → July 1 work, and again through the July 1–9 sprint.
 **Repo:** [github.com/llgsoldiersonly/llg-platform](https://github.com/llgsoldiersonly/llg-platform)
 **Production URL:** [llgportal.com](https://llgportal.com)
 **Hosted on:** Vercel (`llg-team/llg-platform`)
@@ -9,6 +9,7 @@
 > **Reading order:** This document is in two parts.
 > **Part I** (§1–§7 + Appendices) is the original May 22 handoff — the architecture, patterns, and access notes are all still current, so read it first for the foundations.
 > **Part II** (near the bottom, "PART II — May 22 → July 1, 2026") is the detailed log of everything shipped since: multi-site support, the pivot into employee project management (tasks, kanban, My Day, notifications), lead delivery, and a batch of operational fixes. Where Part I and Part II disagree on a specific behavior, **Part II wins**.
+> **Part III** (bottom, "Part III — July 1–9 sprint") covers PRs #51–#65: the self-driving workflow pipeline (content plans → templates → auto-handoffs), email digests (dormant — needs `RESEND_API_KEY`), capacity workload, the staff-UX set (help, search, infotips), and dept leads. Newest wins on any conflict.
 >
 > ⚠️ **Before trusting the DB section:** several migrations (0031, 0033–0037) are applied to production by hand, not by the pipeline. Check "Database migrations 0029–0037" in Part II for exactly which are live vs. still owed.
 
@@ -380,7 +381,7 @@ migration the PR depends on (see **II.5** for apply-status).
 
 | PR | Title | Mig | One-line behavior |
 |---|---|---|---|
-| [#50](https://github.com/llgsoldiersonly/llg-platform/pull/50) | Employee UX 3/N: inline deliverable proof + due-date reminders | — | **DRAFT / in review.** Paperclip-on-card proof URL + daily task-reminder cron |
+| [#50](https://github.com/llgsoldiersonly/llg-platform/pull/50) | Employee UX 3/N: inline deliverable proof + due-date reminders | — | Merged 2026-07-01. Paperclip-on-card proof URL + daily task-reminder cron |
 | [#49](https://github.com/llgsoldiersonly/llg-platform/pull/49) | Employee UX 2/N: task detail — comments, activity, hours | 0037 | Task detail page: comment thread, activity log, estimated/actual hours |
 | [#48](https://github.com/llgsoldiersonly/llg-platform/pull/48) | Employee UX 1/N: "My Day" home + notifications bell | — | `/staff` becomes a My Day dashboard; notification bell in both portals |
 | [#47](https://github.com/llgsoldiersonly/llg-platform/pull/47) | Kanban: purple edges, submit gate, Paused + reason | 0036 | Submit gate (staff→In review, admin→Submitted); Blocked→Paused w/ reason |
@@ -714,3 +715,82 @@ supabase/migrations/0026_calls_tags.sql                 — new
 supabase/migrations/0027_calls_ai_summary.sql           — new
 supabase/migrations/0028_deliverables_display_code.sql  — new
 ```
+
+---
+
+# Part III — July 1–9 sprint (PRs #51 – #65)
+
+Appended 2026-07-09. Everything below is squash-merged to `main` and deployed. This sprint turned the task system from "boards you look at" into a **self-driving PM pipeline** and gave staff a workspace that explains itself.
+
+## III.1 Shipped
+
+| PR | Title | Migration | Behavioral note |
+|---|---|---|---|
+| [#65](https://github.com/llgsoldiersonly/llg-platform/pull/65) | Client portal: Recent Updates items link to the live work | — | Update rows open `posts.url` / submission `link_url` in a new tab |
+| [#64](https://github.com/llgsoldiersonly/llg-platform/pull/64) | Infotips: in-place explanations across boards, My Day, tasks, admin | — | New `components/ui/infotip.tsx` (hover/focus/tap, no deps) |
+| [#63](https://github.com/llgsoldiersonly/llg-platform/pull/63) | Staff UX 3/3: help page + staff search | — | `/staff/help` guide, `/staff/search` (own tasks incl. done + submissions) |
+| [#62](https://github.com/llgsoldiersonly/llg-platform/pull/62) | Staff UX 2/3: "Next up" + one-tap actions, prefilled Submit work | — | Quick Start/Review/Resume/Add-proof buttons on My Day; deep-linked submit form |
+| [#61](https://github.com/llgsoldiersonly/llg-platform/pull/61) | Staff UX 1/3: step instructions (SOP) + client context on task detail | `0045` | Step descriptions copy into spawned subtasks; client sites + recent work on task |
+| [#60](https://github.com/llgsoldiersonly/llg-platform/pull/60) | Workload: hours-vs-capacity view + per-person weekly capacity | `0044` | 7-day estimated hours ÷ `weekly_capacity_hours` (default 40, editable) |
+| [#59](https://github.com/llgsoldiersonly/llg-platform/pull/59) | Email digests: per-staffer morning email + daily team summary | `0043` | **Dormant until `RESEND_API_KEY` is set** — see III.4 |
+| [#58](https://github.com/llgsoldiersonly/llg-platform/pull/58) | Self-driving pipelines: step handoffs, auto-rollup, smart templates | `0042` | Completing a step pings the next assignee; last step → parent In review |
+| [#57](https://github.com/llgsoldiersonly/llg-platform/pull/57) | Work table: grouped, expandable table with inline editing | — | `/admin/tasks/table`, Wrike-style; inline assignee/status/dates |
+| [#56](https://github.com/llgsoldiersonly/llg-platform/pull/56) | Task attachments + @mentions in comments | `0041` | `task_files` table + private bucket; @Name → notification |
+| [#55](https://github.com/llgsoldiersonly/llg-platform/pull/55) | Task subtasks + reusable workflow templates | `0040` | `parent_task_id`; `task_templates` + steps; seeded Blog workflow |
+| [#54](https://github.com/llgsoldiersonly/llg-platform/pull/54) | Content plans: bulk content as a plan, split rows across staff | `0039` | Paste keyword sheet → rows → assigned rows spawn tasks |
+| [#53](https://github.com/llgsoldiersonly/llg-platform/pull/53) | Head of Department: dept-lead flag + team board | `0038` | `is_department_lead`; `/staff/department`; lead can reassign + submit in dept |
+| [#52](https://github.com/llgsoldiersonly/llg-platform/pull/52) | Users: deactivate (login ban) + hard-delete-if-unused | — | Deactivate unassigns open work; delete only with zero history |
+| [#51](https://github.com/llgsoldiersonly/llg-platform/pull/51) | Task board: assignee filter + per-assignee color coding | — | Unassigned as first-class filter; stable per-person colors |
+
+## III.2 The workflow system (read this before touching tasks)
+
+The core loop, end to end:
+
+1. **Content plan** (`/admin/content-plans`): paste a keyword sheet, pick a client + optional department + optional **"Workflow per row"** template. Assign rows (manually or **Distribute unassigned evenly**) → each row spawns a task.
+2. **Workflow templates** (`/admin/settings/task-templates`): ordered steps, each with an **assignee rule** (parent's assignee / department lead / specific person / unassigned), a **due offset** (+N days from parent start), and **instructions** (0045) copied into the spawned subtask.
+3. **Steps hand off automatically** (`lib/tasks/pipeline.ts`, wired into `updateTaskStatus`): completing a step notifies the next step's assignee (or the dept lead if unowned). When all steps are done the **parent auto-moves to In review** (`via: auto_rollup` in the activity log) and its linked content-plan row syncs.
+4. **Submit gate**: staff can move work to In review only; **Submitted** requires super-admin or the task's department lead. Workflow *steps* are exempt (finishing a step ≠ shipping to client).
+
+Key files: `lib/tasks/apply-template.ts` (plain module, deliberately not `'use server'`), `lib/tasks/pipeline.ts`, `lib/actions/tasks.ts`, `lib/actions/task-templates.ts`, `lib/actions/content-plans.ts`.
+
+## III.3 Staff workspace
+
+- **My Day** (`/staff`): Next up (overdue → due date → priority), one-tap Start / Ready for review / Resume / Add proof, dismissible "New here?" card, submit form with URL-param prefill (`/staff?client=…&kind=…&deliverable=…#submit`).
+- **Task detail** (shared `components/admin/task-detail.tsx`, both portals): description, hours (estimated feeds Workload), subtasks, files, comments + @mentions, **Client context** card (sites + 5 recent approved submissions), staff-only **"Submit work for this task →"**.
+- **`/staff/help`** is the canonical "how it works" doc; **infotips** (`components/ui/infotip.tsx`) answer the same questions in place.
+- **`/staff/search`**: own tasks (title or firm name, incl. completed) + own submissions.
+
+## III.4 Email digests — ⚠️ dormant, one env var away
+
+`/api/cron/email-digests` (11:45 UTC daily, in `vercel.json`) sends via **Resend** (`lib/integrations/resend.ts`, plain fetch):
+
+1. **Per-staffer morning digest** — overdue / due today / last-24h mentions & assignments. No content → no email.
+2. **Company-wide daily summary** → `platform_settings.daily_summary_email` (seeded to Brittany, 0043): submissions, completions, per-person rollup, overdue + paused lists.
+
+**To activate: set `RESEND_API_KEY` in Vercel** (domain-verified key; sender defaults to `spaceman@llgportal.com`, override with `EMAIL_FROM`). Until then the cron logs a clean `resend_api_key_missing` error to `sync_log` each morning — expected, not a bug.
+
+## III.5 Workload / capacity
+
+`/admin/workload` shows **estimated hours due in the next 7 days ÷ weekly capacity** per staffer (amber ≥80%, red >100%), open-backlog hours, assigned deliverables, and a **"No estimate"** count (tasks invisible to the bars). Capacity lives on `profiles.weekly_capacity_hours` (0044), editable per person in Settings → Users. Hours come from task estimates — there is deliberately **no timer** yet.
+
+## III.6 Migration ledger (this sprint)
+
+| # | File | What |
+|---|---|---|
+| 0038 | `department_lead` | `profiles.is_department_lead` + partial index |
+| 0039 | `content_plans` | `content_plans`, `content_plan_items` (staff-only RLS) |
+| 0040 | `task_subtasks_templates` | `tasks.parent_task_id`/`position`, `task_templates`(+steps), seeded Blog workflow |
+| 0041 | `task_files` | `task_files` + private `task-files` bucket |
+| 0042 | `template_step_rules` | step `assignee_rule`, `assignee_id`, `offset_days` |
+| 0043 | `daily_summary_email` | `platform_settings.daily_summary_email` (seeded) |
+| 0044 | `weekly_capacity` | `profiles.weekly_capacity_hours` default 40 |
+| 0045 | `template_step_description` | step `description` (the SOP text) |
+
+All are applied to prod **except 0045** (pending as of 2026-07-09 — one `alter table … add column if not exists`, safe to run any time; the template editor's Instructions box errors on save until it lands).
+
+## III.7 Operational notes
+
+- New cron since Part II: `/api/cron/email-digests` — `45 11 * * *`.
+- `RESEND_API_KEY` is the **only unset env var** blocking shipped functionality.
+- All 15 PRs went through the reused working branch `claude/serene-maxwell-zVjvk` (squash-merge only; branch is reset to `origin/main` after each merge — don't be surprised that its history is just `main`).
+- Untitled submissions display with a **URL-slug-derived title** (`lib/title-from-url.ts`) in Recent Updates, task client-context, staff search/recent, and admin submissions.

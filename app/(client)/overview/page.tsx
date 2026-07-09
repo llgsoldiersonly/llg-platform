@@ -28,6 +28,7 @@ import { LeadsCard, type PortalLeadFile } from '@/components/client/cards/leads-
 import { LlgUpdatesCard } from '@/components/client/cards/llg-updates'
 import { aggregateProduction, applyPackageVisibility, type RawProductionRow } from '@/lib/post-launch-production'
 import { blendSiteHealth } from '@/lib/integrations/score-blend'
+import { titleFromUrl } from '@/lib/title-from-url'
 import { fetchLlgBlogPosts, type LlgBlogPost } from '@/lib/llg-blog-feed'
 import CustomerPortalRocketFlyover from '@/components/customer-portal/CustomerPortalRocketFlyover'
 
@@ -293,7 +294,7 @@ export default async function OverviewPage({
     ...(submissionsRes.data ?? []).map<RecentUpdate>((s) => ({
       id: `submission-${s.id}`,
       kind: submissionKindToRecentKind(s.kind),
-      title: s.title ?? s.kind.replace(/_/g, ' '),
+      title: s.title ?? titleFromUrl(s.link_url) ?? s.kind.replace(/_/g, ' '),
       occurred_at: s.reviewed_at ?? s.submitted_at,
       url: s.link_url || null,
     })),
