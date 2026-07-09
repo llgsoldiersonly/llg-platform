@@ -50,7 +50,7 @@ type RawSiteHealth = {
   captured_on: string
 }
 
-type RawPost = { id: string; title: string | null; published_at: string | null; source_type: string }
+type RawPost = { id: string; title: string | null; published_at: string | null; source_type: string; url: string | null }
 type RawCall = {
   id: string
   caller_name: string | null
@@ -147,7 +147,7 @@ export default async function OverviewPage({
       .returns<RawSiteHealth[]>(),
     admin
       .from('posts')
-      .select('id, title, published_at, source_type')
+      .select('id, title, published_at, source_type, url')
       .eq('client_id', ctx.client.id)
       .order('published_at', { ascending: false })
       .limit(4)
@@ -281,18 +281,21 @@ export default async function OverviewPage({
           : 'blog',
       title: p.title ?? 'Untitled post',
       occurred_at: p.published_at ?? new Date().toISOString(),
+      url: p.url,
     })),
     ...(callsRes.data ?? []).map<RecentUpdate>((c) => ({
       id: `call-${c.id}`,
       kind: 'call',
       title: `Call from ${c.caller_name ?? 'unknown caller'}`,
       occurred_at: c.started_at ?? new Date().toISOString(),
+      url: null,
     })),
     ...(submissionsRes.data ?? []).map<RecentUpdate>((s) => ({
       id: `submission-${s.id}`,
       kind: submissionKindToRecentKind(s.kind),
       title: s.title ?? s.kind.replace(/_/g, ' '),
       occurred_at: s.reviewed_at ?? s.submitted_at,
+      url: s.link_url || null,
     })),
   ]
     .sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime())

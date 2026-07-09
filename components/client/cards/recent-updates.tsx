@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ExternalLink } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 export type RecentUpdate = {
@@ -6,6 +7,9 @@ export type RecentUpdate = {
   kind: 'blog' | 'video' | 'call' | 'review' | 'social' | 'other'
   title: string
   occurred_at: string
+  // Live URL of the work (blog post, GBP post, …). Renders the row as an
+  // external link when present; calls and other unlinked items pass null.
+  url: string | null
 }
 
 const KIND_DOT = {
@@ -35,7 +39,19 @@ export function RecentUpdatesCard({ updates }: { updates: RecentUpdate[] }) {
                 <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${KIND_DOT[u.kind]}`} />
                 <div className="flex-1 min-w-0 leading-tight">
                   <div className="text-[10px] uppercase tracking-wider text-body-subtle">recent</div>
-                  <div className="truncate text-sm text-heading">{u.title}</div>
+                  {u.url ? (
+                    <a
+                      href={u.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="group flex items-center gap-1 text-sm text-heading hover:text-fg-brand"
+                    >
+                      <span className="truncate group-hover:underline">{u.title}</span>
+                      <ExternalLink className="h-3 w-3 shrink-0 text-body-subtle group-hover:text-fg-brand" />
+                    </a>
+                  ) : (
+                    <div className="truncate text-sm text-heading">{u.title}</div>
+                  )}
                   <div className="text-xs text-body">
                     {formatDistanceToNow(new Date(u.occurred_at), { addSuffix: true })}
                   </div>
