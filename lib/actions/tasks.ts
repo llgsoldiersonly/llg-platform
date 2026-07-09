@@ -213,6 +213,92 @@ export async function updateTaskStatus(
   return ok({ id })
 }
 
+// A forgotten timer (left running overnight/weekend) logs at most this much.
+const TIMER_MAX_HOURS = 8
+
+export async function startTaskTimer(taskId: string): Promise<Result<{ startedAt: string }>> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return err('UNAUTHORIZED')
+  if (!isAgencyStaff(user)) return err('FORBIDDEN')
+  if (!taskId) return err('VALIDATION_FAILED', 'Missing task id')
+
+  const admin = createAdminClient()
+  const { data: t } = await admin
+    .from('tasks')
+    .select('timer_started_at, timer_user_id')
+    .eq('id', taskId)
+    .maybeSingle<{ timer_started_at: string | null; timer_user_id: string | null }>()
+  if (!t) return err('NOT_FOUND', 'Task not found')
+  if (t.timer_started_at) {
+    return err('VALIDATION_FAILED', 'A timer is already running on this task. Stop it first.')
+  }
+
+  const startedAt = new Date().toISOString()
+  const { error } = await admin
+    .from('tasks')
+    .update({ timer_started_at: startedAt, timer_user_id: user.id })
+    .eq('id', taskId)
+    .is('timer_started_at', null)
+  if (error) return err('INTERNAL', `Failed to start timer: ${error.message}`)
+
+  revalidatePath(`/admin/tasks/${taskId}`)
+  revalidatePath(`/staff/tasks/${taskId}`)
+  return ok({ startedAt })
+}
+
+export async function stopTaskTimer(taskId: string): Promise<Result<{ loggedHours: number; actualHours: number }>> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return err('UNAUTHORIZED')
+  if (!isAgencyStaff(user)) return err('FORBIDDEN')
+  if (!taskId) return err('VALIDATION_FAILED', 'Missing task id')
+
+  const admin = createAdminClient()
+  const { data: t } = await admin
+    .from('tasks')
+    .select('title, timer_started_at, timer_user_id, actual_hours')
+    .eq('id', taskId)
+    .maybeSingle<{ title: string; timer_started_at: string | null; timer_user_id: string | null; actual_hours: number | null }>()
+  if (!t?.timer_started_at) return err('VALIDATION_FAILED', 'No timer is running on this task.')
+  if (t.timer_user_id !== user.id && !isSuperAdmin(user)) {
+    return err('FORBIDDEN', 'Only the person who started the timer (or a super-admin) can stop it.')
+  }
+
+  const elapsedHours = (Date.now() - new Date(t.timer_started_at).getTime()) / 3_600_000
+  // Round to 2 decimals; floor tiny accidental taps at 0.01h (~36s); cap
+  // forgotten timers so a weekend doesn't log 60 hours.
+  const loggedHours = Math.min(TIMER_MAX_HOURS, Math.max(0.01, Math.round(elapsedHours * 100) / 100))
+  const actualHours = Math.round(((t.actual_hours ?? 0) + loggedHours) * 100) / 100
+
+  const { error } = await admin
+    .from('tasks')
+    .update({
+      actual_hours: actualHours,
+      timer_started_at: null,
+      timer_user_id: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', taskId)
+  if (error) return err('INTERNAL', `Failed to stop timer: ${error.message}`)
+
+  await admin.from('activity_log').insert({
+    actor_id: user.id,
+    entity_type: 'task',
+    entity_id: taskId,
+    action: 'updated',
+    after: {
+      timer_logged_hours: loggedHours,
+      actual_hours: actualHours,
+      ...(elapsedHours > TIMER_MAX_HOURS ? { capped_from_hours: Math.round(elapsedHours * 100) / 100 } : {}),
+    },
+  })
+
+  revalidatePath(`/admin/tasks/${taskId}`)
+  revalidatePath(`/staff/tasks/${taskId}`)
+  return ok({ loggedHours, actualHours })
+}
+
 export async function toggleWatchTask(taskId: string): Promise<Result<{ watching: boolean }>> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
