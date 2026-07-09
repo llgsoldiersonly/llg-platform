@@ -4,8 +4,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { fetchCallRailCalls } from '@/lib/integrations/callrail'
 import { postToGlip } from '@/lib/integrations/ringcentral'
 
-// Daily 02:20 UTC. Pulls calls from last 2 days per client to catch
-// late-syncing calls. Upserts to raw_callrail + calls.
+// Hourly at :20 (was daily 02:20 — the portal always lagged CallRail's live
+// dashboard by up to a day). Pulls the last 2 days per client; upserts on
+// stable keys, so re-runs are safe and also refresh tags/AI summaries that
+// CallRail adds after the call.
 export async function POST(req: Request) {
   if (!isAuthorizedCron(req)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
@@ -140,8 +142,14 @@ export async function POST(req: Request) {
 
   if (errors.length > 0 && process.env.RC_WEBHOOK_ALERTS) {
     try {
+      // Name the failures in the alert itself — "7 error(s)" with the detail
+      // buried in sync_log meant nobody knew the sync was down for weeks.
+      const detail = errors
+        .slice(0, 5)
+        .map((e) => `${e.client}: ${e.message.slice(0, 120)}`)
+        .join(' · ')
       await postToGlip(process.env.RC_WEBHOOK_ALERTS, {
-        text: `⚠️ CallRail cron had ${errors.length} error(s)`,
+        text: `⚠️ CallRail cron had ${errors.length} error(s) — ${detail}${errors.length > 5 ? ' · …' : ''}`,
         activity: 'Cron error',
       })
     } catch {}
