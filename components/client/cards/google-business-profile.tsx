@@ -47,10 +47,12 @@ export function GoogleBusinessProfileCard({
               </span>
             </div>
 
-            {/* Posts-in-last-30-days metric */}
+            {/* Posts logged by staff in the trailing 30 days. This counts when
+                our team filed the work, which can lag the real publish date —
+                say what it is instead of implying live GBP data. */}
             <div className="text-sm text-body">
               <span className="font-medium text-heading">{snapshot.posts_30d ?? 0}</span>{' '}
-              {(snapshot.posts_30d ?? 0) === 1 ? 'post' : 'posts'} in the last 30 days
+              GBP {(snapshot.posts_30d ?? 0) === 1 ? 'post' : 'posts'} logged in the last 30 days
             </div>
 
             {/* Latest GBP post preview */}
@@ -64,7 +66,7 @@ export function GoogleBusinessProfileCard({
                 </p>
                 {latestPost.published_at && (
                   <p className="mt-2 text-xs text-body">
-                    {formatDistanceToNow(new Date(latestPost.published_at), { addSuffix: true })}
+                    logged {formatDistanceToNow(new Date(latestPost.published_at), { addSuffix: true })}
                     {latestPost.url && (
                       <>
                         {' · '}
@@ -84,8 +86,17 @@ export function GoogleBusinessProfileCard({
             )}
 
             {snapshot.captured_on && (
-              <p className="text-center text-[10px] uppercase tracking-wider text-body-subtle">
-                As of {new Date(snapshot.captured_on).toLocaleDateString()}
+              // The date only covers rating + review count (the weekly listing
+              // check) — the posts count above is live from our work log. Flag
+              // it when the listing check is overdue instead of quietly
+              // presenting stale numbers as current.
+              <p
+                className={`text-center text-[10px] uppercase tracking-wider ${
+                  isStale(snapshot.captured_on) ? 'text-fg-warning-strong' : 'text-body-subtle'
+                }`}
+              >
+                Rating &amp; reviews as of {new Date(snapshot.captured_on).toLocaleDateString()}
+                {isStale(snapshot.captured_on) && ' · refresh pending'}
               </p>
             )}
           </div>
@@ -93,6 +104,11 @@ export function GoogleBusinessProfileCard({
       </CardContent>
     </Card>
   )
+}
+
+// The listing check runs weekly — anything older than two runs is stuck.
+function isStale(capturedOn: string): boolean {
+  return Date.now() - new Date(capturedOn).getTime() > 14 * 24 * 60 * 60 * 1000
 }
 
 // 5-star rating row with half-star precision. Decorative — accessibility
