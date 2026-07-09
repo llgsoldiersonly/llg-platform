@@ -213,7 +213,9 @@ export async function POST(req: NextRequest) {
           apiToken: process.env.CALLRAIL_API_TOKEN,
           accountId,
           companyId: creds.callrail_company_id,
-          startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+          // 30 days: the manual button doubles as the recovery backfill after
+          // a token outage (the hourly cron only re-pulls 2 days).
+          startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
           endDate: new Date(),
         })
         if (fetched.length > 0) {
