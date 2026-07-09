@@ -22,6 +22,8 @@ type RawTask = {
   estimated_hours: number | null
   actual_hours: number | null
   recur_every: string | null
+  timer_started_at: string | null
+  timer_user_id: string | null
   assigned_to: string | null
   client_id: string | null
   deliverable_id: string | null
@@ -49,7 +51,7 @@ export async function loadTaskDetail(
     supa
       .from('tasks')
       .select(
-        'id, task_number, title, description, status, priority, start_date, due_date, block_reason, estimated_hours, actual_hours, recur_every, assigned_to, client_id, deliverable_id, tags, client:clients(firm_name), department:departments(name)'
+        'id, task_number, title, description, status, priority, start_date, due_date, block_reason, estimated_hours, actual_hours, recur_every, timer_started_at, timer_user_id, assigned_to, client_id, deliverable_id, tags, client:clients(firm_name), department:departments(name)'
       )
       .eq('id', id)
       .maybeSingle<RawTask>(),
@@ -157,6 +159,7 @@ export async function loadTaskDetail(
   for (const c of comments ?? []) if (c.author_id) ids.add(c.author_id)
   for (const s of subtasks ?? []) if (s.assigned_to) ids.add(s.assigned_to)
   for (const w of watcherRows ?? []) ids.add(w.user_id)
+  if (task.timer_user_id) ids.add(task.timer_user_id)
 
   const { data: profs } = ids.size
     ? await supa.from('profiles').select('id, full_name').in('id', [...ids]).returns<{ id: string; full_name: string | null }[]>()
@@ -177,6 +180,9 @@ export async function loadTaskDetail(
       estimated_hours: task.estimated_hours,
       actual_hours: task.actual_hours,
       recur_every: task.recur_every,
+      timer_started_at: task.timer_started_at,
+      timer_user_id: task.timer_user_id,
+      timerUserName: task.timer_user_id ? nameById.get(task.timer_user_id) ?? null : null,
       client: task.client,
       department: task.department,
       assigneeName: task.assigned_to ? nameById.get(task.assigned_to) ?? null : null,

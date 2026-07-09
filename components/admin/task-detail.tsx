@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { InfoTip } from '@/components/ui/infotip'
 import { WatchButton } from './watch-button'
+import { TaskTimer } from './task-timer'
 import { titleFromUrl } from '@/lib/title-from-url'
 import { TaskHoursForm, TaskCommentForm, AddSubtaskForm, ApplyTemplateForm, TaskFiles } from './task-detail-forms'
 
@@ -20,6 +21,9 @@ export type TaskDetailData = {
   estimated_hours: number | null
   actual_hours: number | null
   recur_every: string | null
+  timer_started_at: string | null
+  timer_user_id: string | null
+  timerUserName: string | null
   client: { firm_name: string } | null
   department: { name: string } | null
   assigneeName: string | null
@@ -282,7 +286,13 @@ export function TaskDetail({
             <InfoTip text="Estimated = how long you expect it to take (this drives the Workload capacity bars). Actual = what it really took, filled in as you go or when finished." />
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <TaskTimer
+            taskId={task.id}
+            startedAt={task.timer_started_at}
+            startedByName={task.timerUserName}
+            startedByViewer={!!viewerId && task.timer_user_id === viewerId}
+          />
           <TaskHoursForm taskId={task.id} estimated={task.estimated_hours} actual={task.actual_hours} />
         </CardContent>
       </Card>
