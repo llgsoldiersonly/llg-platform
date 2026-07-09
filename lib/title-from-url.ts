@@ -4,13 +4,19 @@
 // path (bare domain, numeric IDs, query-only links).
 export function titleFromUrl(url: string | null | undefined): string | null {
   if (!url) return null
-  let path: string
+  let parsed: URL
   try {
-    path = new URL(url).pathname
+    parsed = new URL(url)
   } catch {
     return null
   }
-  const segments = path.split('/').filter(Boolean)
+  // YouTube URLs carry an opaque video ID, never a readable slug — a derived
+  // "title" would be garbage like "RI0CqM9zvis". Label them plainly instead.
+  const host = parsed.hostname.replace(/^(www|m)\./, '')
+  if (host === 'youtube.com' || host === 'youtu.be' || host === 'youtube-nocookie.com') {
+    return 'New YouTube video'
+  }
+  const segments = parsed.pathname.split('/').filter(Boolean)
   // Walk from the end past junk segments (pure numbers, index files).
   for (let i = segments.length - 1; i >= 0; i--) {
     const raw = segments[i].replace(/\.(html?|php|aspx?)$/i, '')
