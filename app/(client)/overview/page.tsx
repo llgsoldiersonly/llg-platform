@@ -97,6 +97,8 @@ export default async function OverviewPage({
 
   const ctx = await getClientContext(sp)
   if (!ctx) redirect('/login')
+  // Intakes-only firms have no marketing surface — their portal is /intakes.
+  if (ctx.client.intake_mode === 'intakes_only') redirect('/intakes')
 
   const supabase = await createClient()
   const admin = createAdminClient()

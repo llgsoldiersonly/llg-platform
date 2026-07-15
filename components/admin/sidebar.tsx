@@ -15,6 +15,7 @@ import {
   Columns3,
   FileStack,
   Table2,
+  PhoneIncoming,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { LlgMark } from '@/components/brand/logo'
@@ -30,6 +31,7 @@ const items: NavItem[] = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/clients', label: 'Clients', icon: Users },
   { href: '/admin/tickets', label: 'Tickets', icon: Briefcase },
+  { href: '/admin/intakes', label: 'Intakes', icon: PhoneIncoming },
   { href: '/admin/submissions', label: 'Submissions', icon: Upload },
   { href: '/admin/tasks', label: 'Tasks', icon: ClipboardList },
   { href: '/admin/tasks/board', label: 'Task board', icon: Columns3 },

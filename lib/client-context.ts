@@ -50,6 +50,7 @@ export type ClientContext = {
     next_billing_at: string | null
     show_site_health: boolean
     leads_enabled: boolean
+    intake_mode: 'none' | 'intakes_only' | 'intakes_leads'
   }
   locations: ClientLocation[]
   selectedLocation: ClientLocation | null
@@ -100,7 +101,7 @@ export async function getClientContext(searchParams?: URLSearchParams): Promise<
   const baseQuery = () =>
     supabase
       .from('clients')
-      .select('id, firm_name, primary_domain, is_demo_only, status, onboarded_at, agreed_launch_date, ad_date, next_billing_at, show_site_health, leads_enabled')
+      .select('id, firm_name, primary_domain, is_demo_only, status, onboarded_at, agreed_launch_date, ad_date, next_billing_at, show_site_health, leads_enabled, intake_mode')
 
   let clients = impersonation
     ? (await baseQuery().eq('id', impersonation.clientId).limit(1)).data
