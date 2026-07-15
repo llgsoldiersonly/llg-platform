@@ -47,6 +47,7 @@ export default async function PlanPage({
 
   const ctx = await getClientContext(sp)
   if (!ctx) redirect('/login')
+  if (ctx.client.intake_mode === 'intakes_only') redirect('/intakes')
 
   const supabase = await createClient()
 

@@ -14,7 +14,7 @@ type NavItem = {
 // Top nav items match the brand reference. Locked items keep the same
 // "phase tag" pattern the sidebar used so the visual language stays
 // consistent for the client.
-const items: NavItem[] = [
+const FULL_ITEMS: NavItem[] = [
   { href: '/overview',     label: 'Overview' },
   { href: '/plan',         label: 'SEO Plan' },
   { href: '/seo',          label: 'SEO Insights' },
@@ -22,8 +22,21 @@ const items: NavItem[] = [
   { href: '/team',         label: 'Team',         phase: 'soon' },
 ]
 
-export function ClientTopNav() {
+// Intakes-only firms buy just the intake service — the marketing pages are
+// hidden entirely. Intakes+Leads firms keep the full portal plus Intakes.
+const INTAKES_ONLY_ITEMS: NavItem[] = [
+  { href: '/intakes',      label: 'Intakes' },
+  { href: '/tickets',      label: 'Support & Tickets' },
+]
+
+export function ClientTopNav({ intakeMode = 'none' }: { intakeMode?: string }) {
   const pathname = usePathname()
+  const items =
+    intakeMode === 'intakes_only'
+      ? INTAKES_ONLY_ITEMS
+      : intakeMode === 'intakes_leads'
+      ? [...FULL_ITEMS.slice(0, 3), { href: '/intakes', label: 'Intakes' }, ...FULL_ITEMS.slice(3)]
+      : FULL_ITEMS
 
   return (
     <nav className="hidden flex-1 items-center justify-center gap-8 md:flex">

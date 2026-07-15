@@ -19,15 +19,17 @@ export async function ClientHeader() {
 
   const firmName = ctx?.client.firm_name ?? 'Your firm'
   const initial = (firmName[0] ?? 'C').toUpperCase()
+  const intakeMode = ctx?.client.intake_mode ?? 'none'
+  const homeHref = intakeMode === 'intakes_only' ? '/intakes' : '/overview'
 
   return (
     <header className="border-b border-border-default bg-neutral-primary-soft">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4">
-        <Link href="/overview" className="shrink-0">
+        <Link href={homeHref} className="shrink-0">
           <LlgWordmark size="md" />
         </Link>
 
-        <ClientTopNav />
+        <ClientTopNav intakeMode={intakeMode} />
 
         <div className="flex shrink-0 items-center gap-3">
           {ctx?.client.is_demo_only && <Badge variant="warning">DEMO</Badge>}

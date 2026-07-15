@@ -1,6 +1,11 @@
+import { redirect } from 'next/navigation'
+import { getClientContext } from '@/lib/client-context'
 import { SeoTabNav } from './seo-tab-nav'
 
-export default function ClientSeoLayout({ children }: { children: React.ReactNode }) {
+export default async function ClientSeoLayout({ children }: { children: React.ReactNode }) {
+  // Intakes-only firms have no SEO surface — deep links bounce to /intakes.
+  const ctx = await getClientContext()
+  if (ctx?.client.intake_mode === 'intakes_only') redirect('/intakes')
   return (
     <div>
       <div className="border-b border-border-default bg-neutral-primary-soft">
